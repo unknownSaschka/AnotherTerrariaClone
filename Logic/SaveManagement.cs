@@ -26,12 +26,15 @@ namespace ITProject.Logic
             itemInfo.Add(7, new ItemJSON("Leaves", true, true, false, false));
             itemInfo.Add(8, new ItemJSON("Water", true, true, true, true));
             itemInfo.Add(9, new ItemJSON("Flowing Water", false, false, true, true));
+            itemInfo.Add(10, new ItemJSON("Lava", false, true, true, true));
             itemInfo.Add(20, new ItemJSON("Coal Ore", true, true, false, false));
             itemInfo.Add(21, new ItemJSON("Iron Ore", true, true, false, false));
-            itemInfo.Add(22, new ItemJSON("Cobalt Ore", true, true, false, false));
-            itemInfo.Add(23, new ItemJSON("Coal", true, false, false, false));
-            itemInfo.Add(24, new ItemJSON("Iron", true, false, false, false));
-            itemInfo.Add(25, new ItemJSON("Cobalt", true, false, false, false));
+            itemInfo.Add(22, new ItemJSON("Diamond Ore", true, true, false, false));
+            itemInfo.Add(23, new ItemJSON("Cobalt Ore", true, true, false, false));
+            itemInfo.Add(24, new ItemJSON("Coal", true, false, false, false));
+            itemInfo.Add(25, new ItemJSON("Iron", true, false, false, false));
+            itemInfo.Add(26, new ItemJSON("Diamond", true, false, false, false));
+            itemInfo.Add(27, new ItemJSON("Cobalt", true, false, false, false));
 
             using (StreamWriter file = File.CreateText(@"items.json"))
             {

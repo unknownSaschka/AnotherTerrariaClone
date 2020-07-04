@@ -66,11 +66,12 @@ namespace ITProject.View
                     face.Glyph.Bitmap.Buffer);
 
                 //Setze Textur optionen
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 
+                //Character in Dictionary speichern für später
                 Character character = new Character(
                     textureID,
                     new Vector2(face.Glyph.Bitmap.Width, face.Glyph.Bitmap.Rows),
@@ -80,8 +81,8 @@ namespace ITProject.View
                 Characters.Add((char)c, character);
             }
 
-            face.Dispose();
-            library.Dispose();
+            //face.Dispose();
+            //library.Dispose();
         }
     }
 }

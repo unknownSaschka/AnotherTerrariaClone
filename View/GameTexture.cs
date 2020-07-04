@@ -9,13 +9,18 @@ using System.Threading.Tasks;
 
 namespace ITProject.View
 {
-    class Texture
+    class GameTextures
     {
-        public int InventoryBar;
-        public int Itembar_Selector;
-        public int Inventory;
+        public uint InventoryBar;
+        public uint Itembar_Selector;
+        public uint Inventory;
+        public uint Block;
+        public uint Debug;
+        public uint Debug2;
+        public uint lolDoerte;
+        public uint Items;
 
-        public Texture()
+        public GameTextures()
         {
             LoadTextures();
         }
@@ -25,11 +30,16 @@ namespace ITProject.View
             InventoryBar = LoadTexture("Content/textures/Itembar.png");
             Itembar_Selector = LoadTexture("Content/textures/Itembar_Selector.png");
             Inventory = LoadTexture("Content/textures/Inventory.png");
+            Block = LoadTexture("Content/textures/Block.png");
+            Debug = LoadTexture("Content/textures/Debug.png");
+            lolDoerte = LoadTexture("Content/textures/dumbdoerte.png");
+            Debug2 = LoadTexture("Content/textures/Debug2.png");
+            Items = LoadTexture("Content/textures/Items.png");
         }
 
-        private int LoadTexture(string file)
+        private uint LoadTexture(string file)
         {
-            int tex;
+            uint tex;
 
             Bitmap bitmap = new Bitmap(file);
 
@@ -44,6 +54,8 @@ namespace ITProject.View
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
             return tex;
         }

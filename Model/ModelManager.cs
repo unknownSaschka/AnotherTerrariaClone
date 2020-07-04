@@ -39,7 +39,7 @@ namespace ITProject.Model
             TestedCollisions = new List<System.Numerics.Vector2>();
             RenderDistance = new System.Numerics.Vector2(42, 22);
             WorldMousePosition = new System.Numerics.Vector2();
-            Zoom = 20;
+            Zoom = 20f;
             ShowGrid = false;
             SelectedInventorySlot = 0;
             InventoryOpen = false;

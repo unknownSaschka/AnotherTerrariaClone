@@ -1,12 +1,14 @@
 ﻿#version 330 core
 
-in vec3 aPosition;
-in vec2 aTexCoord;
+layout (location = 0) in vec4 vertex; // <vec2 pos, vec2 tex>
 
-uniform vec3 changedPosition;
+out vec2 texCoord;
+  
 uniform mat4 transform;
+uniform vec4 translation;
 
-void main (void)
+void main()
 {
-	gl_Position = vec4(aPosition, 1.0) * transform;
+    texCoord = vertex.zw;    
+    gl_Position = transform * (vec4(vertex.xy, 0.0, 1.0) + translation);
 }

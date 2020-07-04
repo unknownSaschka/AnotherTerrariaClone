@@ -1,10 +1,13 @@
 ﻿#version 330 core
 
-uniform vec4 color;
+uniform vec4 blockColor;
 
-out vec4 outputColor;
+in vec2 texCoord;
+out vec4 color;
+
+uniform sampler2D texture0;
 
 void main()
 {
-    outputColor = color;
+    color = texture(texture0, texCoord);
 }

@@ -90,7 +90,7 @@ namespace ITProject.Logic
             {
                 if (keyboardState.IsKeyDown(Key.ControlLeft))
                 {
-                    _mainModel.GetModelManager.Zoom -= inputManager.GetMouseWheelDifference();
+                    _mainModel.GetModelManager.Zoom -= inputManager.GetMouseWheelDifference() * 0.5f;
                 }
 
                 if (inputManager.GetKeyPressed(Key.KeypadPlus))
@@ -114,8 +114,8 @@ namespace ITProject.Logic
                 }
             }
 
-            if (_mainModel.GetModelManager.Zoom > 100) _mainModel.GetModelManager.Zoom = 100;
-            else if (_mainModel.GetModelManager.Zoom < 2) _mainModel.GetModelManager.Zoom = 2;
+            if (_mainModel.GetModelManager.Zoom > 300f) _mainModel.GetModelManager.Zoom = 300f;
+            else if (_mainModel.GetModelManager.Zoom < 1f) _mainModel.GetModelManager.Zoom = 1f;
         }
 
         public void PerformPlayerMovement(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double fixedDeltaTime)

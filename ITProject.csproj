@@ -105,6 +105,9 @@
     <Reference Include="OpenTK, Version=3.2.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <HintPath>packages\OpenTK.3.2\lib\net20\OpenTK.dll</HintPath>
     </Reference>
+    <Reference Include="QuickFont, Version=3.0.2.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\QuickFont.3.0.2.1\lib\net40\QuickFont.dll</HintPath>
+    </Reference>
     <Reference Include="SharpFont, Version=4.0.1.200, Culture=neutral, PublicKeyToken=48add4c483071cdf, processorArchitecture=MSIL">
       <HintPath>packages\SharpFont.4.0.1\lib\net45\SharpFont.dll</HintPath>
     </Reference>
@@ -146,8 +149,9 @@
     <Compile Include="View\Camera.cs" />
     <Compile Include="View\Fonts.cs" />
     <Compile Include="View\MainView.cs" />
+    <Compile Include="View\MainViewOld.cs" />
     <Compile Include="View\Shader.cs" />
-    <Compile Include="View\Texture.cs" />
+    <Compile Include="View\GameTexture.cs" />
     <Compile Include="WorldGeneratorStuff\CellularAutomata.cs" />
     <Compile Include="WorldGeneratorStuff\FastNoise.cs" />
     <Compile Include="WorldGeneratorStuff\GeneratorSettings.cs" />
@@ -189,6 +193,18 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\textures\Block.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\textures\Debug.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\textures\Debug2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\textures\dumbdoerte.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Content\textures\Inventory.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -196,6 +212,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\textures\Itembar_Selector.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\textures\Items.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="freetype6.dll">
