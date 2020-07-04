@@ -483,6 +483,7 @@ namespace ITProject.View
 
         private void CalculateViewBorders(System.Numerics.Vector2 playerPosition,  ref Vector2 mins,  ref Vector2 maxs)
         {
+            /*
             WindowPositions winPos = UpdateWindowPositions();
 
             System.Numerics.Vector2 upperLeft= _logic.CalculateViewToWorldPosition(new System.Numerics.Vector2(0f, 0f), playerPosition, winPos);
@@ -492,6 +493,7 @@ namespace ITProject.View
             mins.Y = lowerRight.Y;
             maxs.X = lowerRight.X;
             maxs.Y = upperLeft.Y;
+            */
         }
     }
 
