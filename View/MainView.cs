@@ -33,6 +33,10 @@ namespace ITProject.View
         private uint _blockVAO, _blockVBO;
         private uint _mouseVAO, _mouseVBO;
         private uint _playerVAO, _playerVBO;
+        private uint _invBarVAO, _invBarVBO;
+        private uint _inventoryVAO, _inventoryVBO;
+        private uint _itemInvBarVAO, _itemInvBarVBO;
+        private uint _invBarSelectorVAO, _invBarSelectorVBO;
 
         private Shader _shader;
         private float _passedTime;
@@ -53,6 +57,10 @@ namespace ITProject.View
         {
             InitQFont();
             InitVertexBuffer();
+            InitVertexBufferInvBar();
+            InitVertexBufferInventory();
+            InitVertexBufferInvBarItems();
+            InitVertexBufferInvBarSelector();
             InitShaders();
             base.OnLoad(e);
         }
@@ -92,6 +100,12 @@ namespace ITProject.View
 
             base.OnUnload(e);
         }
+        protected override void OnResize(EventArgs e)
+        {
+            AlterVertexBufferInvBar();
+
+            base.OnResize(e);
+        }
 
         private void Draw()
         {
@@ -100,15 +114,14 @@ namespace ITProject.View
             //DrawWorld();
             DrawWorldV2();
 
-            DrawGUI();
-
             DrawMousePointer();
 
-            if (Keyboard.GetState().IsKeyDown(Key.E))
+            DrawGUI();
+
+            if (Keyboard.GetState().IsKeyDown(Key.T))
             {
                 DrawFont();
             }
-            
 
             SwapBuffers();
         }
@@ -314,7 +327,113 @@ namespace ITProject.View
 
         private void DrawGUI()
         {
+            Matrix4 projection = Matrix4.CreateOrthographic(ClientRectangle.Width, ClientRectangle.Height, -1.0f, 1.0f);
+            Matrix4 transformation = Matrix4.Identity * projection;
+            Vector4 translation = Vector4.Zero;
 
+            GL.UseProgram(0);
+            _shader.Use();
+            _shader.SetMatrix4("transform", transformation);
+            _shader.SetVector4("translation", translation);
+
+            DrawItemBar();
+
+            if (_modelManager.InventoryOpen)
+            {
+                DrawInventory();
+            }
+        }
+
+        private void DrawItemBar()
+        {
+            //Draw Itembar Frame
+            DrawElements(_invBarVAO, _invBarVBO, 4, _gameTextures.InventoryBar);
+
+            //Draw itembar Items
+            ushort[] items = new ushort[10];
+            for(int i = 0; i < items.Length; i++)
+            {
+                items[i] = 1;
+            }
+
+            int itemLength = 0;
+
+            for (int i = 0; i < items.Length; i++)
+            {
+                if (items[i] == 0) continue;
+                itemLength++;
+            }
+
+            float [,] vertices = GetInvBarItemIndices(items, itemLength);
+            DrawElements(_itemInvBarVAO, _itemInvBarVBO, vertices.Length * sizeof(float), vertices, itemLength * 4, _gameTextures.Items);
+
+            //DrawItemSelector
+            int selected = _modelManager.SelectedInventorySlot;
+            float[,] verticesSelector = GetInvBarSelectorIndices(selected);
+
+            DrawElements(_invBarSelectorVAO, _invBarSelectorVBO, sizeof(float) * verticesSelector.Length, verticesSelector, 4, _gameTextures.Itembar_Selector);
+        }
+
+        private void DrawElements(uint vao, uint vbo, int bufferSize, float[,] vertices, int verticesToDraw, uint gameTexture)
+        {
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            GL.BindVertexArray(vao);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
+
+            GL.BufferData(BufferTarget.ArrayBuffer, bufferSize, vertices, BufferUsageHint.DynamicDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, gameTexture);
+
+            GL.DrawArrays(PrimitiveType.QuadsExt, 0, verticesToDraw);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            GL.Disable(EnableCap.Blend);
+        }
+
+        private void DrawElements(uint vao, uint vbo, int verticesToDraw, uint gameTexture)
+        {
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, gameTexture);
+
+            GL.BindVertexArray(vao);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
+
+            GL.DrawArrays(PrimitiveType.Quads, 0, verticesToDraw);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+        }
+
+        private void DrawInventory()
+        {
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Inventory);
+
+            GL.BindVertexArray(_inventoryVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _inventoryVBO);
+
+            GL.DrawArrays(PrimitiveType.Quads, 0, 4);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            GL.Disable(EnableCap.Blend);
         }
 
         private void DrawMousePointer()
@@ -436,6 +555,173 @@ namespace ITProject.View
             GL.BindVertexArray(0);
         }
 
+        private void InitVertexBufferInvBar()
+        {
+            float[,] indices = GetUpdatedInvBarPos();
+
+            GL.GenVertexArrays(1, out _invBarVAO);
+            GL.GenBuffers(1, out _invBarVBO);
+
+            GL.BindVertexArray(_invBarVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _invBarVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, indices, BufferUsageHint.StaticDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+        }
+
+        private void InitVertexBufferInvBarItems()
+        {
+            GL.GenVertexArrays(1, out _itemInvBarVAO);
+            GL.GenBuffers(1, out _itemInvBarVBO);
+
+        }
+
+        private void InitVertexBufferInvBarSelector()
+        {
+            GL.GenVertexArrays(1, out _invBarSelectorVAO);
+            GL.GenBuffers(1, out _invBarSelectorVBO);
+        }
+
+        private void AlterVertexBufferInvBar()
+        {
+            float[,] indices = GetUpdatedInvBarPos();
+
+            GL.BindVertexArray(_invBarVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _invBarVBO);
+            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, sizeof(float) * 4 * 4, indices);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+        }
+
+        private void AlterVertexBufferInventory()
+        {
+            float[,] indices = GetUpdatedInventoryPos();
+
+            GL.BindVertexArray(_inventoryVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _inventoryVBO);
+            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, sizeof(float) * 4 * 4, indices);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+        }
+
+        private float[,] GetUpdatedInvBarPos()
+        {
+            Vector2 position = new Vector2(0f, (Height / 2) - 50f);
+            Vector2 size = new Vector2(300f, 40f);
+
+            float[,] indices = new float[4, 4]
+            {
+                { position.X - size.X, position.Y - size.Y,   0.0f, 1.0f },
+                { position.X + size.X, position.Y - size.Y,   1.0f, 1.0f },
+                { position.X + size.X, position.Y + size.Y,   1.0f, 0.0f },
+                { position.X - size.X, position.Y + size.Y,   0.0f, 0.0f }
+            };
+
+            return indices;
+        }
+
+        private float[,] GetInvBarItemIndices(ushort[] item, int itemLength)
+        {
+            
+            int count = 0;
+
+            Vector2 gridSize = new Vector2(8f, 8f);
+            Vector2 size = new Vector2(20f, 20f);
+            Vector2 position = new Vector2(-255f, (Height / 2) - 50f);
+            float step = 56.8f;
+
+            float[,] vertices = new float[4 * itemLength, 4];
+
+            for (int i = 0; i < 10; i++)
+            {
+                if (item[i] == 0)
+                {
+                    position.X += step;
+                    continue;
+                }
+
+                Vector2 min = new Vector2();
+                Vector2 max = new Vector2();
+
+                GetTextureCoord(item[i], gridSize, out min, out max);
+
+                float[,] vert = new float[4, 4]
+                {
+                    { position.X - size.X, position.Y - size.Y,   min.X, max.Y },
+                    { position.X + size.X, position.Y - size.Y,   max.X, max.Y },
+                    { position.X + size.X, position.Y + size.Y,   max.X, min.Y },
+                    { position.X - size.X, position.Y + size.Y,   min.X, min.Y }
+                };
+
+                for (int ic = 0; ic < 4; ic++)
+                {
+                    for (int ia = 0; ia < 4; ia++)
+                    {
+                        vertices[count, ia] = vert[ic, ia];
+                    }
+                    count++;
+                }
+
+                position.X += step;
+            }
+
+            return vertices;
+        }
+
+        private float[,] GetInvBarSelectorIndices(int selecteditem)
+        {
+            Vector2 size = new Vector2(40f, 40f);
+            Vector2 position = new Vector2(-255f, (Height / 2) - 50f);
+            float step = 56.8f;
+
+            position.X += (step * selecteditem);
+
+            float[,] vertices = new float[4, 4]
+                {
+                    { position.X - size.X, position.Y - size.Y,   0.0f, 1.0f },
+                    { position.X + size.X, position.Y - size.Y,   1.0f, 1.0f },
+                    { position.X + size.X, position.Y + size.Y,   1.0f, 0.0f },
+                    { position.X - size.X, position.Y + size.Y,   0.0f, 0.0f }
+                };
+
+            return vertices;
+        }
+
+        private float[,] GetUpdatedInventoryPos()
+        {
+            Vector2 position = new Vector2(0f, 0f);
+            Vector2 size = new Vector2(300f, 300f);
+
+            float[,] indices = new float[4, 4]
+            {
+                { position.X - size.X, position.Y - size.Y,   0.0f, 1.0f },
+                { position.X + size.X, position.Y - size.Y,   1.0f, 1.0f },
+                { position.X + size.X, position.Y + size.Y,   1.0f, 0.0f },
+                { position.X - size.X, position.Y + size.Y,   0.0f, 0.0f }
+            };
+
+            return indices;
+        }
+        private void InitVertexBufferInventory()
+        {
+            float[,] indices = GetUpdatedInventoryPos();
+
+            GL.GenVertexArrays(1, out _inventoryVAO);
+            GL.GenBuffers(1, out _inventoryVBO);
+
+            GL.BindVertexArray(_inventoryVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _inventoryVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, indices, BufferUsageHint.StaticDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+        }
+
         private void InitShaders()
         {
             _shader = new Shader("Shader/shader.vert", "Shader/shader.frag");
@@ -463,8 +749,8 @@ namespace ITProject.View
         {
             WindowPositions winPos = UpdateWindowPositions();
 
-            System.Numerics.Vector2 upperLeft = _logic.CalculateViewToWorldPosition(new System.Numerics.Vector2(0f, 0f), playerPosition, winPos, false);
-            System.Numerics.Vector2 lowerRight = _logic.CalculateViewToWorldPosition(new System.Numerics.Vector2(winPos.Width, winPos.Height), playerPosition, winPos, false);
+            System.Numerics.Vector2 upperLeft = _logic.CalculateViewToWorldPosition(new System.Numerics.Vector2(0f, 0f), playerPosition, winPos);
+            System.Numerics.Vector2 lowerRight = _logic.CalculateViewToWorldPosition(new System.Numerics.Vector2(winPos.Width, winPos.Height), playerPosition, winPos);
 
             mins.X = upperLeft.X;
             mins.Y = lowerRight.Y;

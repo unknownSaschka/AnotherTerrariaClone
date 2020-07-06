@@ -48,7 +48,7 @@ namespace ITProject.Logic
 
         public void Update(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double deltaTime)
         {
-            _mainModel.GetModelManager.WorldMousePosition = CalculateViewToWorldPosition(new Vector2(windowPositions.WindowMousePosition.X, windowPositions.WindowMousePosition.Y), _mainModel.GetModelManager.Player.Position, windowPositions, true);
+            _mainModel.GetModelManager.WorldMousePosition = CalculateViewToWorldPosition(new Vector2(windowPositions.WindowMousePosition.X, windowPositions.WindowMousePosition.Y), _mainModel.GetModelManager.Player.Position, windowPositions);
             
             accumulator += deltaTime;
 
@@ -179,17 +179,12 @@ namespace ITProject.Logic
             }
         }
 
-        public Vector2 CalculateViewToWorldPosition(Vector2 viewPosition, Vector2 playerPosition, WindowPositions windowPositions, bool test)
+        public Vector2 CalculateViewToWorldPosition(Vector2 viewPosition, Vector2 playerPosition, WindowPositions windowPositions)
         {
             Vector2 worldPosition = new Vector2(playerPosition.X, playerPosition.Y);
             float ratio = (float)windowPositions.Width / (float)windowPositions.Height;
 
             Vector2 centeredPos = new Vector2(viewPosition.X - windowPositions.Width / 2, windowPositions.Height / 2 - viewPosition.Y);
-
-            if (test)
-            {
-                Console.WriteLine(centeredPos);
-            }
             worldPosition.X = playerPosition.X + ((centeredPos.X *  windowPositions.Zoom) / (500));
             worldPosition.Y = playerPosition.Y + ((centeredPos.Y * windowPositions.Zoom) / (500));
 
