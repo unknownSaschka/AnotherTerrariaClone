@@ -19,6 +19,7 @@ namespace ITProject.View
         public uint Debug2;
         public uint lolDoerte;
         public uint Items;
+        public uint InventoryDebug;
 
         public GameTextures()
         {
@@ -35,6 +36,7 @@ namespace ITProject.View
             lolDoerte = LoadTexture("Content/textures/dumbdoerte.png");
             Debug2 = LoadTexture("Content/textures/Debug2.png");
             Items = LoadTexture("Content/textures/Items.png");
+            InventoryDebug = LoadTexture("Content/textures/InventoryDebug.png");
         }
 
         private uint LoadTexture(string file)

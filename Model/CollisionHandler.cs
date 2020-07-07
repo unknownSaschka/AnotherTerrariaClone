@@ -23,6 +23,9 @@ namespace ITProject.Model
             World world = _modelManager.World;
             Hitbox playerHitbox = new Hitbox(position, size, Hitbox.HitboxType.Player);
             Vector2 newPlayerPosition = new Vector2(position.X, position.Y);
+            Vector2 newPlayerPositionSlope = new Vector2(position.X, position.Y);
+            bool slope = false;
+            float oldVelocity = velocity;
 
             for(int iy = (int)playerHitbox.MinY; iy <= (int)playerHitbox.MaxY; iy++)
             {
@@ -40,8 +43,9 @@ namespace ITProject.Model
                         MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 3]].Walkable &&
                         position.Y > blockHitbox.MaxY && _modelManager.Player.Grounded)
                     {
-                        newPlayerPosition.Y = blockHitbox.MaxY + size.Y / 2;
-                        return newPlayerPosition;
+                        newPlayerPositionSlope.Y = blockHitbox.MaxY + size.Y / 2;
+                        slope = true;
+                        //return newPlayerPositionSlope;
                     }
 
                     if (velocity > 0)
@@ -59,6 +63,35 @@ namespace ITProject.Model
                 }
             }
 
+            //Falls eine Slope/Treppe entdeckt wurde, soll die Playerhitbox auf der Slope auch nochmal geprüft werden
+            if (slope == true)
+            {
+                bool trueSlope = true;
+
+                Hitbox playerHitboxSlope = new Hitbox(newPlayerPositionSlope, size, Hitbox.HitboxType.Player);
+
+                for (int iy = (int)playerHitboxSlope.MinY; iy <= (int)playerHitboxSlope.MaxY; iy++)
+                {
+                    for (int ix = (int)playerHitboxSlope.MinX; ix <= (int)playerHitboxSlope.MaxX; ix++)
+                    {
+                        if (!GameExtentions.CheckIfInBound(ix, iy, world.WorldSize)) continue;
+                        if (MainModel.Item[_modelManager.World.GetWorld[ix, iy]].Walkable) continue;
+
+                        Hitbox blockHitbox = new Hitbox(new Vector2(ix, iy), new Vector2(1.0f, 1.0f), Hitbox.HitboxType.Block);
+                        if (Intersects(playerHitboxSlope, blockHitbox))
+                        {
+                            trueSlope = false;
+                        }
+                    }
+                }
+
+                if (trueSlope)
+                {
+                    velocity = oldVelocity;
+                    return newPlayerPositionSlope;
+                }
+            }
+            
             return newPlayerPosition;
         }
 
