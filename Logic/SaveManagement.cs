@@ -59,7 +59,7 @@ namespace ITProject.Logic
             }
         }
 
-        public PlayerSave LoadPlayer(int saveSlot)
+        public static PlayerSave LoadPlayer(int saveSlot)
         {
             try
             {
@@ -77,7 +77,7 @@ namespace ITProject.Logic
             return null;
         }
 
-        public bool SavePlayer(int saveSlot, Player player)
+        public static bool SavePlayer(int saveSlot, Player player)
         {
             //Laden aller benötigten Sachen
             PlayerSave playerSave = new PlayerSave(player.Position, player.ItemInventory.GetSaveInv());
@@ -88,9 +88,19 @@ namespace ITProject.Logic
 
             try
             {
-
                 Stream readStream = new FileStream("players.bin", FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
-                playerSaves = (PlayerSaves)formatter.Deserialize(readStream);
+
+                Console.WriteLine(readStream.Length);
+
+                if(readStream.Length != 0)
+                {
+                    playerSaves = (PlayerSaves)formatter.Deserialize(readStream);
+                }
+                else
+                {
+                    playerSaves = new PlayerSaves();
+                }
+                
                 readStream.Close();
             }
             catch (Exception e)
@@ -120,7 +130,7 @@ namespace ITProject.Logic
             return true;
         }
 
-        public bool DeletePlayer(int saveSlot)
+        public static bool DeletePlayer(int saveSlot)
         {
             PlayerSaves playerSaves = null;
 
@@ -129,7 +139,6 @@ namespace ITProject.Logic
 
             try
             {
-
                 Stream readStream = new FileStream("players.bin", FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
                 playerSaves = (PlayerSaves)formatter.Deserialize(readStream);
                 readStream.Close();
@@ -161,7 +170,7 @@ namespace ITProject.Logic
             return true;
         }
 
-        public PlayerSaves LoadPlayerList()
+        public static PlayerSaves LoadPlayerList()
         {
             PlayerSaves playerSaves = null;
 

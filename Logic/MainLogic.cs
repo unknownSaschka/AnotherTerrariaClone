@@ -1,16 +1,21 @@
 ﻿using ITProject.Model;
 using ITProject.View;
 using OpenTK.Input;
+using SharpFont;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 
 namespace ITProject.Logic
 {
     public class MainLogic
     {
+        public enum GameState { Menu, InGame }
+        public GameState State;
+
         private int _width = 800, _height = 800;
         private string _windowTitle = "Game";
         private InputManager inputManager;
@@ -36,14 +41,59 @@ namespace ITProject.Logic
         public MainLogic()
         {
             //Console.WriteLine(Convert.ToUInt32("a"[0]));
+            State = GameState.InGame;   //Später wird zuerst View in Menu State gestartet und das Game später geladen
 
+            //World.WorldLoadType worldLoadType = World.WorldLoadType.LoadWorld;
+            //Player.PlayerLoadingType playerLoadingType = Player.PlayerLoadingType.LoadPlayer;
+            //int saveSlot = 0;
+
+            World.WorldLoadType worldLoadType;
+            Player.PlayerLoadingType playerLoadingType;
+            int saveSlot;
+            int worldSeed;
+            ConsoleStart(out worldLoadType, out playerLoadingType, out saveSlot, out worldSeed);
 
             inputManager = new InputManager();
-            _mainModel = new MainModel();
+            _mainModel = new MainModel(worldLoadType, playerLoadingType, saveSlot, worldSeed);
             
             MainView view = new MainView(_width, _height, OpenTK.Graphics.GraphicsMode.Default, _windowTitle, this, _mainModel);
             view.VSync = OpenTK.VSyncMode.Off;
             view.Run();
+        }
+
+        private void ConsoleStart(out World.WorldLoadType worldLoadType, out Player.PlayerLoadingType playerLoadingType, out int saveSlot, out int worldSeed)
+        {
+            Console.WriteLine("Wie soll die Welt geladen werden?");
+            Console.WriteLine("1: Neue Welt, 2: Lade Welt");
+            string worldLoad = Console.ReadLine();
+            worldLoadType = (World.WorldLoadType) int.Parse(worldLoad);
+            worldSeed = 1337;
+
+            if((int)worldLoadType == 1)
+            {
+                Console.WriteLine("WorldSeed? (Standard: 1337)");
+                string seed = Console.ReadLine();
+
+                if(!int.TryParse(seed, out worldSeed))
+                {
+                    byte[] bytes = System.Text.Encoding.ASCII.GetBytes(seed);
+                    worldSeed = BitConverter.ToInt32(bytes, 0);
+                }
+            }
+
+            Console.WriteLine("Wie soll der Spieler geladen werden?");
+            Console.WriteLine("1: Neuer Spieler, 2: Lade Spieler");
+            string playerLoad = Console.ReadLine();
+            playerLoadingType = (Player.PlayerLoadingType)int.Parse(playerLoad);
+
+            Console.WriteLine("Welcher PlayerSlot soll geladen werden? (0 - 9)");
+            string slot = Console.ReadLine();
+            saveSlot = int.Parse(slot);
+
+            if ((int)worldLoadType == 1)
+            {
+                Console.WriteLine("Generiere Welt...");
+            }
         }
 
         public void Update(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double deltaTime)
@@ -177,6 +227,11 @@ namespace ITProject.Logic
             {
                 _mainModel.GetModelManager.InventoryOpen = !_mainModel.GetModelManager.InventoryOpen;
             }
+
+            if (_mainModel.GetModelManager.InventoryOpen && inputManager.GetKeyPressed(Key.Escape))
+            {
+                _mainModel.GetModelManager.InventoryOpen = !_mainModel.GetModelManager.InventoryOpen;
+            }
         }
 
         public Vector2 CalculateViewToWorldPosition(Vector2 viewPosition, Vector2 playerPosition, WindowPositions windowPositions)
@@ -205,7 +260,12 @@ namespace ITProject.Logic
         {
             Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
             ushort removedItem = _mainModel.GetModelManager.World.RemoveBlock(_mainModel.GetModelManager.WorldMousePosition);
-            bool test = playerInventory.AddItemUnsorted(new Item(removedItem, 1));
+            
+            if(removedItem != 0)
+            {
+                Console.WriteLine(removedItem);
+                bool test = playerInventory.AddItemUnsorted(new Item(removedItem, 1));
+            }
         }
 
         private void PlayerRightClick()

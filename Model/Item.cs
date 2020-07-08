@@ -12,7 +12,7 @@ namespace ITProject.Model
         public ushort ID;
         public short Amount;
 
-        public Item(ushort id, byte amount)
+        public Item(ushort id, short amount)
         {
             ID = id;
             Amount = amount;

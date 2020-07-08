@@ -6,6 +6,8 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using static ITProject.Model.Player;
+using static ITProject.Model.World;
 
 namespace ITProject.Model
 {
@@ -13,9 +15,9 @@ namespace ITProject.Model
     {
         public bool PlayerIntersection;
         public List<System.Numerics.Vector2> TestedCollisions;
-        public Player Player { get; }
-        public World World { get; }
-        public CollisionHandler CollisionHandler{ get; }
+        public Player Player { get; internal set; }
+        public World World { get; internal set; }
+        public CollisionHandler CollisionHandler{ get; internal set; }
         public SaveManagement SaveManagement { get; }
         public System.Numerics.Vector2 WorldMousePosition;
         public int SelectedInventorySlot;
@@ -26,14 +28,30 @@ namespace ITProject.Model
         public System.Numerics.Vector2 RenderDistance;
         public WindowState WindowState;
         public bool ShowGrid;
+        public int ActiveSaveSlot;
 
-        public ModelManager(World world, SaveManagement saveManagement)
-        { 
-            World = world;
-            SaveManagement = saveManagement;
+        public ModelManager(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed)
+        {
+            InitGame(worldLoadType, playerLoadingType, playerSaveSlot, worldSeed);
+        }
 
-            int playerPosY = world.SearchGround(2000);
-            Player = new Player(2000, playerPosY + 2, new System.Numerics.Vector2(1.5f, 2.8f));
+        private void InitGame(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed)
+        {
+            ActiveSaveSlot = playerSaveSlot;
+            if(worldLoadType == WorldLoadType.LoadWorld)
+            {
+                World = new World(2500, 1000, worldLoadType, worldSeed);
+            }
+            else
+            {
+                World = new World(2500, 1000, worldLoadType, worldSeed);
+            }
+            
+
+            //int playerPosY = World.SearchGround(2000);
+            //Player = new Player(2000, playerPosY + 2, new System.Numerics.Vector2(1.5f, 2.8f));
+            Player = new Player(playerLoadingType, playerSaveSlot, new System.Numerics.Vector2(2000, World.SearchGround(2000)));
+
             CollisionHandler = new CollisionHandler(this);
             PlayerIntersection = false;
             TestedCollisions = new List<System.Numerics.Vector2>();

@@ -4,14 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using static ITProject.Logic.GameExtentions;
 
 namespace ITProject.Model
 {
     public class Inventory
     {
         private Item[,] _item;
+
         private int _inventoryWidth = 10;
         private int _inventoryHeight = 4;
+        private short _maxItemStack = 99;
 
         public Inventory()
         {
@@ -35,51 +38,65 @@ namespace ITProject.Model
         /// <returns></returns>
         public bool AddItemUnsorted(Item item)
         {
-            int EmptyX = -1, EmptyY = -1;
-            int StackableX = -1, StackableY = -1;
-
-            for(int ix = 0; ix < _inventoryWidth; ix++)
+            InventoryPosition stackableInvPos = GetNextStackable(item.ID);
+            if(stackableInvPos != null)
             {
-                for(int iy = 0; iy < _inventoryHeight; iy++)
+                short restAmount = (short) (_item[stackableInvPos.X, stackableInvPos.Y].Amount + item.Amount);
+
+                if(restAmount > _maxItemStack)
                 {
-                    if(EmptyX == -1 && _item[ix, iy] == null)
-                    {
-                        EmptyX = ix;
-                        EmptyY = iy;
-                    }
-
-                    if (_item[ix, iy] == null) continue;
-
-                    if(StackableX == -1 && _item[ix, iy].ID == item.ID && MainModel.Item[item.ID].Stackable)
-                    {
-                        StackableX = ix;
-                        StackableY = iy;
-                    }
-                }
-            }
-
-            if(StackableX != -1)
-            {
-                int amount = _item[StackableX, StackableY].Amount + item.Amount;
-                if(amount > 99)
-                {
-                    _item[StackableX, StackableY].Amount = 99;
-                    item.Amount = (short)(99 - amount);
+                    _item[stackableInvPos.X, stackableInvPos.Y].Amount = _maxItemStack;
+                    restAmount -= _maxItemStack;
+                    AddItemUnsorted(new Item(item.ID, restAmount));
                 }
                 else
                 {
-                    _item[StackableX, StackableY].Amount += item.Amount;
+                    _item[stackableInvPos.X, stackableInvPos.Y].Amount = restAmount;
                     return true;
                 }
             }
 
-            if(EmptyX != -1)
+            InventoryPosition emptyInvPos = GetNextEmpty();
+            if(emptyInvPos != null)
             {
-                _item[EmptyX, EmptyY] = item;
-                return true;
+                _item[emptyInvPos.X, emptyInvPos.Y] = item;
             }
 
             return false;
+        }
+
+        private InventoryPosition GetNextEmpty()
+        {
+            for(int iy = 0; iy < _inventoryHeight; iy++)
+            {
+                for(int ix = 0; ix < _inventoryWidth; ix++)
+                {
+                    if(_item[ix, iy] == null)
+                    {
+                        return new InventoryPosition(ix, iy);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private InventoryPosition GetNextStackable(ushort itemID)
+        {
+            for (int iy = 0; iy < _inventoryHeight; iy++)
+            {
+                for (int ix = 0; ix < _inventoryWidth; ix++)
+                {
+                    if (_item[ix, iy] == null) continue;
+                    
+                    if(_item[ix, iy].ID == itemID && _item[ix, iy].Amount < _maxItemStack)
+                    {
+                        return new InventoryPosition(ix, iy);
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -186,6 +203,17 @@ namespace ITProject.Model
             {
                 return _item[x, y].ID;
             }
+        }
+    }
+
+    public class InventoryPosition
+    {
+        public int X, Y;
+
+        public InventoryPosition(int x, int y)
+        {
+            X = x;
+            Y = y;
         }
     }
 }

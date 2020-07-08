@@ -22,7 +22,7 @@ namespace ITProject.View
         private GameTextures _gameTextures;
         private MainLogic _logic;
         private MainModel _mainModel;
-        private ModelManager _modelManager;
+        //private ModelManager _modelManager;
 
         private Vector2 _oldPlayerPosition;
         private float _zoom;
@@ -63,9 +63,8 @@ namespace ITProject.View
             _gameTextures = new GameTextures();
             _logic = logic;
             _mainModel = mainModel;
-            _modelManager = mainModel.GetModelManager;
-            _oldPlayerPosition = new Vector2(-_modelManager.Player.Position.X, -_modelManager.Player.Position.Y);
-            _zoom = _modelManager.Zoom;
+            _oldPlayerPosition = new Vector2(-_mainModel.GetModelManager.Player.Position.X, -_mainModel.GetModelManager.Player.Position.Y);
+            _zoom = _mainModel.GetModelManager.Zoom;
         }
 
         protected override void OnLoad(EventArgs e)
@@ -84,7 +83,7 @@ namespace ITProject.View
 
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
-            _zoom = GameExtentions.Lerp(_zoom, _modelManager.Zoom, 3.0f * (float)e.Time);
+            _zoom = GameExtentions.Lerp(_zoom, _mainModel.GetModelManager.Zoom, 3.0f * (float)e.Time);
             //_renderDistance = new Vector2(_modelManager.RenderDistance.X, _modelManager.RenderDistance.Y);
 
             _logic.Update(Keyboard.GetState(), Mouse.GetCursorState(), UpdateWindowPositions(), e.Time);
@@ -158,9 +157,9 @@ namespace ITProject.View
 
         private void DrawWorldV2()
         {
-            Player player = _modelManager.Player;
-            World world = _modelManager.World;
-            System.Numerics.Vector2 worldSize = _modelManager.World.WorldSize;
+            Player player = _mainModel.GetModelManager.Player;
+            World world = _mainModel.GetModelManager.World;
+            System.Numerics.Vector2 worldSize = _mainModel.GetModelManager.World.WorldSize;
             float zoomFactor = 0.002f;
             float w = 1f, h = 1f;   //Block höhe und breite
 
@@ -323,7 +322,7 @@ namespace ITProject.View
             SetIdentityMatrix();
             DrawItemBar();
 
-            if (_modelManager.InventoryOpen)
+            if (_mainModel.GetModelManager.InventoryOpen)
             {
                 SetIdentityMatrix();
                 DrawInventory();
@@ -340,7 +339,7 @@ namespace ITProject.View
             Item[] items = new Item[10];
             for(int i = 0; i < items.Length; i++)
             {
-                items[i] = _modelManager.Player.ItemInventory.GetItem(i, 0);
+                items[i] = _mainModel.GetModelManager.Player.ItemInventory.GetItem(i, 0);
             }
 
             int itemLength = 0;
@@ -358,7 +357,7 @@ namespace ITProject.View
             
 
             //DrawItemSelector
-            int selected = _modelManager.SelectedInventorySlot;
+            int selected = _mainModel.GetModelManager.SelectedInventorySlot;
             float[,] verticesSelector = GetInvBarSelectorIndices(selected);
             DrawElements(_invBarSelectorVAO, _invBarSelectorVBO, sizeof(float) * verticesSelector.Length, verticesSelector, 4, _gameTextures.Itembar_Selector);
 
@@ -409,7 +408,7 @@ namespace ITProject.View
 
         private void DrawNumbers(List<ItemPositionAmount> itemPositions)
         {
-            Vector2 offset = new Vector2(15f, 0f);
+            Vector2 offset = new Vector2(25f, -5f);
 
             Matrix4 projectionMatrix = Matrix4.CreateOrthographic(ClientRectangle.Width, ClientRectangle.Height, -1.0f, 1.0f);
             _drawing.ProjectionMatrix = projectionMatrix;
@@ -423,7 +422,7 @@ namespace ITProject.View
 
             foreach(ItemPositionAmount item in itemPositions)
             {
-                _drawing.Print(_font, item.Amount.ToString(), new Vector3(item.Position.X + offset.X, item.Position.Y + offset.Y, 0.0f), QFontAlignment.Left, textOpts);
+                _drawing.Print(_font, item.Amount.ToString(), new Vector3(item.Position.X + offset.X, item.Position.Y + offset.Y, 0.0f), QFontAlignment.Right, textOpts);
             }
 
             _drawing.RefreshBuffers();
@@ -436,15 +435,20 @@ namespace ITProject.View
             DrawElements(_inventoryVAO, _inventoryVBO, 4, _gameTextures.Inventory);
 
             //Zeichne einzelne Items
-            DrawElements(_invItemsPosVAO, _invItemsPosVBO, 10 * 4 * 4, _gameTextures.InventoryDebug);
+            int itemCount;
+            List<ItemPositionAmount> itemPositions;
+            float[,] vertices = GetInventoryItemsPos(_mainModel.GetModelManager.Player.ItemInventory, out itemCount, out itemPositions);
+            DrawElements(_invItemsPosVAO, _invItemsPosVBO, vertices.Length, vertices, itemCount * 4, _gameTextures.Items);
+            DrawNumbers(itemPositions);
+            //DrawElements(_invItemsPosVAO, _invItemsPosVBO, itemCount * 4, _gameTextures.InventoryDebug);
         }
 
         private void DrawMousePointer()
         {
             _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
             float mouseSize = 0.2f;
-            Vector2 min = new Vector2(_modelManager.WorldMousePosition.X - mouseSize, _modelManager.WorldMousePosition.Y - mouseSize);
-            Vector2 max = new Vector2(_modelManager.WorldMousePosition.X + mouseSize, _modelManager.WorldMousePosition.Y + mouseSize);
+            Vector2 min = new Vector2(_mainModel.GetModelManager.WorldMousePosition.X - mouseSize, _mainModel.GetModelManager.WorldMousePosition.Y - mouseSize);
+            Vector2 max = new Vector2(_mainModel.GetModelManager.WorldMousePosition.X + mouseSize, _mainModel.GetModelManager.WorldMousePosition.Y + mouseSize);
 
             float[,] playerVertices = new float[4, 4]
             {
@@ -493,7 +497,7 @@ namespace ITProject.View
 
         private void InitQFont()
         {
-            _font = new QFont("fonts/Depredationpixie.ttf", 20, new QuickFont.Configuration.QFontBuilderConfiguration(true));
+            _font = new QFont("fonts/Depredationpixie.ttf", 15, new QuickFont.Configuration.QFontBuilderConfiguration(true));
             _drawing = new QFontDrawing();
         }
 
@@ -740,46 +744,63 @@ namespace ITProject.View
 
         private void InitInventoryItemsPos()
         {
+            GL.GenVertexArrays(1, out _invItemsPosVAO);
+            GL.GenBuffers(1, out _invItemsPosVBO);
+        }
+
+        private float[,] GetInventoryItemsPos(Inventory inventory, out int itemCount, out List<ItemPositionAmount> itemPositions)
+        {
             int x = 10, y = 4;
             Vector2 steps = new Vector2(50f, 50f);
             Vector2 size = new Vector2(25f, 25f);
-            Vector2 startPos = new Vector2(-225f, 100f);
+            Vector2 startPos = new Vector2(-225f, 200f);
             Vector2 position = new Vector2(startPos.X, startPos.Y);
 
             float[,] indices = new float[x * y * 4, 4];
             int count = 0;
+            itemCount = 0;
+            itemPositions = new List<ItemPositionAmount>();
 
             for(int iy = 0; iy < y; iy++)
             {
                 for(int ix = 0; ix < x; ix++)
                 {
-                    float[,] vert = new float[4, 4]
+                    if(inventory.GetItem(ix, iy) != null)
                     {
-                        { position.X - size.X, position.Y - size.Y,   0.0f, 1.0f },
-                        { position.X + size.X, position.Y - size.Y,   1.0f, 1.0f },
-                        { position.X + size.X, position.Y + size.Y,   1.0f, 0.0f },
-                        { position.X - size.X, position.Y + size.Y,   0.0f, 0.0f }
-                    };
+                        Vector2 min, max;
+                        GetTextureCoord(inventory.GetItem(ix, iy).ID, new Vector2(8, 8), out min, out max);
 
-                    for (int ic = 0; ic < 4; ic++)
-                    {
-                        for (int ia = 0; ia < 4; ia++)
+                        float[,] vert = new float[4, 4]
                         {
-                            indices[count, ia] = vert[ic, ia];
+                            { position.X - size.X, position.Y - size.Y,   min.X, max.Y },
+                            { position.X + size.X, position.Y - size.Y,   max.X, max.Y },
+                            { position.X + size.X, position.Y + size.Y,   max.X, min.Y },
+                            { position.X - size.X, position.Y + size.Y,   min.X, min.Y }
+                        };
+
+                        for (int ic = 0; ic < 4; ic++)
+                        {
+                            for (int ia = 0; ia < 4; ia++)
+                            {
+                                indices[count, ia] = vert[ic, ia];
+                            }
+                            count++;
                         }
-                        count++;
+
+                        itemPositions.Add(new ItemPositionAmount(new Vector2(position.X, position.Y), inventory.GetItem(ix, iy).Amount));
+                        itemCount++;
                     }
 
                     position.X += steps.X;
                 }
 
                 position.X = startPos.X;
-                position.Y += steps.Y;
+                position.Y -= steps.Y;
             }
 
-            GL.GenVertexArrays(1, out _invItemsPosVAO);
-            GL.GenBuffers(1, out _invItemsPosVBO);
+            return indices;
 
+            /*
             GL.BindVertexArray(_invItemsPosVAO);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _invItemsPosVBO);
             GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * indices.Length, indices, BufferUsageHint.StaticDraw);
@@ -788,6 +809,7 @@ namespace ITProject.View
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
+            */
         }
 
         private void InitShaders()

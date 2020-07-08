@@ -12,21 +12,28 @@ namespace ITProject.Logic
     {
         public static ushort[,] LoadWorld( int width, int height)
         {
-            using (FileStream fs = File.Open("world.dat", FileMode.Open))
+            try
             {
-                ushort[,] world = new ushort[width, height];
-                byte[] bytes = new byte[fs.Length];
-                int i = 0;
-
-                while (true)
+                using (FileStream fs = File.Open("world.dat", FileMode.Open))
                 {
-                    int n = fs.Read(bytes, 0, 2);
-                    if (n == 0) break;
+                    ushort[,] world = new ushort[width, height];
+                    byte[] bytes = new byte[fs.Length];
+                    int i = 0;
 
-                    world[i % width, i / width] = BitConverter.ToUInt16(bytes, 0);
-                    i++;
+                    while (true)
+                    {
+                        int n = fs.Read(bytes, 0, 2);
+                        if (n == 0) break;
+
+                        world[i % width, i / width] = BitConverter.ToUInt16(bytes, 0);
+                        i++;
+                    }
+                    return world;
                 }
-                return world;
+            }
+            catch(FileNotFoundException fnfE)
+            {
+                return new ushort[0, 0];
             }
         }
 

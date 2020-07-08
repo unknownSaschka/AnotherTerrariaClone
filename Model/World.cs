@@ -11,7 +11,7 @@ namespace ITProject.Model
 {
     public class World
     {
-        public enum WorldLoadType { NewWorld, LoadWorld, TestLoad }
+        public enum WorldLoadType { TestLoad, NewWorld, LoadWorld }
 
         private ushort[,] _world;
         public ushort[,] GetWorld
@@ -25,27 +25,32 @@ namespace ITProject.Model
             get { return new Vector2(_width, _height); }
         }
 
-        public World(int width, int height, WorldLoadType loadType)
+        public World(int width, int height, WorldLoadType loadType, int seed)
         {
             if (loadType == WorldLoadType.NewWorld)
             {
                 _width = width;
                 _height = height;
                 _world = new UInt16[width, height];
-                NewWorld();
+                NewWorld(seed);
             }
             else if(loadType == WorldLoadType.LoadWorld)
             {
                 _width = width;
                 _height = height;
                 _world = WorldLoader.LoadWorld(width, height);
+
+                if(_world.Length == 0)
+                {
+                    NewWorld(seed);
+                }
             }
             else if(loadType == WorldLoadType.TestLoad)
             {
                 _world = new UInt16[width, height];
                 _width = width;
                 _height = height;
-                NewWorld();
+                NewWorld(seed);
                 SaveWorld();
                 _world = WorldLoader.LoadWorld(width, height);
             }
@@ -56,9 +61,16 @@ namespace ITProject.Model
             WorldLoader.SaveWorld(_world, _width, _height);
         }
 
-        public void NewWorld()
+        public void NewWorld(int? seed)
         {
-            GeneratorSettings settings = InitGeneratorSettings(_width, _height);
+            int worldGenSeed = 1337;
+
+            if(seed != null)
+            {
+                worldGenSeed = (int)seed;
+            }
+
+            GeneratorSettings settings = InitGeneratorSettings(_width, _height, worldGenSeed);
             WorldGenerator worldGenerator = new WorldGenerator(settings);
             _world = worldGenerator.NewWorld();
         }
@@ -105,7 +117,7 @@ namespace ITProject.Model
             _world[2993, 1502] = 1;
         }
 
-        public GeneratorSettings InitGeneratorSettings(int width, int height)
+        public GeneratorSettings InitGeneratorSettings(int width, int height, int seed)
         {
             GeneratorSettings settings = new GeneratorSettings();
             settings.WorldWidth = width;
@@ -123,7 +135,7 @@ namespace ITProject.Model
             settings.NoiseType = FastNoise.NoiseType.PerlinFractal;
             settings.FractalType = FastNoise.FractalType.FBM;
             settings.Interpolation = FastNoise.Interp.Quintic;
-            settings.Seed = 1337;
+            settings.Seed = seed;
             settings.Frequency = 0.01f;
             settings.FractalOctaves = 6;
             settings.FractalGain = 0.5f;

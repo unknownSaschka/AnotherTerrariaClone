@@ -11,11 +11,13 @@ namespace ITProject.Model
 {
     public class Player
     {
+        public enum PlayerLoadingType { SaveLoad, NewPlayer, LoadPlayer }
+
         public Inventory ItemInventory;
 
         public Vector2 Position;
         public Vector2 OldPosition; //Um den Bewegungsablauf für das CDS nachzuvollziehen
-        public Vector2 Size;
+        public Vector2 Size = new Vector2(1.5f, 2.8f);
         public float WalkSpeed;
         public float MaxWalkSpeed = 10f;
         public Vector2 Velocity;
@@ -36,7 +38,7 @@ namespace ITProject.Model
         
         public Player()
         {
-            new Vector2(0, 0);
+            
         }
 
         public Player(float posX, float posY, Vector2 size)
@@ -48,9 +50,36 @@ namespace ITProject.Model
             Velocity = new Vector2(0f, 0f);
             SetGrounded(false);
 
+            /*
             ItemInventory = new Inventory();
-            ItemInventory.SetItem(0, 0, new Item(1, 1));
-            ItemInventory.SetItem(3, 0, new Item(3, 1));
+
+            ItemInventory.SetItem(2, 2, new Item(2, 29));
+            ItemInventory.SetItem(2, 3, new Item(1, 15));
+            */
+        }
+
+        public Player(PlayerLoadingType loadingType, int saveSlot, Vector2 position)
+        {
+
+            switch (loadingType)
+            {
+                case PlayerLoadingType.NewPlayer:
+                    InitPlayer(position.X, position.Y + Size.Y / 2);
+                    ItemInventory = new Inventory();
+                    SavePlayer(saveSlot);
+                    LoadPlayer(saveSlot);
+                    break;
+                case PlayerLoadingType.SaveLoad:
+                    //Gleich wie new aber mit vielleicht anderen Startitems, etc.
+                    InitPlayer(position.X, position.Y);
+                    ItemInventory = new Inventory();
+                    SavePlayer(saveSlot);
+                    LoadPlayer(saveSlot);
+                    break;
+                case PlayerLoadingType.LoadPlayer:
+                    LoadPlayer(saveSlot);
+                    break;
+            }
         }
 
         public void Update(double deltaTime, CollisionHandler collisions)
@@ -170,6 +199,36 @@ namespace ITProject.Model
         {
             Position = newPosition;
         }
+
+        private bool LoadPlayer(int saveSlot)
+        {
+            try
+            {
+                PlayerSave playerSave = SaveManagement.LoadPlayer(saveSlot);
+
+                InitPlayer(playerSave.PosX, playerSave.PosY);
+                ItemInventory = new Inventory(playerSave.Inventory);
+                return true;
+            }
+            catch(Exception e)
+            {
+                return false;
+            }
+        }
+
+        public bool SavePlayer(int saveSlot)
+        {
+            return SaveManagement.SavePlayer(saveSlot, this);
+        }
+
+        private void InitPlayer(float posX, float posY)
+        {
+            Position = new Vector2(posX, posY);
+            OldPosition = new Vector2(posX, posY);
+            WalkSpeed = 5f;
+            Velocity = new Vector2(0f, 0f);
+            SetGrounded(false);
+        }
     }
 
     public class Hitbox
@@ -214,12 +273,15 @@ namespace ITProject.Model
     public class PlayerSave
     {
         public string Name;
-        public Vector2 Position;
+        //public Vector2 Position;
+        public float PosX;
+        public float PosY;
         public Item[,] Inventory;
 
         public PlayerSave(Vector2 position, Item[,] inventory)
         {
-            Position = position;
+            PosX = position.X;
+            PosY = position.Y;
             Inventory = inventory;
         }
     }

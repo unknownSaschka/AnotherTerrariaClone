@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static ITProject.Model.Player;
+using static ITProject.Model.World;
 
 namespace ITProject.Model
 {
@@ -11,6 +13,9 @@ namespace ITProject.Model
     {
         //public static List<Block> Blocks = new List<Block>();
         public static Dictionary<ushort, ItemInfo> Item;
+
+        public static int InventoryHeight = 4;
+        public static int InventoryWidth = 10;
         
         public ModelManager GetModelManager
         {
@@ -20,15 +25,13 @@ namespace ITProject.Model
         public bool Debug;
 
         private ModelManager _manager;
-        private World _world;
 
-        public MainModel()
+        public MainModel(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed)
         {
             SaveManagement saveManagement = new SaveManagement();
             saveManagement.SaveItemJson();
             Item = saveManagement.LoadItemInfo();
-            _world = new World(2500, 1000, World.WorldLoadType.LoadWorld);
-            _manager = new ModelManager(_world, saveManagement);
+            _manager = new ModelManager(worldLoadType, playerLoadingType, playerSaveSlot, worldSeed);
         }
 
         public void Update(double deltaTime)
@@ -38,7 +41,8 @@ namespace ITProject.Model
 
         public void CloseGame()
         {
-            _world.SaveWorld();
+            _manager.World.SaveWorld();
+            _manager.Player.SavePlayer(_manager.ActiveSaveSlot);
         }
     }
 }

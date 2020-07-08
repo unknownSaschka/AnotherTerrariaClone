@@ -8,6 +8,7 @@ namespace ITProject.Logic
 {
     public static class GameExtentions
     {
+        
         /// <summary>
         /// Gibt true zurück, falls sich der Punkt innerhalb der Welt befindet
         /// </summary>
