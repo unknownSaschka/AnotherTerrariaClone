@@ -41,6 +41,7 @@ namespace ITProject.View
         private uint _waterBlocksVAO, _waterBlocksVBO;
         private uint _invItemsPosVAO, _invItemsPosVBO;
         private uint _invHoldItemVAO, _invHoldItemVBO;
+        private uint _background1VAO, _background1VBO;
 
         private Shader _shader;
         private float _passedTime;
@@ -80,6 +81,7 @@ namespace ITProject.View
             InitVertexBufferInvBarItems();
             InitVertexBufferInvBarSelector();
             InitVertexBufferInvHoldItem();
+            InitVertexBufferBackground();
             InitShaders();
             base.OnLoad(e);
         }
@@ -143,6 +145,8 @@ namespace ITProject.View
         {
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+            DrawBackground();
+
             //DrawWorld();
             DrawWorldV2();
 
@@ -164,7 +168,7 @@ namespace ITProject.View
             World world = _mainModel.GetModelManager.World;
             System.Numerics.Vector2 worldSize = _mainModel.GetModelManager.World.WorldSize;
             float zoomFactor = 0.002f;
-            float w = 1f, h = 1f;   //Block höhe und breite
+            float w = 1.005f, h = 1.005f;   //Block höhe und breite
 
             Vector2 smoothCameraPos = Vector2.Lerp(_oldPlayerPosition, new Vector2(-player.Position.X, -player.Position.Y), 0.3f);
             _oldPlayerPosition = smoothCameraPos;
@@ -287,6 +291,45 @@ namespace ITProject.View
 
             _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 0.5f));
             DrawElements(_waterBlocksVAO, _waterBlocksVBO, sizeof(float) * waterBlocks.Length, waterBlocks, waterBlocks.Length * 4, _gameTextures.Items);
+        }
+
+        private void DrawBackground()
+        {
+            SetIdentityMatrix();
+            float backgroundZoom = 1f;
+            //GL.Viewport(0, 0, Width, Height);
+            Matrix4 transform = Matrix4.CreateOrthographic(Width * backgroundZoom, Height * backgroundZoom, -1, 1);
+            _shader.SetMatrix4("transform", transform);
+            //_shader.SetVector4("translation", new Vector4(-Width/2, -Height/2, 1f, 1f));
+
+            float ratio = Width / (float)Height;
+            Vector2 min = new Vector2(-Width / 2, -Height / 2);
+            Vector2 max = new Vector2(Width / 2, Height / 2);
+
+            float[,] vertices = new float[4, 4]
+            {
+                        { min.X, min.Y,   0.0f, 1.0f },
+                        { max.X, min.Y,   1.0f, 1.0f },
+                        { max.X, max.Y,   1.0f, 0.0f },
+                        { min.X, max.Y,   0.0f, 0.0f }
+
+            };
+
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Background1);
+
+            GL.BindVertexArray(_mouseVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _mouseVBO);
+
+            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, sizeof(float) * vertices.Length, vertices);
+            GL.DrawArrays(PrimitiveType.Quads, 0, 4);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            GL.Disable(EnableCap.Blend);
         }
 
         private void DrawPlayer(Player player)
@@ -639,6 +682,21 @@ namespace ITProject.View
 
             GL.BindVertexArray(_invHoldItemVAO);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _invHoldItemVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+        }
+
+        private void InitVertexBufferBackground()
+        {
+            GL.GenVertexArrays(1, out _background1VAO);
+            GL.GenBuffers(1, out _background1VBO);
+
+
+            GL.BindVertexArray(_mouseVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _mouseVBO);
             GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
             GL.EnableVertexAttribArray(0);
             GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
