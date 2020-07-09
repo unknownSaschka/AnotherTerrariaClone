@@ -16,6 +16,8 @@ namespace ITProject.Model
         private int _inventoryHeight = 4;
         private short _maxItemStack = 99;
 
+        public Item ActiveHoldingItem { get; internal set; }
+
         public Inventory()
         {
             _item = new Item[_inventoryWidth, _inventoryHeight];
@@ -202,6 +204,73 @@ namespace ITProject.Model
             else
             {
                 return _item[x, y].ID;
+            }
+        }
+
+        public void LeftClick(int x, int y)
+        {
+            if(ActiveHoldingItem == null)
+            {
+                ActiveHoldingItem = _item[x, y];
+                _item[x, y] = null;
+            }
+            else
+            {
+                if(_item[x, y] == null)
+                {
+                    _item[x, y] = ActiveHoldingItem;
+                    ActiveHoldingItem = null;
+                }
+                else
+                {
+                    Item hold = _item[x, y];
+                    _item[x, y] = ActiveHoldingItem;
+                    ActiveHoldingItem = hold;
+                }
+            }
+        }
+
+        public void RightClick(int x, int y)
+        {
+            if(ActiveHoldingItem == null)
+            {
+                //Nichts passiert mal (Kommt auf UX an)
+            }
+            else
+            {
+                if(_item[x, y] == null)
+                {
+                    _item[x, y] = new Item(ActiveHoldingItem.ID, 1);
+
+                    if(ActiveHoldingItem.Amount < 1)
+                    {
+                        ActiveHoldingItem = null;
+                    }
+                    else
+                    {
+                        ActiveHoldingItem.Amount -= 1;
+                    }
+                }
+                else
+                {
+                    if(_item[x, y].ID == ActiveHoldingItem.ID)
+                    {
+                        if(_item[x, y].Amount < _maxItemStack)
+                        {
+                            _item[x, y].Amount += 1;
+                            ActiveHoldingItem.Amount -= 1;
+
+                            if(ActiveHoldingItem.Amount < 1)
+                            {
+                                ActiveHoldingItem = null;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        //Nichts passiert (Kommt auf UX an)
+                    }
+                }
             }
         }
     }

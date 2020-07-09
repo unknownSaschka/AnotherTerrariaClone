@@ -6,6 +6,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using static ITProject.Logic.GameExtentions;
 using static ITProject.Model.Player;
 using static ITProject.Model.World;
 
@@ -29,6 +30,8 @@ namespace ITProject.Model
         public WindowState WindowState;
         public bool ShowGrid;
         public int ActiveSaveSlot;
+
+        public List<ViewItemPositions> ViewItemPositions;
 
         public ModelManager(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed)
         {

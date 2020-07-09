@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using static ITProject.Logic.GameExtentions;
 
 namespace ITProject.Logic
 {
@@ -200,21 +201,15 @@ namespace ITProject.Logic
             if (windowPositions.Focused && cursorState.IsButtonDown(MouseButton.Left) && 
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
-                PlayerLeftClick();
+                Vector2 mouseMiddle = new Vector2(windowPositions.WindowMousePosition.X - (windowPositions.Width / 2), -(windowPositions.WindowMousePosition.Y - (windowPositions.Height / 2)));
+                PlayerLeftClick(mouseMiddle);
             }
 
             if (windowPositions.Focused && cursorState.IsButtonDown(MouseButton.Right) &&
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
-                Player player = _mainModel.GetModelManager.Player;
-                Hitbox playerHitbox = new Hitbox(player.Position, player.Size, Hitbox.HitboxType.Player);
-                Vector2 roundedMousePos = new Vector2((int)_mainModel.GetModelManager.WorldMousePosition.X, (int)_mainModel.GetModelManager.WorldMousePosition.Y);
-                Hitbox blockHitbox = new Hitbox(roundedMousePos, new Vector2(1f, 1f), Hitbox.HitboxType.Block);
-
-                if (!_mainModel.GetModelManager.CollisionHandler.Intersects(playerHitbox, blockHitbox))
-                {
-                    PlayerRightClick();
-                }
+                Vector2 mouseMiddle = new Vector2(windowPositions.WindowMousePosition.X - (windowPositions.Width / 2), -(windowPositions.WindowMousePosition.Y - (windowPositions.Height / 2)));
+                PlayerRightClick(mouseMiddle);
             }
 
             if (windowPositions.Focused && inputManager.GetKeyPressed(Key.Q) &&
@@ -256,30 +251,94 @@ namespace ITProject.Logic
             return false;
         }
 
-        private void PlayerLeftClick()
+        private void PlayerLeftClick(Vector2 mousePositionMiddle)
         {
-            Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
-            ushort removedItem = _mainModel.GetModelManager.World.RemoveBlock(_mainModel.GetModelManager.WorldMousePosition);
-            
-            if(removedItem != 0)
+            if (_mainModel.GetModelManager.InventoryOpen)
             {
-                Console.WriteLine(removedItem);
-                bool test = playerInventory.AddItemUnsorted(new Item(removedItem, 1));
+                //Prüfen, welche Itemposition angeklickt wurde
+                if (inputManager.GetMouseButtonPressed(MouseButton.Left))
+                {
+                    int itemX, itemY;
+                    if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewItemPositions, out itemX, out itemY))
+                    {
+                        Console.WriteLine($"LeftClick auf Item: {itemX}, {itemY}");
+                        _mainModel.GetModelManager.Player.ItemInventory.LeftClick(itemX, itemY);
+                    }
+                }
+            }
+
+            if(!_mainModel.GetModelManager.InventoryOpen && State == GameState.InGame)
+            {
+                Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
+                ushort removedItem = _mainModel.GetModelManager.World.RemoveBlock(_mainModel.GetModelManager.WorldMousePosition);
+
+                if (removedItem != 0)
+                {
+                    Console.WriteLine(removedItem);
+                    bool test = playerInventory.AddItemUnsorted(new Item(removedItem, 1));
+                }
             }
         }
 
-        private void PlayerRightClick()
+        private void PlayerRightClick(Vector2 mousePositionMiddle)
         {
-            Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
-            ushort selectedItem = playerInventory.GetItemID(_mainModel.GetModelManager.SelectedInventorySlot, 0);
-
-            if (MainModel.Item[selectedItem].Placable)
+            if (_mainModel.GetModelManager.InventoryOpen)
             {
-                if (_mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, selectedItem))
+                //Prüfen, welche Itemposition angeklickt wurde
+                
+                if (inputManager.GetMouseButtonPressed(MouseButton.Right))
                 {
-                    playerInventory.RemoveItemAmount(new Item(selectedItem, 1), _mainModel.GetModelManager.SelectedInventorySlot, 0);
+                    Console.WriteLine("RightClick");
+                    int itemX, itemY;
+                    if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewItemPositions, out itemX, out itemY))
+                    {
+                        _mainModel.GetModelManager.Player.ItemInventory.RightClick(itemX, itemY);
+                    }
+                }
+                
+            }
+
+            Player player = _mainModel.GetModelManager.Player;
+            Hitbox playerHitbox = new Hitbox(player.Position, player.Size, Hitbox.HitboxType.Player);
+            Vector2 roundedMousePos = new Vector2((int)_mainModel.GetModelManager.WorldMousePosition.X, (int)_mainModel.GetModelManager.WorldMousePosition.Y);
+            Hitbox blockHitbox = new Hitbox(roundedMousePos, new Vector2(1f, 1f), Hitbox.HitboxType.Block);
+
+            if (!_mainModel.GetModelManager.CollisionHandler.Intersects(playerHitbox, blockHitbox))
+            {
+                if (!_mainModel.GetModelManager.InventoryOpen && State == GameState.InGame)
+                {
+                    Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
+                    ushort selectedItem = playerInventory.GetItemID(_mainModel.GetModelManager.SelectedInventorySlot, 0);
+
+                    if (MainModel.Item[selectedItem].Placable)
+                    {
+                        if (_mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, selectedItem))
+                        {
+                            playerInventory.RemoveItemAmount(new Item(selectedItem, 1), _mainModel.GetModelManager.SelectedInventorySlot, 0);
+                        }
+                    }
                 }
             }
+
+                
+        }
+
+        private bool CheckInventoryClickedPosition(Vector2 mousePosition, List<ViewItemPositions> viewItemPositions, out int x, out int y)
+        {
+            x = 0;
+            y = 0;
+
+            foreach(ViewItemPositions pos in viewItemPositions)
+            {
+                if (CheckIfWithin(new OpenTK.Vector2(mousePosition.X, mousePosition.Y), pos.Position, pos.Size))
+                {
+                    x = pos.InventoryX;
+                    y = pos.InventoryY;
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

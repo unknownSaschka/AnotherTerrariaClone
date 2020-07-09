@@ -38,5 +38,14 @@ namespace ITProject.Logic
         {
             return currentMouseState.ScrollWheelValue - lastMouseState.ScrollWheelValue;
         }
+
+        public bool GetMouseButtonPressed(MouseButton mouseButton)
+        {
+            if (currentMouseState.IsButtonDown(mouseButton) && !lastMouseState.IsButtonDown(mouseButton))
+            {
+                return true;
+            }
+            else return false;
+        }
     }
 }
