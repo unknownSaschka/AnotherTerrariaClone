@@ -48,15 +48,16 @@ namespace ITProject.WorldGeneratorStuff
 
         }
 
-        public ushort[,] NewWorld()
+        public void NewWorld(out ushort[,] world, out ushort[,] worldBack)
         {
-            ushort[,] world = new ushort[width, height];
+            world = new ushort[width, height];
+            worldBack = new ushort[width, height];
 
             if (settings.Overworld)
             {
                 int[] heightLine = new int[width];
-                NoiseWorldV1(world, heightLine);
-                OverworldDirt(world, heightLine);
+                NoiseWorldV1(world, worldBack, heightLine);
+                OverworldDirt(world, worldBack, heightLine);
             }
 
             if (settings.Underground)
@@ -99,7 +100,7 @@ namespace ITProject.WorldGeneratorStuff
                 }
             }
 
-            return world;
+            return;
         }
 
         private FastNoise SetFastNoiseSettings()
@@ -130,16 +131,18 @@ namespace ITProject.WorldGeneratorStuff
             return fastNoise;
         }
 
-        public void NoiseWorldV1(ushort[,] world, int[] heightLine)
+        public void NoiseWorldV1(ushort[,] world, ushort[,] worldBack, int[] heightLine)
         {
             FastNoise fastNoise = SetFastNoiseSettings();
             SmoothWorld(world, minStoneHeight, maxStoneHeight);
 
+            //Füllt alles Stein auf unterhalb der minimalen Steinhöhe
             for (int iy = 0; iy < minStoneHeight; iy++)
             {
                 for (int ix = 0; ix < width; ix++)
                 {
                     world[ix, iy] = 1;
+                    worldBack[ix, iy] = 1;
                 }
             }
 
@@ -158,6 +161,7 @@ namespace ITProject.WorldGeneratorStuff
                     if (world[ix, iy] > Threshold)
                     {
                         world[ix, iy] = 1;
+                        worldBack[ix, iy] = 1;
                         stoneHeight = iy;
                     }
                     else
@@ -378,7 +382,7 @@ namespace ITProject.WorldGeneratorStuff
             return underground;
         }
 
-        private void OverworldDirt(ushort[,] world, int[] heightLine)
+        private void OverworldDirt(ushort[,] world, ushort[,] worldBack, int[] heightLine)
         {
             for(int ix = 0; ix < width; ix++)
             {
@@ -390,10 +394,12 @@ namespace ITProject.WorldGeneratorStuff
                     if(iy >= minDirtHeight && iy < heightLine[ix])
                     {
                         world[ix, iy] = 2;
+                        worldBack[ix, iy] = 2;
                     }
                     else if(iy == heightLine[ix])
                     {
                         world[ix, iy] = 3;
+                        worldBack[ix, iy] = 2;
                     }
                 }
             }

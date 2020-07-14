@@ -14,9 +14,16 @@ namespace ITProject.Model
         public enum WorldLoadType { TestLoad, NewWorld, LoadWorld }
 
         private ushort[,] _world;
+        private ushort[,] _worldBack;
+
         public ushort[,] GetWorld
         {
             get { return _world; }
+        }
+
+        public ushort[,] GetWorldBack
+        {
+            get { return _worldBack; }
         }
 
         private int _width, _height;
@@ -38,7 +45,7 @@ namespace ITProject.Model
             {
                 _width = width;
                 _height = height;
-                _world = WorldLoader.LoadWorld(width, height);
+                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack);
 
                 if(_world.Length == 0)
                 {
@@ -52,13 +59,13 @@ namespace ITProject.Model
                 _height = height;
                 NewWorld(seed);
                 SaveWorld();
-                _world = WorldLoader.LoadWorld(width, height);
+                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack);
             }
         }
 
         public void SaveWorld()
         {
-            WorldLoader.SaveWorld(_world, _width, _height);
+            WorldLoader.SaveWorld(_width, _height, _world, _worldBack);
         }
 
         public void NewWorld(int? seed)
@@ -72,7 +79,7 @@ namespace ITProject.Model
 
             GeneratorSettings settings = InitGeneratorSettings(_width, _height, worldGenSeed);
             WorldGenerator worldGenerator = new WorldGenerator(settings);
-            _world = worldGenerator.NewWorld();
+            worldGenerator.NewWorld(out _world, out _worldBack);
         }
 
         public void NewWorldOld()

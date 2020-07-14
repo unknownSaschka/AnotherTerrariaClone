@@ -223,9 +223,26 @@ namespace ITProject.Model
                 }
                 else
                 {
-                    Item hold = _item[x, y];
-                    _item[x, y] = ActiveHoldingItem;
-                    ActiveHoldingItem = hold;
+                    if(_item[x, y].ID == ActiveHoldingItem.ID)
+                    {
+                        _item[x, y].Amount += ActiveHoldingItem.Amount;
+
+                        if(_item[x, y].Amount > _maxItemStack)
+                        {
+                            ActiveHoldingItem.Amount = (short)(_maxItemStack - _item[x, y].Amount);
+                            _item[x, y].Amount = _maxItemStack;
+                        }
+                        else
+                        {
+                            ActiveHoldingItem = null;
+                        }
+                    }
+                    else
+                    {
+                        Item hold = _item[x, y];
+                        _item[x, y] = ActiveHoldingItem;
+                        ActiveHoldingItem = hold;
+                    }
                 }
             }
         }
@@ -235,6 +252,8 @@ namespace ITProject.Model
             if(ActiveHoldingItem == null)
             {
                 //Nichts passiert mal (Kommt auf UX an)
+                ActiveHoldingItem = new Item(_item[x, y].ID, (short)(_item[x, y].Amount / 2));
+                _item[x, y].Amount -= ActiveHoldingItem.Amount;
             }
             else
             {
@@ -249,6 +268,10 @@ namespace ITProject.Model
                     else
                     {
                         ActiveHoldingItem.Amount -= 1;
+                        if(ActiveHoldingItem.Amount <= 0)
+                        {
+                            ActiveHoldingItem = null;
+                        }
                     }
                 }
                 else
@@ -260,7 +283,7 @@ namespace ITProject.Model
                             _item[x, y].Amount += 1;
                             ActiveHoldingItem.Amount -= 1;
 
-                            if(ActiveHoldingItem.Amount < 1)
+                            if(ActiveHoldingItem.Amount <= 0)
                             {
                                 ActiveHoldingItem = null;
                             }

@@ -32,6 +32,7 @@ namespace ITProject.View
         private QFontDrawing _drawing;
 
         private uint _blockVAO, _blockVBO;
+        private uint _blockWallVAO, _blockWallVBO;
         private uint _mouseVAO, _mouseVBO;
         private uint _playerVAO, _playerVBO;
         private uint _invBarVAO, _invBarVBO;
@@ -43,10 +44,14 @@ namespace ITProject.View
         private uint _invHoldItemVAO, _invHoldItemVBO;
         private uint _background1VAO, _background1VBO;
 
+        private uint _darknessVAO, _darknessVBO;
+        private uint _lightSourceVAO, _lightSourceVBO;
+
         private Shader _shader;
+        private Shader _blockShader;
         private float _passedTime;
 
-        private int _blocksToProcess = 0;
+        private int _blocksToProcess = 0;   //Maximale ANzahl an Blöcken, die verrbeitet werden können bzw. auf dem Screen angezeigt werden können
 
         private struct ItemPositionAmount
         {
@@ -82,6 +87,7 @@ namespace ITProject.View
             InitVertexBufferInvBarSelector();
             InitVertexBufferInvHoldItem();
             InitVertexBufferBackground();
+            InitShadows();
             InitShaders();
             base.OnLoad(e);
         }
@@ -124,6 +130,7 @@ namespace ITProject.View
         protected override void OnResize(EventArgs e)
         {
             AlterVertexBufferInvBar();
+            UpdateShadowBuffers();
 
             base.OnResize(e);
         }
@@ -149,6 +156,8 @@ namespace ITProject.View
 
             //DrawWorld();
             DrawWorldV2();
+
+            //Shadows();
 
             DrawMousePointer();
 
@@ -177,19 +186,18 @@ namespace ITProject.View
             Matrix4 projection = Matrix4.CreateOrthographic(ClientRectangle.Width * _zoom * zoomFactor, ClientRectangle.Height * _zoom * zoomFactor, -1.0f, 1.0f);
             Vector4 translation = new Vector4(smoothCameraPos.X, smoothCameraPos.Y, 0f, 0f);
 
-            GL.UseProgram(0);
-            _shader.Use();
-
-
             Matrix4 transformation = Matrix4.Identity * projection;
-            _shader.SetMatrix4("transform", transformation);
-            _shader.SetVector4("translation", translation);
-            _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
 
-            //Draw Player
-            DrawPlayer(player);
 
             //DrawWorld
+            GL.UseProgram(0);
+            _blockShader.Use();
+
+            _blockShader.SetMatrix4("transform", transformation);
+            _blockShader.SetVector4("translation", translation);
+            _blockShader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
+
+
             Vector2 minBoundary = new Vector2();
             Vector2 maxBoundary = new Vector2();
 
@@ -198,10 +206,15 @@ namespace ITProject.View
             CalculateViewBorders(player.Position, ref minBoundary, ref maxBoundary);
             ProcessBlockVertices(minBoundary, maxBoundary);
 
-            float[,] vertices = new float[4 * _blocksToProcess, 4];
+            float blockDarkness = 0.5f;
+
+            float[,] vertices = new float[4 * _blocksToProcess, 5];
+            float[,] backgroundVertices = new float[4 * _blocksToProcess, 5];
             int count = 0;
+            int countBackground = 0;
 
             int blocks = 0;
+            int blocksBack = 0;
 
             for (int iy = (int)minBoundary.Y; iy < (int)maxBoundary.Y + 1; iy++)
             {
@@ -210,12 +223,20 @@ namespace ITProject.View
                     //Alles, was innerhalb der RenderDistance abläuft
                     if (!GameExtentions.CheckIfInBound(ix, iy, worldSize)) continue;
                     ushort blockID = world.GetWorld[ix, iy];
-                    if (blockID == 0) continue;
+                    //if (blockID == 0) continue;
 
-                    if(blockID == 8)
+                    bool background = false;
+
+                    if (blockID == 8)
                     {
                         waterBlockList.Add(new Vector2(ix, iy));
-                        continue;
+                        background = true;
+                    }
+
+                    if (blockID == 0)
+                    {
+                        blockID = world.GetWorldBack[ix, iy];
+                        background = true;
                     }
 
                     Vector2 min = new Vector2();
@@ -224,30 +245,65 @@ namespace ITProject.View
                     GetTextureCoord(blockID, new Vector2(8, 8), out min, out max);
 
                     
-                    float[,] vert = new float[4, 4]
+                    float[,] vert = new float[4, 5]
                     {
-                        { ix,     iy,       min.X, max.Y },
-                        { ix + w, iy,       max.X, max.Y },
-                        { ix + w, iy + h,   max.X, min.Y },
-                        { ix,     iy + h,   min.X, min.Y }
+                        { ix,     iy,       min.X, max.Y, blockDarkness },
+                        { ix + w, iy,       max.X, max.Y, blockDarkness },
+                        { ix + w, iy + h,   max.X, min.Y, blockDarkness },
+                        { ix,     iy + h,   min.X, min.Y, blockDarkness }
 
                     };
-                    
-                    for(int ic = 0; ic < 4; ic++)
-                    {
-                        for(int ia = 0; ia < 4; ia++)
-                        {
-                            vertices[count, ia] = vert[ic, ia];
-                        }
-                        count++;
-                    }
 
-                    blocks++;
+                    if (background)
+                    {
+                        for (int ic = 0; ic < 4; ic++)
+                        {
+                            for (int ia = 0; ia < 5; ia++)
+                            {
+                                backgroundVertices[countBackground, ia] = vert[ic, ia];
+                            }
+                            countBackground++;
+                        }
+
+                        blocksBack++;
+                    }
+                    else
+                    {
+                        if(blockID == 8)    //Wenn Wasser, dann weiter, da wo anders dargestellt wird
+                        {
+                            continue;
+                        }
+
+                        for (int ic = 0; ic < 4; ic++)
+                        {
+                            for (int ia = 0; ia < 5; ia++)
+                            {
+                                vertices[count, ia] = vert[ic, ia];
+                            }
+                            count++;
+                        }
+
+                        blocks++;
+                    }
                 }
             }
 
-            AlterVertexBufferBlocks(_blockVAO, _blockVBO, vertices);
+            //WorldBack zeichnen
+            AlterVertexBufferBlocks(_blockWallVAO, _blockWallVBO, backgroundVertices);
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.ItemsBack);
+            GL.BindVertexArray(_blockWallVAO);
 
+            GL.DrawArrays(PrimitiveType.QuadsExt, 0, blocksBack * 4);
+
+            GL.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            GL.Disable(EnableCap.Blend);
+
+            //Welt zeichnen
+            AlterVertexBufferBlocks(_blockVAO, _blockVBO, vertices);
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.ActiveTexture(TextureUnit.Texture0);
@@ -260,8 +316,26 @@ namespace ITProject.View
             GL.BindTexture(TextureTarget.Texture2D, 0);
             GL.Disable(EnableCap.Blend);
 
+            //Player zeichnen
+            GL.UseProgram(0);
+            _shader.Use();
 
-            float[,] waterBlocks = new float[waterBlockList.Count * 4, 4];
+            _shader.SetMatrix4("transform", transformation);
+            _shader.SetVector4("translation", translation);
+            _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
+
+            DrawPlayer(player);
+
+
+            //Wasserblöcke zeichnen
+            GL.UseProgram(0);
+            _blockShader.Use();
+
+            _blockShader.SetMatrix4("transform", transformation);
+            _blockShader.SetVector4("translation", translation);
+            _blockShader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
+
+            float[,] waterBlocks = new float[waterBlockList.Count * 4, 5];
             Vector2 minWater;
             Vector2 maxWater;
 
@@ -270,17 +344,17 @@ namespace ITProject.View
             count = 0;
             foreach(Vector2 pos in waterBlockList)
             {
-                float[,] waterVerts = new float[4, 4]
+                float[,] waterVerts = new float[4, 5]
                 {
-                    { pos.X,     pos.Y,       minWater.X, maxWater.Y },
-                    { pos.X + w, pos.Y,       maxWater.X, maxWater.Y },
-                    { pos.X + w, pos.Y + h,   maxWater.X, minWater.Y },
-                    { pos.X,     pos.Y + h,   minWater.X, minWater.Y }
+                    { pos.X,     pos.Y,       minWater.X, maxWater.Y, blockDarkness },
+                    { pos.X + w, pos.Y,       maxWater.X, maxWater.Y, blockDarkness },
+                    { pos.X + w, pos.Y + h,   maxWater.X, minWater.Y, blockDarkness },
+                    { pos.X,     pos.Y + h,   minWater.X, minWater.Y, blockDarkness }
                 };
 
                 for (int ic = 0; ic < 4; ic++)
                 {
-                    for (int ia = 0; ia < 4; ia++)
+                    for (int ia = 0; ia < 5; ia++)
                     {
                         waterBlocks[count, ia] = waterVerts[ic, ia];
                     }
@@ -288,9 +362,25 @@ namespace ITProject.View
                 }
             }
 
+            AlterVertexBufferBlocks(_waterBlocksVAO, _waterBlocksVBO, waterBlocks);
+            _blockShader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 0.5f));
 
-            _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 0.5f));
-            DrawElements(_waterBlocksVAO, _waterBlocksVBO, sizeof(float) * waterBlocks.Length, waterBlocks, waterBlocks.Length * 4, _gameTextures.Items);
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            //DrawElements(_waterBlocksVAO, _waterBlocksVBO, sizeof(float) * waterBlocks.Length, waterBlocks, waterBlocks.Length * 4, _gameTextures.Items);
+            
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Items);
+            GL.BindVertexArray(_waterBlocksVBO);
+
+            GL.DrawArrays(PrimitiveType.QuadsExt, 0, waterBlocks.Length * 4);
+
+            GL.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            GL.Disable(EnableCap.Blend);
+            
         }
 
         private void DrawBackground()
@@ -337,21 +427,24 @@ namespace ITProject.View
             Vector2 min = new Vector2(player.Position.X - (player.Size.X / 2), player.Position.Y - (player.Size.Y / 2));
             Vector2 max = new Vector2(player.Position.X + (player.Size.X / 2), player.Position.Y + (player.Size.Y / 2));
 
+            //float darkness = 1f;
+
             float[,] playerVertices = new float[4, 4]
             {
-                        { min.X, min.Y,   0.0f, 1.0f },
-                        { max.X, min.Y,   1.0f, 1.0f },
-                        { max.X, max.Y,   1.0f, 0.0f },
-                        { min.X, max.Y,   0.0f, 0.0f }
+                        { min.X, min.Y,   0.0f, 1.0f},
+                        { max.X, min.Y,   1.0f, 1.0f},
+                        { max.X, max.Y,   1.0f, 0.0f},
+                        { min.X, max.Y,   0.0f, 0.0f}
             };
 
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Debug2);
 
-            GL.BindVertexArray(_blockVAO);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _blockVBO);
+            GL.BindVertexArray(_playerVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _playerVBO);
 
             GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, sizeof(float) * playerVertices.Length, playerVertices);
 
@@ -360,12 +453,15 @@ namespace ITProject.View
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
             GL.BindTexture(TextureTarget.Texture2D, 0);
+
             GL.Disable(EnableCap.Blend);
         }
 
         private void DrawGUI()
         {
             SetIdentityMatrix();
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             DrawItemBar();
 
             if (_mainModel.GetModelManager.InventoryOpen)
@@ -373,6 +469,7 @@ namespace ITProject.View
                 SetIdentityMatrix();
                 DrawInventory();
             }
+            GL.Disable(EnableCap.Blend);
         }
 
         private void DrawItemBar()
@@ -412,8 +509,8 @@ namespace ITProject.View
 
         private void DrawElements(uint vao, uint vbo, int bufferSize, float[,] vertices, int verticesToDraw, uint gameTexture)
         {
-            GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            //GL.Enable(EnableCap.Blend);
+            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             GL.BindVertexArray(vao);
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
@@ -431,13 +528,13 @@ namespace ITProject.View
             GL.BindVertexArray(0);
             GL.BindTexture(TextureTarget.Texture2D, 0);
 
-            GL.Disable(EnableCap.Blend);
+            //GL.Disable(EnableCap.Blend);
         }
 
         private void DrawElements(uint vao, uint vbo, int verticesToDraw, uint gameTexture)
         {
-            GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            //GL.Enable(EnableCap.Blend);
+            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, gameTexture);
@@ -475,6 +572,27 @@ namespace ITProject.View
             _drawing.Draw();
         }
 
+        private void DrawNumber(Item item, Vector2 position)
+        {
+            Vector2 offset = new Vector2(25f, -5f);
+
+            Matrix4 projectionMatrix = Matrix4.CreateOrthographic(ClientRectangle.Width, ClientRectangle.Height, -1.0f, 1.0f);
+            _drawing.ProjectionMatrix = projectionMatrix;
+            _drawing.DrawingPimitiveses.Clear();
+
+            var textOpts = new QFontRenderOptions()
+            {
+                Colour = Color.FromArgb(new Color4(0.0f, 1.0f, 1.0f, 1.0f).ToArgb()),
+                DropShadowActive = true
+            };
+
+             _drawing.Print(_font, item.Amount.ToString(), new Vector3(position.X + offset.X, position.Y + offset.Y, 0.0f), QFontAlignment.Right, textOpts);
+            
+
+            _drawing.RefreshBuffers();
+            _drawing.Draw();
+        }
+
         private void DrawInventory()
         {
             //Zeichne Hintergrund
@@ -486,8 +604,11 @@ namespace ITProject.View
             List<ViewItemPositions> viewItemPositions;
             float[,] vertices = GetInventoryItemsPos(_mainModel.GetModelManager.Player.ItemInventory, out itemCount, out itemPositions, out viewItemPositions);
             _mainModel.GetModelManager.ViewItemPositions = viewItemPositions;   //Setze aktuelle Positionen, wo die Inventar Items gezeichnet werden, für Inventar Funktionen
+            
             DrawElements(_invItemsPosVAO, _invItemsPosVBO, vertices.Length, vertices, itemCount * 4, _gameTextures.Items);
+            DrawNumbers(itemPositions);
 
+            SetIdentityMatrix();
             Item holdItem = _mainModel.GetModelManager.Player.ItemInventory.ActiveHoldingItem;
             if (holdItem != null)
             {
@@ -511,9 +632,9 @@ namespace ITProject.View
                 GL.BindVertexArray(0);
                 GL.BindTexture(TextureTarget.Texture2D, 0);
                 GL.Disable(EnableCap.Blend);
-            }
 
-            DrawNumbers(itemPositions);
+                DrawNumber(holdItem, mouseMiddle);
+            }
         }
 
         private void DrawMousePointer()
@@ -569,6 +690,81 @@ namespace ITProject.View
             _drawing.Draw();
         }
 
+        private void Shadows()
+        {
+            
+            GL.Enable(EnableCap.Blend);
+
+            SetIdentityMatrix();
+            
+
+            _shader.SetVector4("blockColor", new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+            //int lightSources = 4;
+
+            float[,] lightsVertices = new float[4, 4]
+            {
+                { -200f, -200f,   0.0f, 1.0f },
+                { 200f, -200f,   1.0f, 1.0f },
+                { 200f, 200f,   1.0f, 0.0f },
+                { -200f, 200f,   0.0f, 0.0f }
+            };
+
+
+
+            //Dunkelheit
+
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            
+
+            _shader.SetVector4("blockColor", new Vector4(1.0f, 1.0f, 1.0f, 0.97f));
+            //DrawElements(_darknessVAO, _darknessVBO, 4 * 4, _gameTextures.Darkness);
+
+            //Lichtquelle
+            GL.BlendFunc(BlendingFactor.DstAlpha, BlendingFactor.OneMinusSrcAlpha);
+            GL.BlendEquation(_darknessVBO, BlendEquationMode.Min);
+            DrawElements(_lightSourceVAO, _lightSourceVBO, sizeof(float) * lightsVertices.Length, lightsVertices, 4 * 4, _gameTextures.LightSource1);
+
+
+
+            GL.BlendEquation(BlendEquationMode.FuncAdd);
+            GL.Disable(EnableCap.Blend);
+            
+        }
+
+        private void InitShadows()
+        {
+            GL.GenVertexArrays(1, out _darknessVAO);
+            GL.GenBuffers(1, out _darknessVBO);
+
+            UpdateShadowBuffers();
+
+            GL.GenVertexArrays(1, out _lightSourceVAO);
+            GL.GenBuffers(1, out _lightSourceVBO);
+        }
+
+        private void UpdateShadowBuffers()
+        {
+            //Called on Resize
+
+            float[,] vertices = new float[4, 4]
+            {
+                { -Width, -Height,   0.0f, 1.0f },
+                { Width, -Height,   1.0f, 1.0f },
+                { Width, Height,   1.0f, 0.0f },
+                { -Width, Height,   0.0f, 0.0f }
+            };
+
+
+            GL.BindVertexArray(_darknessVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _darknessVBO);
+
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, vertices, BufferUsageHint.StaticDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+        }
+
         private void InitQFont()
         {
             _font = new QFont("fonts/Depredationpixie.ttf", 15, new QuickFont.Configuration.QFontBuilderConfiguration(true));
@@ -594,8 +790,28 @@ namespace ITProject.View
             GL.BindVertexArray(vao);
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
             GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * vertices.Length, vertices, BufferUsageHint.DynamicDraw);
+            /*
             GL.EnableVertexAttribArray(0);
             GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+            */
+
+            //Setzen der Pointer für die Position
+            var vertexLocation = _blockShader.GetAttribLocation("position");
+            GL.EnableVertexAttribArray(vertexLocation);
+            GL.VertexAttribPointer(vertexLocation, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
+
+            //Setzen der Pointer für die Textur Koordinaten
+            var texCoords = _blockShader.GetAttribLocation("texCoordinate");
+            GL.EnableVertexAttribArray(texCoords);
+            GL.VertexAttribPointer(texCoords, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 2 * sizeof(float));
+
+            //Setzen der Farbe des Blocks (von Schwarz bis volle Farbe) für Schatteneffekt
+            var darkness = _blockShader.GetAttribLocation("bDarkness");
+            GL.EnableVertexAttribArray(darkness);
+            GL.VertexAttribPointer(darkness, 1, VertexAttribPointerType.Float, false, 5 * sizeof(float), 4 * sizeof(float));
+
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
         }
@@ -605,6 +821,10 @@ namespace ITProject.View
             //World
             GL.GenVertexArrays(1, out _blockVAO);
             GL.GenBuffers(1, out _blockVBO);
+
+            GL.GenVertexArrays(1, out _blockWallVAO);
+            GL.GenBuffers(1, out _blockWallVBO);
+
         }
 
         private void InitVertexBufferWaterBlocks()
@@ -943,6 +1163,7 @@ namespace ITProject.View
         private void InitShaders()
         {
             _shader = new Shader("Shader/shader.vert", "Shader/shader.frag");
+            _blockShader = new Shader("Shader/blockShader.vert", "Shader/blockShader.frag");
         }
 
         private WindowPositions UpdateWindowPositions()
