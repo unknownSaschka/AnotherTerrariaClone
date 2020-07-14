@@ -52,6 +52,7 @@ namespace ITProject.View
         private float _passedTime;
 
         private int _blocksToProcess = 0;   //Maximale ANzahl an Blöcken, die verrbeitet werden können bzw. auf dem Screen angezeigt werden können
+        private float[,] _light;
 
         private struct ItemPositionAmount
         {
@@ -202,6 +203,7 @@ namespace ITProject.View
             Vector2 maxBoundary = new Vector2();
 
             List<Vector2> waterBlockList = new List<Vector2>();
+            List<Vector2> lightSources = new List<Vector2>();
 
             CalculateViewBorders(player.Position, ref minBoundary, ref maxBoundary);
             ProcessBlockVertices(minBoundary, maxBoundary);
@@ -239,11 +241,17 @@ namespace ITProject.View
                         background = true;
                     }
 
+                    if (blockID == 0 || MainModel.Item[world.GetWorld[ix, iy]].LightSource)
+                    {
+                        ApplyLightRec(ix, iy, 1.0f, worldSize);
+                    }
+
                     Vector2 min = new Vector2();
                     Vector2 max = new Vector2();
 
                     GetTextureCoord(blockID, new Vector2(8, 8), out min, out max);
 
+                    blockDarkness = _light[ix, iy];
                     
                     float[,] vert = new float[4, 5]
                     {
@@ -287,6 +295,8 @@ namespace ITProject.View
                     }
                 }
             }
+
+
 
             //WorldBack zeichnen
             AlterVertexBufferBlocks(_blockWallVAO, _blockWallVBO, backgroundVertices);
@@ -692,7 +702,7 @@ namespace ITProject.View
 
         private void Shadows()
         {
-            
+            /*
             GL.Enable(EnableCap.Blend);
 
             SetIdentityMatrix();
@@ -708,8 +718,6 @@ namespace ITProject.View
                 { 200f, 200f,   1.0f, 0.0f },
                 { -200f, 200f,   0.0f, 0.0f }
             };
-
-
 
             //Dunkelheit
 
@@ -728,11 +736,28 @@ namespace ITProject.View
 
             GL.BlendEquation(BlendEquationMode.FuncAdd);
             GL.Disable(EnableCap.Blend);
-            
+            */
+
+
+        }
+
+        private void ApplyLightRec(int currentX, int currentY, float lastLight, System.Numerics.Vector2 worldSize)
+        {
+            if (!GameExtentions.CheckIfInBound(currentX, currentY, worldSize)) return;
+            float newLight = lastLight - MainModel.Item[_mainModel.GetModelManager.World.GetWorld[currentX, currentY]].LightBlocking;
+            if (newLight <= _light[currentX, currentY]) return;
+
+            _light[currentX, currentY] = newLight;
+
+            ApplyLightRec(currentX + 1, currentY, newLight, worldSize);
+            ApplyLightRec(currentX, currentY + 1, newLight, worldSize);
+            ApplyLightRec(currentX - 1, currentY, newLight, worldSize);
+            ApplyLightRec(currentX, currentY - 1, newLight, worldSize);
         }
 
         private void InitShadows()
         {
+            /*
             GL.GenVertexArrays(1, out _darknessVAO);
             GL.GenBuffers(1, out _darknessVBO);
 
@@ -740,6 +765,9 @@ namespace ITProject.View
 
             GL.GenVertexArrays(1, out _lightSourceVAO);
             GL.GenBuffers(1, out _lightSourceVBO);
+            */
+            System.Numerics.Vector2 worldSize = _mainModel.GetModelManager.World.WorldSize;
+            _light = new float[(int)worldSize.X, (int)worldSize.Y];
         }
 
         private void UpdateShadowBuffers()
