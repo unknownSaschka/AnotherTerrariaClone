@@ -17,7 +17,7 @@ namespace ITProject.Model
             _modelManager = modelManager;
         }
 
-        public Vector2 CheckCollisionX(Vector2 position, Vector2 size, ref float velocity)
+        public Vector2 CheckCollisionX(Vector2 position, Vector2 size, ref float velocity, GameObject gameObject)
         {
             //Idee wieder mit Blöcke haben auch Hitboxen
             World world = _modelManager.World;
@@ -41,7 +41,7 @@ namespace ITProject.Model
                     if (MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 1]].Walkable &&
                         MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 2]].Walkable &&
                         MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 3]].Walkable &&
-                        position.Y > blockHitbox.MaxY && _modelManager.Player.Grounded)
+                        position.Y > blockHitbox.MaxY && gameObject.Grounded)
                     {
                         newPlayerPositionSlope.Y = blockHitbox.MaxY + size.Y / 2;
                         slope = true;
@@ -95,12 +95,12 @@ namespace ITProject.Model
             return newPlayerPosition;
         }
 
-        public Vector2 CheckCollisionY(ref Vector2 position, Vector2 size, ref float velocity)
+        public Vector2 CheckCollisionY(Vector2 position, Vector2 size, ref float velocity, GameObject gameObject)
         {
             World world = _modelManager.World;
             Hitbox playerHitbox = new Hitbox(position, size, Hitbox.HitboxType.Player);
             Vector2 newPlayerPosition = new Vector2(position.X, position.Y);
-            _modelManager.Player.SetGrounded(false);
+            gameObject.SetGrounded(false);
 
             for (int iy = (int)playerHitbox.MinY; iy <= (int)playerHitbox.MaxY; iy++)
             {
@@ -123,7 +123,7 @@ namespace ITProject.Model
                     {
                         //Unten
                         newPlayerPosition.Y = blockHitbox.MaxY + size.Y / 2;
-                        _modelManager.Player.SetGrounded(true);
+                        gameObject.SetGrounded(true);
                         velocity = 0;
                     }
                 }
@@ -132,12 +132,29 @@ namespace ITProject.Model
             return newPlayerPosition;
         }
 
+        public void CheckPlayerWithDroppedItems(Player player)
+        {
+            var itemsList = _modelManager.World.GetDroppedItemsList();
+
+            var itemsToPickup = from item in itemsList
+                       where Intersects(new Hitbox(player.Position, player.Size, Hitbox.HitboxType.Player), new Hitbox(item.Position, item.Size, Hitbox.HitboxType.Player))
+                       select item;
+            
+
+            foreach(WorldItem item in itemsToPickup.ToArray())
+            {
+                if (item.LayingTime < 3.0f) continue;
+                player.ItemInventory.AddItemUnsorted(item.Item);
+                _modelManager.World.RemoveDroppedItem(item);
+            }
+        }
+
         public bool Intersects(Hitbox hb1, Hitbox hb2)
         {
-            if(((hb1.MinX / 2) < (hb2.MaxX / 2)) && 
-                ((hb1.MaxX / 2) > (hb2.MinX/ 2)) &&
-                ((hb1.MinY / 2) < (hb2.MaxY / 2)) &&
-                ((hb1.MaxY / 2) > (hb2.MinY / 2)))
+            if(((hb1.MinX) < (hb2.MaxX)) && 
+                ((hb1.MaxX) > (hb2.MinX)) &&
+                ((hb1.MinY) < (hb2.MaxY)) &&
+                ((hb1.MaxY) > (hb2.MinY)))
             {
                 return true;
             }

@@ -138,6 +138,7 @@
     <Compile Include="Logic\SaveManagement.cs" />
     <Compile Include="Logic\WorldLoader.cs" />
     <Compile Include="Model\CollisionHandler.cs" />
+    <Compile Include="Model\GameObject.cs" />
     <Compile Include="Model\Inventory.cs" />
     <Compile Include="Model\Item.cs" />
     <Compile Include="Model\MainModel.cs" />
@@ -241,6 +242,9 @@
     <Content Include="freetype6.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Model\Interfaces\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

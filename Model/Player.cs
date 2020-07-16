@@ -9,21 +9,15 @@ using ITProject.Logic;
 
 namespace ITProject.Model
 {
-    public class Player
+    public class Player : GameObject
     {
         public enum PlayerLoadingType { SaveLoad, NewPlayer, LoadPlayer }
 
         public Inventory ItemInventory;
 
-        public Vector2 Position;
-        public Vector2 OldPosition; //Um den Bewegungsablauf für das CDS nachzuvollziehen
-        public Vector2 Size = new Vector2(1.5f, 2.8f);
+        //public Vector2 OldPosition; //Um den Bewegungsablauf für das CDS nachzuvollziehen
         public float WalkSpeed;
         public float MaxWalkSpeed = 10f;
-        public Vector2 Velocity;
-        public float Gravity = -20f;
-        public bool Grounded;
-        public float SlidingPower = 6.0f;
 
         private float _jumpPower = 18f;
         private float jumpDuration = 0f;
@@ -44,7 +38,7 @@ namespace ITProject.Model
         public Player(float posX, float posY, Vector2 size)
         {
             Position = new Vector2(posX, posY);
-            OldPosition = new Vector2(posX, posY);
+            //OldPosition = new Vector2(posX, posY);
             Size = size;
             WalkSpeed = 5f;
             Velocity = new Vector2(0f, 0f);
@@ -82,12 +76,12 @@ namespace ITProject.Model
             }
         }
 
-        public void Update(double deltaTime, CollisionHandler collisions)
+        public override void Update(double deltaTime, CollisionHandler collisions)
         {
             UpdatePhysics(deltaTime, collisions);
         }
 
-        public void UpdatePhysics(double deltaTime, CollisionHandler collisions)
+        private void UpdatePhysics(double deltaTime, CollisionHandler collisions)
         {
             Vector2 newPlayerPosition = new Vector2(Position.X, Position.Y);
 
@@ -115,7 +109,7 @@ namespace ITProject.Model
             if (Velocity.X < -_maxVelocityX) Velocity.X = -_maxVelocityX;
 
             newPlayerPosition.X = Velocity.X * (float)deltaTime + Position.X;
-            newPlayerPosition = collisions.CheckCollisionX(newPlayerPosition, Size, ref Velocity.X);
+            newPlayerPosition = collisions.CheckCollisionX(newPlayerPosition, Size, ref Velocity.X, this);
 
             //Gravitation
             if (Velocity.Y > -5f)
@@ -130,7 +124,7 @@ namespace ITProject.Model
             if (Velocity.Y < -_maxVelocityY) Velocity.Y = -_maxVelocityY;               //Damit die Geschwindigkeit beim Fallen nicht ins unendliche wächst
 
             newPlayerPosition.Y = Velocity.Y * (float)deltaTime + newPlayerPosition.Y;
-            newPlayerPosition = collisions.CheckCollisionY(ref newPlayerPosition, Size, ref Velocity.Y);
+            newPlayerPosition = collisions.CheckCollisionY(newPlayerPosition, Size, ref Velocity.Y, this);
 
             UpdatePosition(newPlayerPosition);
         }
@@ -144,10 +138,11 @@ namespace ITProject.Model
                 _jumpState = 2;
             }
 
-            if(_jumpHold && Grounded)
+            if (_jumpHold && Grounded)
             {
                 return;
             }
+
 
             if ((Grounded || jumpDuration <= maxJumpDuration) && _jumpState < 2)
             {
@@ -167,7 +162,7 @@ namespace ITProject.Model
             }
         }
 
-        public void SetGrounded(bool grounded)
+        public override void SetGrounded(bool grounded)
         {
             if (grounded)
             {
@@ -225,10 +220,18 @@ namespace ITProject.Model
         private void InitPlayer(float posX, float posY)
         {
             Position = new Vector2(posX, posY);
-            OldPosition = new Vector2(posX, posY);
+            //OldPosition = new Vector2(posX, posY);
+            SlidingPower = 6.0f;
             WalkSpeed = 5f;
             Velocity = new Vector2(0f, 0f);
+            Gravity = -20f;
+            Size = new Vector2(1.5f, 2.8f);
             SetGrounded(false);
+        }
+
+        public Hitbox GetHitbox()
+        {
+            return new Hitbox(Position, Size, Hitbox.HitboxType.Player);
         }
     }
 

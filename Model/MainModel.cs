@@ -36,7 +36,9 @@ namespace ITProject.Model
 
         public void Update(double deltaTime)
         {
+            _manager.World.Update(deltaTime, _manager.Player, _manager.CollisionHandler);
             _manager.Player.Update(deltaTime, _manager.CollisionHandler);
+            _manager.CollisionHandler.CheckPlayerWithDroppedItems(_manager.Player);
         }
 
         public void CloseGame()

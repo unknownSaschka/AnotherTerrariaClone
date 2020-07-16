@@ -13,9 +13,6 @@ namespace ITProject.Model
     {
         public enum WorldLoadType { TestLoad, NewWorld, LoadWorld }
 
-        private ushort[,] _world;
-        private ushort[,] _worldBack;
-
         public ushort[,] GetWorld
         {
             get { return _world; }
@@ -26,11 +23,18 @@ namespace ITProject.Model
             get { return _worldBack; }
         }
 
-        private int _width, _height;
         public Vector2 WorldSize
         {
             get { return new Vector2(_width, _height); }
         }
+
+        private List<WorldItem> _droppedItems = new List<WorldItem>();
+
+        public bool WorldChanged = false;
+
+        private int _width, _height;
+        private ushort[,] _world;
+        private ushort[,] _worldBack;
 
         public World(int width, int height, WorldLoadType loadType, int seed)
         {
@@ -60,6 +64,27 @@ namespace ITProject.Model
                 NewWorld(seed);
                 SaveWorld();
                 WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack);
+            }
+        }
+
+        public void Update(double deltaTime, Player player, CollisionHandler collisionHandler)
+        {
+            foreach(WorldItem worldItem in _droppedItems)
+            {
+                //Items ziehen sich an den Spieler herran, wenn dieser nahe genug ist
+                if(worldItem.LayingTime >= 3f)
+                {
+                    if(Vector2.Distance(player.Position, worldItem.Position) <= 5f)
+                    {
+                        Vector2 playerDirection = player.Position - worldItem.Position;
+                        worldItem.SetVelocity(playerDirection);
+                    }
+                }
+
+                worldItem.LayingTime += (float)deltaTime;
+
+                //Physikupdate machen
+                worldItem.Update(deltaTime, collisionHandler);
             }
         }
 
@@ -192,6 +217,7 @@ namespace ITProject.Model
             {
                 ushort removedItem = _world[(int)blockPosition.X, (int)blockPosition.Y];
                 _world[(int)blockPosition.X, (int)blockPosition.Y] = 0;
+                WorldChanged = true;
                 return removedItem;
             }
             else
@@ -208,6 +234,7 @@ namespace ITProject.Model
                 if(_world[(int)blockPosition.X, (int)blockPosition.Y] == 0 || _world[(int)blockPosition.X, (int)blockPosition.Y] == 8)  //Luft und Wasser
                 {
                     _world[(int)blockPosition.X, (int)blockPosition.Y] = blockType;
+                    WorldChanged = true;
                     return true;
                 }
                 else
@@ -220,6 +247,67 @@ namespace ITProject.Model
             {
                 return false;
             }
+        }
+
+        public bool AddDroppedItem(WorldItem item)
+        {
+            _droppedItems.Add(item);
+            return true;
+        }
+
+        public IEnumerable<WorldItem> GetDroppedItems(Vector2 min, Vector2 max)
+        {
+            var enumarator = from droppedItem in _droppedItems
+                             where CheckWithin(droppedItem.Position, min, max)
+                             select droppedItem;
+            return enumarator;
+        }
+
+        public bool RemoveDroppedItem(WorldItem item)
+        {
+            return _droppedItems.Remove(item);
+        }
+
+        private bool CheckWithin(Vector2 position, Vector2 min, Vector2 max)
+        {
+            if(position.X > min.X && position.X < max.X && position.Y > min.Y && position.Y < max.Y)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public List<WorldItem> GetDroppedItemsList()
+        {
+            return _droppedItems;
+        }
+    }
+
+    public class WorldItem : GameObject
+    {
+        public Item Item;
+        public float LayingTime;
+
+        public WorldItem(Vector2 position, Vector2 velocity, Vector2 size, Item item)
+        {
+            Position = position;
+            Size = size;
+            Velocity = velocity;
+            Item = item;
+            LayingTime = 0f;
+        }
+
+        public void SetVelocity(Vector2 velocity)
+        {
+            Velocity = velocity;
+        }
+
+        public Hitbox GetHitbox()
+        {
+            return new Hitbox(Position, Size, Hitbox.HitboxType.Player);
         }
     }
 }

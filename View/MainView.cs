@@ -23,7 +23,6 @@ namespace ITProject.View
         private GameTextures _gameTextures;
         private MainLogic _logic;
         private MainModel _mainModel;
-        //private ModelManager _modelManager;
 
         private Vector2 _oldPlayerPosition;
         private float _zoom;
@@ -43,15 +42,13 @@ namespace ITProject.View
         private uint _invItemsPosVAO, _invItemsPosVBO;
         private uint _invHoldItemVAO, _invHoldItemVBO;
         private uint _background1VAO, _background1VBO;
-
-        private uint _darknessVAO, _darknessVBO;
-        private uint _lightSourceVAO, _lightSourceVBO;
+        private uint _droppedItemsVAO, _droppedItemsVBO;
 
         private Shader _shader;
         private Shader _blockShader;
         private float _passedTime;
 
-        private int _blocksToProcess = 0;   //Maximale ANzahl an Blöcken, die verrbeitet werden können bzw. auf dem Screen angezeigt werden können
+        private Vector2 _textureGridSize = new Vector2(8f, 8f);
         private float[,] _light;
 
         private struct ItemPositionAmount
@@ -79,15 +76,7 @@ namespace ITProject.View
         protected override void OnLoad(EventArgs e)
         {
             InitQFont();
-            InitVertexBuffer();
-            InitVertexBufferWaterBlocks();
-            InitVertexBufferInvBar();
-            InitVertexBufferInventory();
-            InitInventoryItemsPos();
-            InitVertexBufferInvBarItems();
-            InitVertexBufferInvBarSelector();
-            InitVertexBufferInvHoldItem();
-            InitVertexBufferBackground();
+            InitBuffers();
             InitShadows();
             InitShaders();
             base.OnLoad(e);
@@ -96,7 +85,6 @@ namespace ITProject.View
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             _zoom = GameExtentions.Lerp(_zoom, _mainModel.GetModelManager.Zoom, 3.0f * (float)e.Time);
-            //_renderDistance = new Vector2(_modelManager.RenderDistance.X, _modelManager.RenderDistance.Y);
 
             _logic.Update(Keyboard.GetState(), Mouse.GetCursorState(), UpdateWindowPositions(), e.Time);
             Title = $"{Math.Round(UpdateFrequency, 2)} fps";
@@ -131,22 +119,29 @@ namespace ITProject.View
         protected override void OnResize(EventArgs e)
         {
             AlterVertexBufferInvBar();
-            UpdateShadowBuffers();
-
             base.OnResize(e);
         }
 
-        private void SetIdentityMatrix()
+        private void SetIdentityMatrix(Shader shader)
         {
             Matrix4 projection = Matrix4.CreateOrthographic(ClientRectangle.Width, ClientRectangle.Height, -1.0f, 1.0f);
             Matrix4 transformation = Matrix4.Identity * projection;
             Vector4 translation = Vector4.Zero;
 
             GL.UseProgram(0);
-            _shader.Use();
-            _shader.SetMatrix4("transform", transformation);
-            _shader.SetVector4("translation", translation);
-            _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
+            shader.Use();
+            shader.SetMatrix4("transform", transformation);
+            shader.SetVector4("translation", translation);
+            shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
+        }
+
+        private void SetMatrix(Shader shader, Matrix4 transformation, Vector4 translation)
+        {
+            GL.UseProgram(0);
+            shader.Use();
+            shader.SetMatrix4("transform", transformation);
+            shader.SetVector4("translation", translation);
+            shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
         }
 
         private void Draw()
@@ -155,7 +150,6 @@ namespace ITProject.View
 
             DrawBackground();
 
-            //DrawWorld();
             DrawWorldV2();
 
             //Shadows();
@@ -179,6 +173,7 @@ namespace ITProject.View
             System.Numerics.Vector2 worldSize = _mainModel.GetModelManager.World.WorldSize;
             float zoomFactor = 0.002f;
             float w = 1.005f, h = 1.005f;   //Block höhe und breite
+            float blockDarkness = 0.5f;
 
             Vector2 smoothCameraPos = Vector2.Lerp(_oldPlayerPosition, new Vector2(-player.Position.X, -player.Position.Y), 0.3f);
             _oldPlayerPosition = smoothCameraPos;
@@ -186,18 +181,9 @@ namespace ITProject.View
             GL.Viewport(ClientRectangle.X, ClientRectangle.Y, ClientRectangle.Width, ClientRectangle.Height);
             Matrix4 projection = Matrix4.CreateOrthographic(ClientRectangle.Width * _zoom * zoomFactor, ClientRectangle.Height * _zoom * zoomFactor, -1.0f, 1.0f);
             Vector4 translation = new Vector4(smoothCameraPos.X, smoothCameraPos.Y, 0f, 0f);
-
             Matrix4 transformation = Matrix4.Identity * projection;
 
-
-            //DrawWorld
-            GL.UseProgram(0);
-            _blockShader.Use();
-
-            _blockShader.SetMatrix4("transform", transformation);
-            _blockShader.SetVector4("translation", translation);
-            _blockShader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
-
+            SetMatrix(_blockShader, transformation, translation);
 
             Vector2 minBoundary = new Vector2();
             Vector2 maxBoundary = new Vector2();
@@ -206,12 +192,18 @@ namespace ITProject.View
             List<Vector2> lightSources = new List<Vector2>();
 
             CalculateViewBorders(player.Position, ref minBoundary, ref maxBoundary);
-            ProcessBlockVertices(minBoundary, maxBoundary);
 
-            float blockDarkness = 0.5f;
+            if (world.WorldChanged)
+            {
+                ResetLightMap(minBoundary, maxBoundary);
+                world.WorldChanged = false;
+            }
+            
 
-            float[,] vertices = new float[4 * _blocksToProcess, 5];
-            float[,] backgroundVertices = new float[4 * _blocksToProcess, 5];
+            int blocksToProcess = ProcessBlockVertices(minBoundary, maxBoundary);
+            float[,] vertices = new float[4 * blocksToProcess, 5];
+            float[,] backgroundVertices = new float[4 * blocksToProcess, 5];
+
             int count = 0;
             int countBackground = 0;
 
@@ -225,7 +217,6 @@ namespace ITProject.View
                     //Alles, was innerhalb der RenderDistance abläuft
                     if (!GameExtentions.CheckIfInBound(ix, iy, worldSize)) continue;
                     ushort blockID = world.GetWorld[ix, iy];
-                    //if (blockID == 0) continue;
 
                     bool background = false;
 
@@ -246,21 +237,11 @@ namespace ITProject.View
                         ApplyLightRec(ix, iy, 1.0f, worldSize);
                     }
 
-                    Vector2 min = new Vector2();
-                    Vector2 max = new Vector2();
-
+                    Vector2 min, max;
                     GetTextureCoord(blockID, new Vector2(8, 8), out min, out max);
 
                     blockDarkness = _light[ix, iy];
-                    
-                    float[,] vert = new float[4, 5]
-                    {
-                        { ix,     iy,       min.X, max.Y, blockDarkness },
-                        { ix + w, iy,       max.X, max.Y, blockDarkness },
-                        { ix + w, iy + h,   max.X, min.Y, blockDarkness },
-                        { ix,     iy + h,   min.X, min.Y, blockDarkness }
-
-                    };
+                    float[,] vert = GetVertices4x5(new Vector2(ix, iy), new Vector2(w, h), min, max, blockDarkness, false);
 
                     if (background)
                     {
@@ -327,22 +308,14 @@ namespace ITProject.View
             GL.Disable(EnableCap.Blend);
 
             //Player zeichnen
-            GL.UseProgram(0);
-            _shader.Use();
-
-            _shader.SetMatrix4("transform", transformation);
-            _shader.SetVector4("translation", translation);
+            SetMatrix(_shader, transformation, translation);
             _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
 
             DrawPlayer(player);
 
 
             //Wasserblöcke zeichnen
-            GL.UseProgram(0);
-            _blockShader.Use();
-
-            _blockShader.SetMatrix4("transform", transformation);
-            _blockShader.SetVector4("translation", translation);
+            SetMatrix(_blockShader, transformation, translation);
             _blockShader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
 
             float[,] waterBlocks = new float[waterBlockList.Count * 4, 5];
@@ -354,13 +327,7 @@ namespace ITProject.View
             count = 0;
             foreach(Vector2 pos in waterBlockList)
             {
-                float[,] waterVerts = new float[4, 5]
-                {
-                    { pos.X,     pos.Y,       minWater.X, maxWater.Y, blockDarkness },
-                    { pos.X + w, pos.Y,       maxWater.X, maxWater.Y, blockDarkness },
-                    { pos.X + w, pos.Y + h,   maxWater.X, minWater.Y, blockDarkness },
-                    { pos.X,     pos.Y + h,   minWater.X, minWater.Y, blockDarkness }
-                };
+                float[,] waterVerts = GetVertices4x5(pos, new Vector2(w, h), minWater, maxWater, blockDarkness, false);
 
                 for (int ic = 0; ic < 4; ic++)
                 {
@@ -377,8 +344,6 @@ namespace ITProject.View
 
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            //DrawElements(_waterBlocksVAO, _waterBlocksVBO, sizeof(float) * waterBlocks.Length, waterBlocks, waterBlocks.Length * 4, _gameTextures.Items);
-            
 
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Items);
@@ -390,31 +355,24 @@ namespace ITProject.View
             GL.BindTexture(TextureTarget.Texture2D, 0);
 
             GL.Disable(EnableCap.Blend);
-            
+
+            _blockShader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
+            DrawDroppedItems(world, minBoundary, maxBoundary);
         }
 
         private void DrawBackground()
         {
-            SetIdentityMatrix();
+            SetIdentityMatrix(_shader);
             float backgroundZoom = 1f;
-            //GL.Viewport(0, 0, Width, Height);
             Matrix4 transform = Matrix4.CreateOrthographic(Width * backgroundZoom, Height * backgroundZoom, -1, 1);
             _shader.SetMatrix4("transform", transform);
-            //_shader.SetVector4("translation", new Vector4(-Width/2, -Height/2, 1f, 1f));
 
             float ratio = Width / (float)Height;
             Vector2 min = new Vector2(-Width / 2, -Height / 2);
             Vector2 max = new Vector2(Width / 2, Height / 2);
 
-            float[,] vertices = new float[4, 4]
-            {
-                        { min.X, min.Y,   0.0f, 1.0f },
-                        { max.X, min.Y,   1.0f, 1.0f },
-                        { max.X, max.Y,   1.0f, 0.0f },
-                        { min.X, max.Y,   0.0f, 0.0f }
-
-            };
-
+            float[,] vertices = GetVerices4x4MinMax(min, max, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f));
+            
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.ActiveTexture(TextureUnit.Texture0);
@@ -437,15 +395,7 @@ namespace ITProject.View
             Vector2 min = new Vector2(player.Position.X - (player.Size.X / 2), player.Position.Y - (player.Size.Y / 2));
             Vector2 max = new Vector2(player.Position.X + (player.Size.X / 2), player.Position.Y + (player.Size.Y / 2));
 
-            //float darkness = 1f;
-
-            float[,] playerVertices = new float[4, 4]
-            {
-                        { min.X, min.Y,   0.0f, 1.0f},
-                        { max.X, min.Y,   1.0f, 1.0f},
-                        { max.X, max.Y,   1.0f, 0.0f},
-                        { min.X, max.Y,   0.0f, 0.0f}
-            };
+            float[,] playerVertices = GetVerices4x4MinMax(min, max, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f));
 
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -469,14 +419,14 @@ namespace ITProject.View
 
         private void DrawGUI()
         {
-            SetIdentityMatrix();
+            SetIdentityMatrix(_shader);
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             DrawItemBar();
 
             if (_mainModel.GetModelManager.InventoryOpen)
             {
-                SetIdentityMatrix();
+                SetIdentityMatrix(_shader);
                 DrawInventory();
             }
             GL.Disable(EnableCap.Blend);
@@ -519,9 +469,6 @@ namespace ITProject.View
 
         private void DrawElements(uint vao, uint vbo, int bufferSize, float[,] vertices, int verticesToDraw, uint gameTexture)
         {
-            //GL.Enable(EnableCap.Blend);
-            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
             GL.BindVertexArray(vao);
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
 
@@ -537,15 +484,10 @@ namespace ITProject.View
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
             GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            //GL.Disable(EnableCap.Blend);
         }
 
         private void DrawElements(uint vao, uint vbo, int verticesToDraw, uint gameTexture)
         {
-            //GL.Enable(EnableCap.Blend);
-            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, gameTexture);
 
@@ -618,7 +560,7 @@ namespace ITProject.View
             DrawElements(_invItemsPosVAO, _invItemsPosVBO, vertices.Length, vertices, itemCount * 4, _gameTextures.Items);
             DrawNumbers(itemPositions);
 
-            SetIdentityMatrix();
+            SetIdentityMatrix(_shader);
             Item holdItem = _mainModel.GetModelManager.Player.ItemInventory.ActiveHoldingItem;
             if (holdItem != null)
             {
@@ -654,14 +596,7 @@ namespace ITProject.View
             Vector2 min = new Vector2(_mainModel.GetModelManager.WorldMousePosition.X - mouseSize, _mainModel.GetModelManager.WorldMousePosition.Y - mouseSize);
             Vector2 max = new Vector2(_mainModel.GetModelManager.WorldMousePosition.X + mouseSize, _mainModel.GetModelManager.WorldMousePosition.Y + mouseSize);
 
-            float[,] playerVertices = new float[4, 4]
-            {
-                        { min.X, min.Y,   0.0f, 1.0f },
-                        { max.X, min.Y,   1.0f, 1.0f },
-                        { max.X, max.Y,   1.0f, 0.0f },
-                        { min.X, max.Y,   0.0f, 0.0f }
-                        
-            };
+            float[,] mouseVertices = GetVerices4x4MinMax(min, max, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f));
             
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -671,7 +606,7 @@ namespace ITProject.View
             GL.BindVertexArray(_mouseVAO);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _mouseVBO);
 
-            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, sizeof(float) * playerVertices.Length, playerVertices);
+            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, sizeof(float) * mouseVertices.Length, mouseVertices);
             GL.DrawArrays(PrimitiveType.Quads, 0, 4);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
@@ -700,45 +635,37 @@ namespace ITProject.View
             _drawing.Draw();
         }
 
-        private void Shadows()
+        private void DrawDroppedItems(World world, Vector2 minBoundary, Vector2 maxBoundary)
         {
-            /*
-            GL.Enable(EnableCap.Blend);
+            IEnumerable<WorldItem> droppedItems = world.GetDroppedItems(ConvertVector(minBoundary), ConvertVector(maxBoundary));
 
-            SetIdentityMatrix();
-            
+            if (droppedItems.Count() == 0) return;
 
-            _shader.SetVector4("blockColor", new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-            //int lightSources = 4;
+            float[,] vertices = new float[droppedItems.Count() * 4, 5];
+            int count = 0;
 
-            float[,] lightsVertices = new float[4, 4]
+            foreach(WorldItem worldItem in droppedItems)
             {
-                { -200f, -200f,   0.0f, 1.0f },
-                { 200f, -200f,   1.0f, 1.0f },
-                { 200f, 200f,   1.0f, 0.0f },
-                { -200f, 200f,   0.0f, 0.0f }
-            };
+                Vector2 texCoordMin, texCoordMax;
+                GetTextureCoord(worldItem.Item.ID, _textureGridSize, out texCoordMin, out texCoordMax);
+                float[,] vert = GetVertices4x5(ConvertVector(worldItem.Position), ConvertVector(worldItem.Size), texCoordMin, texCoordMax, _light[(int)worldItem.Position.X, (int)worldItem.Position.Y], true);
+                InsertVertices(ref vertices, ref vert, ref count, 5);
+            }
 
-            //Dunkelheit
-
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             
 
-            _shader.SetVector4("blockColor", new Vector4(1.0f, 1.0f, 1.0f, 0.97f));
-            //DrawElements(_darknessVAO, _darknessVBO, 4 * 4, _gameTextures.Darkness);
+            AlterVertexBufferBlocks(_droppedItemsVAO, _droppedItemsVBO, vertices);
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Items);
+            GL.BindVertexArray(_droppedItemsVAO);
 
-            //Lichtquelle
-            GL.BlendFunc(BlendingFactor.DstAlpha, BlendingFactor.OneMinusSrcAlpha);
-            GL.BlendEquation(_darknessVBO, BlendEquationMode.Min);
-            DrawElements(_lightSourceVAO, _lightSourceVBO, sizeof(float) * lightsVertices.Length, lightsVertices, 4 * 4, _gameTextures.LightSource1);
+            GL.DrawArrays(PrimitiveType.QuadsExt, 0, droppedItems.Count() * 4);
 
-
-
-            GL.BlendEquation(BlendEquationMode.FuncAdd);
+            GL.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
             GL.Disable(EnableCap.Blend);
-            */
-
-
         }
 
         private void ApplyLightRec(int currentX, int currentY, float lastLight, System.Numerics.Vector2 worldSize)
@@ -757,40 +684,21 @@ namespace ITProject.View
 
         private void InitShadows()
         {
-            /*
-            GL.GenVertexArrays(1, out _darknessVAO);
-            GL.GenBuffers(1, out _darknessVBO);
-
-            UpdateShadowBuffers();
-
-            GL.GenVertexArrays(1, out _lightSourceVAO);
-            GL.GenBuffers(1, out _lightSourceVBO);
-            */
             System.Numerics.Vector2 worldSize = _mainModel.GetModelManager.World.WorldSize;
             _light = new float[(int)worldSize.X, (int)worldSize.Y];
         }
 
-        private void UpdateShadowBuffers()
+        private void ResetLightMap(Vector2 minBoundary, Vector2 maxBoundary)
         {
-            //Called on Resize
+            Vector2 lightOffset = new Vector2(5f, 5f);
 
-            float[,] vertices = new float[4, 4]
+            for(int iy = (int)(minBoundary.Y - lightOffset.Y); iy < (int)(maxBoundary.Y + lightOffset.Y); iy++)
             {
-                { -Width, -Height,   0.0f, 1.0f },
-                { Width, -Height,   1.0f, 1.0f },
-                { Width, Height,   1.0f, 0.0f },
-                { -Width, Height,   0.0f, 0.0f }
-            };
-
-
-            GL.BindVertexArray(_darknessVAO);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _darknessVBO);
-
-            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, vertices, BufferUsageHint.StaticDraw);
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
+                for(int ix = (int)(minBoundary.X - lightOffset.X); ix < (int)(maxBoundary.X + lightOffset.X); ix++)
+                {
+                    _light[ix, iy] = 0f;
+                }
+            }
         }
 
         private void InitQFont()
@@ -799,18 +707,10 @@ namespace ITProject.View
             _drawing = new QFontDrawing();
         }
 
-        private void InitVertexBuffer()
-        {
-            InitVertexBufferMouse();
-            InitVertexBufferPlayer();
-            InitVertexBufferBlocks();
-        }
-
-        private void ProcessBlockVertices(Vector2 min, Vector2 max)
+        private int ProcessBlockVertices(Vector2 min, Vector2 max)
         {
             int blocks =  (((int)max.X + 1) - (int)min.X) * (((int)max.Y + 1) - (int)min.Y);
-
-            _blocksToProcess = blocks;
+            return blocks;
         }
 
         private void AlterVertexBufferBlocks(uint vao, uint vbo, float [,] vertices)
@@ -818,12 +718,6 @@ namespace ITProject.View
             GL.BindVertexArray(vao);
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
             GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * vertices.Length, vertices, BufferUsageHint.DynamicDraw);
-            /*
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
-            */
 
             //Setzen der Pointer für die Position
             var vertexLocation = _blockShader.GetAttribLocation("position");
@@ -844,113 +738,7 @@ namespace ITProject.View
             GL.BindVertexArray(0);
         }
 
-        private void InitVertexBufferBlocks()
-        {
-            //World
-            GL.GenVertexArrays(1, out _blockVAO);
-            GL.GenBuffers(1, out _blockVBO);
 
-            GL.GenVertexArrays(1, out _blockWallVAO);
-            GL.GenBuffers(1, out _blockWallVBO);
-
-        }
-
-        private void InitVertexBufferWaterBlocks()
-        {
-            GL.GenVertexArrays(1, out _waterBlocksVAO);
-            GL.GenBuffers(1, out _waterBlocksVBO);
-        }
-
-        private void InitVertexBufferPlayer()
-        {
-            //Player
-            GL.GenVertexArrays(1, out _playerVAO);
-            GL.GenBuffers(1, out _playerVBO);
-
-            GL.BindVertexArray(_playerVAO);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _playerVBO);
-            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
-        }
-
-        private void InitVertexBufferMouse()
-        {
-            //Mouse Cursor
-            GL.GenVertexArrays(1, out _mouseVAO);
-            GL.GenBuffers(1, out _mouseVBO);
-
-            
-            GL.BindVertexArray(_mouseVAO);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _mouseVBO);
-            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
-            
-        }
-
-        private void InitVertexBufferInvBar()
-        {
-            float[,] indices = GetUpdatedInvBarPos();
-
-            GL.GenVertexArrays(1, out _invBarVAO);
-            GL.GenBuffers(1, out _invBarVBO);
-
-            GL.BindVertexArray(_invBarVAO);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _invBarVBO);
-            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, indices, BufferUsageHint.StaticDraw);
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
-        }
-
-        private void InitVertexBufferInvBarItems()
-        {
-            GL.GenVertexArrays(1, out _itemInvBarVAO);
-            GL.GenBuffers(1, out _itemInvBarVBO);
-
-        }
-
-        private void InitVertexBufferInvBarSelector()
-        {
-            GL.GenVertexArrays(1, out _invBarSelectorVAO);
-            GL.GenBuffers(1, out _invBarSelectorVBO);
-        }
-
-        private void InitVertexBufferInvHoldItem()
-        {
-            GL.GenVertexArrays(1, out _invHoldItemVAO);
-            GL.GenBuffers(1, out _invHoldItemVBO);
-
-            GL.BindVertexArray(_invHoldItemVAO);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _invHoldItemVBO);
-            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
-        }
-
-        private void InitVertexBufferBackground()
-        {
-            GL.GenVertexArrays(1, out _background1VAO);
-            GL.GenBuffers(1, out _background1VBO);
-
-
-            GL.BindVertexArray(_mouseVAO);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _mouseVBO);
-            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
-        }
 
         private void AlterVertexBufferInvBar()
         {
@@ -977,16 +765,8 @@ namespace ITProject.View
         private float[,] GetUpdatedInvBarPos()
         {
             Vector2 position = new Vector2(0f, (Height / 2) - 50f);
-            Vector2 size = new Vector2(300f, 40f);
-
-            float[,] indices = new float[4, 4]
-            {
-                { position.X - size.X, position.Y - size.Y,   0.0f, 1.0f },
-                { position.X + size.X, position.Y - size.Y,   1.0f, 1.0f },
-                { position.X + size.X, position.Y + size.Y,   1.0f, 0.0f },
-                { position.X - size.X, position.Y + size.Y,   0.0f, 0.0f }
-            };
-
+            Vector2 size = new Vector2(600f, 80f);
+            float[,] indices = GetVertices4x4(position, size, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f), true);
             return indices;
         }
 
@@ -996,7 +776,7 @@ namespace ITProject.View
             itemPosition = new List<ItemPositionAmount>();
 
             Vector2 gridSize = new Vector2(8f, 8f);
-            Vector2 size = new Vector2(20f, 20f);
+            Vector2 size = new Vector2(40f, 40f);
             Vector2 position = new Vector2(-255f, (Height / 2) - 50f);
             float step = 56.8f;
 
@@ -1015,18 +795,10 @@ namespace ITProject.View
                     continue;
                 }
 
-                Vector2 min = new Vector2();
-                Vector2 max = new Vector2();
+                Vector2 min, max;
 
                 GetTextureCoord(item[i].ID, gridSize, out min, out max);
-
-                float[,] vert = new float[4, 4]
-                {
-                    { position.X - size.X, position.Y - size.Y,   min.X, max.Y },
-                    { position.X + size.X, position.Y - size.Y,   max.X, max.Y },
-                    { position.X + size.X, position.Y + size.Y,   max.X, min.Y },
-                    { position.X - size.X, position.Y + size.Y,   min.X, min.Y }
-                };
+                float[,] vert = GetVertices4x4(position, size, min, max, true);
 
                 for (int ic = 0; ic < 4; ic++)
                 {
@@ -1046,66 +818,139 @@ namespace ITProject.View
 
         private float[,] GetInvBarSelectorIndices(int selecteditem)
         {
-            Vector2 size = new Vector2(40f, 40f);
+            Vector2 size = new Vector2(80f, 80f);
             Vector2 position = new Vector2(-255f, (Height / 2) - 50f);
             float step = 56.8f;
 
             position.X += (step * selecteditem);
-
-            float[,] vertices = new float[4, 4]
-                {
-                    { position.X - size.X, position.Y - size.Y,   0.0f, 1.0f },
-                    { position.X + size.X, position.Y - size.Y,   1.0f, 1.0f },
-                    { position.X + size.X, position.Y + size.Y,   1.0f, 0.0f },
-                    { position.X - size.X, position.Y + size.Y,   0.0f, 0.0f }
-                };
-
+            float[,] vertices = GetVertices4x4(position, size, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f), true);
             return vertices;
         }
 
         private float[,] GetUpdatedInventoryPos()
         {
             Vector2 position = new Vector2(0f, 0f);
-            Vector2 size = new Vector2(300f, 300f);
+            Vector2 size = new Vector2(600f, 600f);
+            _mainModel.GetModelManager.InventoryRectangle = new Logic.Box2D(position, size, true);
 
-            float[,] indices = new float[4, 4]
-            {
-                { position.X - size.X, position.Y - size.Y,   0.0f, 1.0f },
-                { position.X + size.X, position.Y - size.Y,   1.0f, 1.0f },
-                { position.X + size.X, position.Y + size.Y,   1.0f, 0.0f },
-                { position.X - size.X, position.Y + size.Y,   0.0f, 0.0f }
-            };
+            float[,] indices = GetVertices4x4(position, size, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f), true);
 
             return indices;
         }
-        private void InitVertexBufferInventory()
+
+        private void InitBuffers()
         {
-            float[,] indices = GetUpdatedInventoryPos();
+            //World and Blocks
+            GL.GenVertexArrays(1, out _blockVAO);
+            GL.GenBuffers(1, out _blockVBO);
+
+            GL.GenVertexArrays(1, out _blockWallVAO);
+            GL.GenBuffers(1, out _blockWallVBO);
+
+            GL.GenVertexArrays(1, out _droppedItemsVAO);
+            GL.GenBuffers(1, out _droppedItemsVBO);
+
+            //Water Blocks
+            GL.GenVertexArrays(1, out _waterBlocksVAO);
+            GL.GenBuffers(1, out _waterBlocksVBO);
+
+            //Player
+            GL.GenVertexArrays(1, out _playerVAO);
+            GL.GenBuffers(1, out _playerVBO);
+
+            GL.BindVertexArray(_playerVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _playerVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+
+            //Mouse Cursor
+            GL.GenVertexArrays(1, out _mouseVAO);
+            GL.GenBuffers(1, out _mouseVBO);
+
+
+            GL.BindVertexArray(_mouseVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _mouseVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+
+            //InventoryBar
+            float[,] indicesInvBar = GetUpdatedInvBarPos();
+
+            GL.GenVertexArrays(1, out _invBarVAO);
+            GL.GenBuffers(1, out _invBarVBO);
+
+            GL.BindVertexArray(_invBarVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _invBarVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, indicesInvBar, BufferUsageHint.StaticDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+
+            //InventoryBar Items
+            GL.GenVertexArrays(1, out _itemInvBarVAO);
+            GL.GenBuffers(1, out _itemInvBarVBO);
+
+            //InventoryBar Selector
+            GL.GenVertexArrays(1, out _invBarSelectorVAO);
+            GL.GenBuffers(1, out _invBarSelectorVBO);
+
+            //Inventory
+            float[,] indicesInventory = GetUpdatedInventoryPos();
 
             GL.GenVertexArrays(1, out _inventoryVAO);
             GL.GenBuffers(1, out _inventoryVBO);
 
             GL.BindVertexArray(_inventoryVAO);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _inventoryVBO);
-            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, indices, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, indicesInventory, BufferUsageHint.StaticDraw);
             GL.EnableVertexAttribArray(0);
             GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
-        }
 
-        private void InitInventoryItemsPos()
-        {
+            //Items in Inventory
             GL.GenVertexArrays(1, out _invItemsPosVAO);
             GL.GenBuffers(1, out _invItemsPosVBO);
+
+            //Inventory Hold Item
+            GL.GenVertexArrays(1, out _invHoldItemVAO);
+            GL.GenBuffers(1, out _invHoldItemVBO);
+
+            GL.BindVertexArray(_invHoldItemVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _invHoldItemVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+
+            //Background
+            GL.GenVertexArrays(1, out _background1VAO);
+            GL.GenBuffers(1, out _background1VBO);
+
+            GL.BindVertexArray(_mouseVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _mouseVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
         }
 
         private float[,] GetInventoryItemsPos(Inventory inventory, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)
         {
             int x = 10, y = 4;
             Vector2 steps = new Vector2(50f, 50f);
-            Vector2 size = new Vector2(25f, 25f);
+            Vector2 size = new Vector2(50f, 50f);
             Vector2 startPos = new Vector2(-225f, 200f);
             Vector2 position = new Vector2(startPos.X, startPos.Y);
 
@@ -1126,13 +971,7 @@ namespace ITProject.View
                         Vector2 min, max;
                         GetTextureCoord(inventory.GetItem(ix, iy).ID, new Vector2(8, 8), out min, out max);
 
-                        float[,] vert = new float[4, 4]
-                        {
-                            { position.X - size.X, position.Y - size.Y,   min.X, max.Y },
-                            { position.X + size.X, position.Y - size.Y,   max.X, max.Y },
-                            { position.X + size.X, position.Y + size.Y,   max.X, min.Y },
-                            { position.X - size.X, position.Y + size.Y,   min.X, min.Y }
-                        };
+                        float[,] vert = GetVertices4x4(position, size, min, max, true);
 
                         for (int ic = 0; ic < 4; ic++)
                         {
@@ -1155,36 +994,14 @@ namespace ITProject.View
             }
 
             return indices;
-
-            /*
-            GL.BindVertexArray(_invItemsPosVAO);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _invItemsPosVBO);
-            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * indices.Length, indices, BufferUsageHint.StaticDraw);
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
-            */
         }
 
         private float[,] GetVerticesHoldItem(Item holdItem, Vector2 mousePosition)
         {
-            Vector2 size = new Vector2(20f, 20f);
-            Vector2 min;
-            Vector2 max;
+            Vector2 size = new Vector2(40f, 40f);
+            Vector2 min, max;
             GetTextureCoord(holdItem.ID, new Vector2(8f, 8f), out min, out max);
-
-            
-            float[,] vertices = new float[4, 4]
-                {
-                    { mousePosition.X - size.X, mousePosition.Y - size.Y,   min.X, max.Y },
-                    { mousePosition.X + size.X, mousePosition.Y - size.Y,   max.X, max.Y },
-                    { mousePosition.X + size.X, mousePosition.Y + size.Y,   max.X, min.Y },
-                    { mousePosition.X - size.X, mousePosition.Y + size.Y,   min.X, min.Y }
-                };
-            
-
+            float[,] vertices = GetVertices4x4(mousePosition, size, min, max, true);
             return vertices;
         }
 
@@ -1199,16 +1016,7 @@ namespace ITProject.View
             float cursorPosX = (float)PointToClient(Control.MousePosition).X;
             float cursorPosY = (float)PointToClient(Control.MousePosition).Y;
 
-            WindowPositions windowPositions = new WindowPositions();
-            windowPositions.Height = Height;
-            windowPositions.Width = Width;
-            windowPositions.X = X;
-            windowPositions.Y = Y;
-            windowPositions.WindowState = WindowState;
-            windowPositions.Focused = Focused;
-            windowPositions.WindowMousePosition = new System.Numerics.Vector2(cursorPosX, cursorPosY);
-            windowPositions.Zoom = _zoom;
-
+            WindowPositions windowPositions = new WindowPositions(Width, Height, X, Y, _zoom, WindowState, Focused, new System.Numerics.Vector2(cursorPosX, cursorPosY));
             return windowPositions;
         }
 
@@ -1227,6 +1035,9 @@ namespace ITProject.View
 
         private void GetTextureCoord(int position, Vector2 gridSize, out Vector2 minTexCoord, out Vector2 maxTexCoord)
         {
+            minTexCoord = new Vector2();
+            maxTexCoord = new Vector2();
+
             float offset = 0.0042f;
             Vector2 tileSize = new Vector2();
             tileSize.X = 1 / gridSize.X;
@@ -1238,6 +1049,72 @@ namespace ITProject.View
             maxTexCoord.X = ((x + 1) * tileSize.X) - offset;
             minTexCoord.Y = (y * tileSize.Y) + offset;
             maxTexCoord.Y = ((y + 1) * tileSize.Y) - offset;
+        }
+
+        private float[,] GetVertices4x5(Vector2 position, Vector2 size, Vector2 texCoordMin, Vector2 texCoordMax, float blockDarkness, bool centered)
+        {
+            if (centered)
+            {
+                return new float[4, 5]
+                {
+                    { position.X - size.X / 2, position.Y - size.Y / 2,   texCoordMin.X, texCoordMax.Y, blockDarkness },
+                    { position.X + size.X / 2, position.Y - size.Y / 2,   texCoordMax.X, texCoordMax.Y, blockDarkness },
+                    { position.X + size.X / 2, position.Y + size.Y / 2,   texCoordMax.X, texCoordMin.Y, blockDarkness },
+                    { position.X - size.X / 2, position.Y + size.Y / 2,   texCoordMin.X, texCoordMin.Y, blockDarkness }
+                };
+            }
+            else
+            {
+                return new float[4, 5]
+                {
+                    { position.X,          position.Y,            texCoordMin.X, texCoordMax.Y, blockDarkness },
+                    { position.X + size.X, position.Y,            texCoordMax.X, texCoordMax.Y, blockDarkness },
+                    { position.X + size.X, position.Y + size.Y,   texCoordMax.X, texCoordMin.Y, blockDarkness },
+                    { position.X,          position.Y + size.Y,   texCoordMin.X, texCoordMin.Y, blockDarkness }
+                };
+            }
+        }
+
+        private float[,] GetVerices4x4MinMax(Vector2 min, Vector2 max, Vector2 texCoordMin, Vector2 texCoordMax)
+        {
+             return GetVertices4x4(min, max - min, texCoordMin, texCoordMax, false);
+        }
+
+        private float[,] GetVertices4x4(Vector2 position, Vector2 size, Vector2 texCoordMin, Vector2 texCoordMax, bool centered)
+        {
+            if (centered)
+            {
+                return new float[4, 4]
+                {
+                    { position.X - size.X / 2, position.Y - size.Y / 2,   texCoordMin.X, texCoordMax.Y },
+                    { position.X + size.X / 2, position.Y - size.Y / 2,   texCoordMax.X, texCoordMax.Y },
+                    { position.X + size.X / 2, position.Y + size.Y / 2,   texCoordMax.X, texCoordMin.Y },
+                    { position.X - size.X / 2, position.Y + size.Y / 2,   texCoordMin.X, texCoordMin.Y }
+                };
+            }
+            else
+            {
+                return new float[4, 4]
+                {
+                    { position.X,     position.Y,                 texCoordMin.X, texCoordMax.Y },
+                    { position.X + size.X, position.Y,            texCoordMax.X, texCoordMax.Y },
+                    { position.X + size.X, position.Y + size.Y,   texCoordMax.X, texCoordMin.Y },
+                    { position.X,     position.Y + size.Y,        texCoordMin.X, texCoordMin.Y }
+                };
+            }
+            
+        }
+
+        private void InsertVertices(ref float[,] vertices, ref float[,] toInsertVertices, ref int count, int verticeSize)
+        {
+            for (int ic = 0; ic < 4; ic++)
+            {
+                for (int ia = 0; ia < verticeSize; ia++)
+                {
+                    vertices[count, ia] = toInsertVertices[ic, ia];
+                }
+                count++;
+            }
         }
     }
 }

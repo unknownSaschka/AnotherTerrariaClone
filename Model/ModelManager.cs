@@ -32,6 +32,7 @@ namespace ITProject.Model
         public int ActiveSaveSlot;
 
         public List<ViewItemPositions> ViewItemPositions;
+        public Box2D InventoryRectangle;
 
         public ModelManager(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed)
         {

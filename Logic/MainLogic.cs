@@ -33,10 +33,21 @@ namespace ITProject.Logic
             public int X;
             public int Y;
             public float Zoom;
-            public bool Fullscreen;
             public OpenTK.WindowState WindowState;
             public bool Focused;
             public Vector2 WindowMousePosition;
+
+            public WindowPositions(int width, int height, int x, int y, float zoom, OpenTK.WindowState windowState, bool focused, Vector2 windowMousePosition)
+            {
+                Width = width;
+                Height = height;
+                X = x;
+                Y = y;
+                Zoom = zoom;
+                WindowState = windowState;
+                Focused = focused;
+                WindowMousePosition = windowMousePosition;
+            }
         }
 
         public MainLogic()
@@ -227,6 +238,12 @@ namespace ITProject.Logic
             {
                 _mainModel.GetModelManager.InventoryOpen = !_mainModel.GetModelManager.InventoryOpen;
             }
+
+            if (windowPositions.Focused && inputManager.GetKeyPressed(Key.I) &&
+                MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
+            {
+                _mainModel.GetModelManager.World.AddDroppedItem(new WorldItem(_mainModel.GetModelManager.WorldMousePosition, new Vector2(10f, 3f), new Vector2(0.8f, 0.8f), new Item(1, 1)));
+            }
         }
 
         public Vector2 CalculateViewToWorldPosition(Vector2 viewPosition, Vector2 playerPosition, WindowPositions windowPositions)
@@ -261,8 +278,17 @@ namespace ITProject.Logic
                     int itemX, itemY;
                     if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewItemPositions, out itemX, out itemY))
                     {
-                        Console.WriteLine($"LeftClick auf Item: {itemX}, {itemY}");
                         _mainModel.GetModelManager.Player.ItemInventory.LeftClick(itemX, itemY);
+                    }
+                    else if(!CheckIfWithin(ConvertVector(mousePositionMiddle), _mainModel.GetModelManager.InventoryRectangle))
+                    {
+                        Item activeItem = _mainModel.GetModelManager.Player.ItemInventory.ActiveHoldingItem;
+
+                        if(activeItem != null)
+                        {
+                            _mainModel.GetModelManager.World.AddDroppedItem(new WorldItem(_mainModel.GetModelManager.Player.Position, new Vector2(10f, 3f), new Vector2(0.8f, 0.8f), activeItem));
+                            _mainModel.GetModelManager.Player.ItemInventory.ActiveHoldingItem = null;
+                        }
                     }
                 }
             }
@@ -274,7 +300,6 @@ namespace ITProject.Logic
 
                 if (removedItem != 0)
                 {
-                    Console.WriteLine(removedItem);
                     bool test = playerInventory.AddItemUnsorted(new Item(removedItem, 1));
                 }
             }
@@ -288,7 +313,6 @@ namespace ITProject.Logic
                 
                 if (inputManager.GetMouseButtonPressed(MouseButton.Right))
                 {
-                    Console.WriteLine("RightClick");
                     int itemX, itemY;
                     if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewItemPositions, out itemX, out itemY))
                     {
@@ -330,7 +354,7 @@ namespace ITProject.Logic
 
             foreach(ViewItemPositions pos in viewItemPositions)
             {
-                if (CheckIfWithin(new OpenTK.Vector2(mousePosition.X, mousePosition.Y), pos.Position, pos.Size))
+                if (CheckIfWithin(new OpenTK.Vector2(mousePosition.X, mousePosition.Y), pos.Position, pos.Size, true))
                 {
                     x = pos.InventoryX;
                     y = pos.InventoryY;

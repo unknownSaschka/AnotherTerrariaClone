@@ -296,6 +296,11 @@ namespace ITProject.Model
                 }
             }
         }
+
+        public void RemoveHoldItem()
+        {
+            ActiveHoldingItem = null;
+        }
     }
 
     public class InventoryPosition
