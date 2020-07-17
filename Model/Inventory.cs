@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -10,22 +11,25 @@ namespace ITProject.Model
 {
     public class Inventory
     {
+        private ModelManager _manager;
         private Item[,] _item;
 
         private int _inventoryWidth = 10;
         private int _inventoryHeight = 4;
         private short _maxItemStack = 99;
 
-        public Item ActiveHoldingItem { get; internal set; }
+        //public Item ActiveHoldingItem { get; internal set; }
 
-        public Inventory()
+        public Inventory(ModelManager manager)
         {
             _item = new Item[_inventoryWidth, _inventoryHeight];
+            _manager = manager;
         }
 
-        public Inventory(Item[,] items)
+        public Inventory(Item[,] items, ModelManager manager)
         {
             _item = items;
+            _manager = manager;
         }
 
         public Item[,] GetSaveInv()
@@ -209,39 +213,39 @@ namespace ITProject.Model
 
         public void LeftClick(int x, int y)
         {
-            if(ActiveHoldingItem == null)
+            if( _manager.ActiveHoldingItem == null)
             {
-                ActiveHoldingItem = _item[x, y];
+                _manager.ActiveHoldingItem = _item[x, y];
                 _item[x, y] = null;
             }
             else
             {
                 if(_item[x, y] == null)
                 {
-                    _item[x, y] = ActiveHoldingItem;
-                    ActiveHoldingItem = null;
+                    _item[x, y] = _manager.ActiveHoldingItem;
+                    _manager.ActiveHoldingItem = null;
                 }
                 else
                 {
-                    if(_item[x, y].ID == ActiveHoldingItem.ID)
+                    if(_item[x, y].ID == _manager.ActiveHoldingItem.ID)
                     {
-                        _item[x, y].Amount += ActiveHoldingItem.Amount;
+                        _item[x, y].Amount += _manager.ActiveHoldingItem.Amount;
 
                         if(_item[x, y].Amount > _maxItemStack)
                         {
-                            ActiveHoldingItem.Amount = (short)(_maxItemStack - _item[x, y].Amount);
+                            _manager.ActiveHoldingItem.Amount = (short)(_maxItemStack - _item[x, y].Amount);
                             _item[x, y].Amount = _maxItemStack;
                         }
                         else
                         {
-                            ActiveHoldingItem = null;
+                            _manager.ActiveHoldingItem = null;
                         }
                     }
                     else
                     {
                         Item hold = _item[x, y];
-                        _item[x, y] = ActiveHoldingItem;
-                        ActiveHoldingItem = hold;
+                        _item[x, y] = _manager.ActiveHoldingItem;
+                        _manager.ActiveHoldingItem = hold;
                     }
                 }
             }
@@ -249,43 +253,43 @@ namespace ITProject.Model
 
         public void RightClick(int x, int y)
         {
-            if(ActiveHoldingItem == null)
+            if(_manager.ActiveHoldingItem == null)
             {
                 //Nichts passiert mal (Kommt auf UX an)
-                ActiveHoldingItem = new Item(_item[x, y].ID, (short)(_item[x, y].Amount / 2));
-                _item[x, y].Amount -= ActiveHoldingItem.Amount;
+                _manager.ActiveHoldingItem = new Item(_item[x, y].ID, (short)(_item[x, y].Amount / 2));
+                _item[x, y].Amount -= _manager.ActiveHoldingItem.Amount;
             }
             else
             {
                 if(_item[x, y] == null)
                 {
-                    _item[x, y] = new Item(ActiveHoldingItem.ID, 1);
+                    _item[x, y] = new Item(_manager.ActiveHoldingItem.ID, 1);
 
-                    if(ActiveHoldingItem.Amount < 1)
+                    if(_manager.ActiveHoldingItem.Amount < 1)
                     {
-                        ActiveHoldingItem = null;
+                        _manager.ActiveHoldingItem = null;
                     }
                     else
                     {
-                        ActiveHoldingItem.Amount -= 1;
-                        if(ActiveHoldingItem.Amount <= 0)
+                        _manager.ActiveHoldingItem.Amount -= 1;
+                        if(_manager.ActiveHoldingItem.Amount <= 0)
                         {
-                            ActiveHoldingItem = null;
+                            _manager.ActiveHoldingItem = null;
                         }
                     }
                 }
                 else
                 {
-                    if(_item[x, y].ID == ActiveHoldingItem.ID)
+                    if(_item[x, y].ID == _manager.ActiveHoldingItem.ID)
                     {
                         if(_item[x, y].Amount < _maxItemStack)
                         {
                             _item[x, y].Amount += 1;
-                            ActiveHoldingItem.Amount -= 1;
+                            _manager.ActiveHoldingItem.Amount -= 1;
 
-                            if(ActiveHoldingItem.Amount <= 0)
+                            if(_manager.ActiveHoldingItem.Amount <= 0)
                             {
-                                ActiveHoldingItem = null;
+                                _manager.ActiveHoldingItem = null;
                             }
                         }
                     }
@@ -299,7 +303,20 @@ namespace ITProject.Model
 
         public void RemoveHoldItem()
         {
-            ActiveHoldingItem = null;
+            _manager.ActiveHoldingItem = null;
+        }
+
+        public bool IsEmpty()
+        {
+            foreach (Item item in _item)
+            {
+                if(item != null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 
@@ -311,6 +328,42 @@ namespace ITProject.Model
         {
             X = x;
             Y = y;
+        }
+    }
+
+    public class Chest
+    {
+        public Inventory Content;
+
+
+        public Chest(ModelManager manager)
+        {
+            Content = new Inventory(manager);
+        }
+
+        public Chest(Item[,] items, ModelManager manager)
+        {
+            Content = new Inventory(items, manager);
+        }
+
+        public bool IsEmpty()
+        {
+            return Content.IsEmpty();
+        }
+
+        public bool AddItemUnsorted(Item item)
+        {
+            return Content.AddItemUnsorted(item);
+        }
+
+        public Item SetItem(int x, int y, Item item)
+        {
+            return Content.SetItem(x, y, item);
+        }
+
+        public void RemoveItem(int x, int y)
+        {
+            Content.RemoveItem(x, y);
         }
     }
 }

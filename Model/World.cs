@@ -29,6 +29,7 @@ namespace ITProject.Model
         }
 
         private List<WorldItem> _droppedItems = new List<WorldItem>();
+        private Dictionary<Vector2, Chest> _worldChests;
 
         public bool WorldChanged = false;
 
@@ -36,20 +37,21 @@ namespace ITProject.Model
         private ushort[,] _world;
         private ushort[,] _worldBack;
 
-        public World(int width, int height, WorldLoadType loadType, int seed)
+        public World(int width, int height, WorldLoadType loadType, int seed, ModelManager manager)
         {
             if (loadType == WorldLoadType.NewWorld)
             {
                 _width = width;
                 _height = height;
                 _world = new UInt16[width, height];
+                _worldChests = new Dictionary<Vector2, Chest>();
                 NewWorld(seed);
             }
             else if(loadType == WorldLoadType.LoadWorld)
             {
                 _width = width;
                 _height = height;
-                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack);
+                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack, out _worldChests, manager);
 
                 if(_world.Length == 0)
                 {
@@ -61,9 +63,10 @@ namespace ITProject.Model
                 _world = new UInt16[width, height];
                 _width = width;
                 _height = height;
+                _worldChests = new Dictionary<Vector2, Chest>();
                 NewWorld(seed);
                 SaveWorld();
-                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack);
+                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack, out _worldChests, manager);
             }
         }
 
@@ -90,7 +93,7 @@ namespace ITProject.Model
 
         public void SaveWorld()
         {
-            WorldLoader.SaveWorld(_width, _height, _world, _worldBack);
+            WorldLoader.SaveWorld(_width, _height, _world, _worldBack, _worldChests);
         }
 
         public void NewWorld(int? seed)
@@ -191,7 +194,7 @@ namespace ITProject.Model
             {
                 if(_world[posX, iy] != 0)
                 {
-                    return iy;
+                    return iy + 1;
                 }
             }
 
@@ -216,6 +219,23 @@ namespace ITProject.Model
             if (GameExtentions.CheckIfInBound((int)blockPosition.X, (int)blockPosition.Y, WorldSize))
             {
                 ushort removedItem = _world[(int)blockPosition.X, (int)blockPosition.Y];
+
+                if(removedItem == 12)   //Chest
+                {
+                    Chest chest;
+                    _worldChests.TryGetValue(new Vector2((int)blockPosition.X, (int)blockPosition.Y), out chest);
+
+                    if(chest != null)
+                    {
+                        if (!chest.IsEmpty())
+                        {
+                            return 0;
+                        }
+                    }
+
+                    _worldChests.Remove(new Vector2((int)blockPosition.X, (int)blockPosition.Y));
+                }
+
                 _world[(int)blockPosition.X, (int)blockPosition.Y] = 0;
                 WorldChanged = true;
                 return removedItem;
@@ -227,13 +247,19 @@ namespace ITProject.Model
         }
 
         //Gibt true zurück, wenn ein Block gesetzt werden konnte
-        public bool PlaceBlock(Vector2 blockPosition, UInt16 blockType)
+        public bool PlaceBlock(Vector2 blockPosition, ushort blockType, ModelManager manager)
         {
             if (GameExtentions.CheckIfInBound((int)blockPosition.X, (int)blockPosition.Y, WorldSize))
             {
                 if(_world[(int)blockPosition.X, (int)blockPosition.Y] == 0 || _world[(int)blockPosition.X, (int)blockPosition.Y] == 8)  //Luft und Wasser
                 {
                     _world[(int)blockPosition.X, (int)blockPosition.Y] = blockType;
+
+                    if(blockType == 12)     //Chest
+                    {
+                        _worldChests.Add(new Vector2((int)blockPosition.X, (int)blockPosition.Y), new Chest(manager));
+                    }
+
                     WorldChanged = true;
                     return true;
                 }
@@ -283,6 +309,18 @@ namespace ITProject.Model
         public List<WorldItem> GetDroppedItemsList()
         {
             return _droppedItems;
+        }
+
+        public Chest GetChest(Vector2 position)
+        {
+            Chest chest;
+            _worldChests.TryGetValue(position, out chest);
+            return chest;
+        }
+
+        public bool HasInventory(Vector2 position)
+        {
+            return MainModel.Item[_world[(int)position.X, (int)position.Y]].HasInventory;
         }
     }
 

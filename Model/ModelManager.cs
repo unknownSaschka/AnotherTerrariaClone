@@ -21,8 +21,11 @@ namespace ITProject.Model
         public CollisionHandler CollisionHandler{ get; internal set; }
         public SaveManagement SaveManagement { get; }
         public System.Numerics.Vector2 WorldMousePosition;
+
         public int SelectedInventorySlot;
         public bool InventoryOpen;
+        public Chest OpenChest;
+        public Item ActiveHoldingItem;
 
         //View Settings
         public float Zoom;
@@ -32,6 +35,7 @@ namespace ITProject.Model
         public int ActiveSaveSlot;
 
         public List<ViewItemPositions> ViewItemPositions;
+        public List<ViewItemPositions> ViewChestItemPositions;
         public Box2D InventoryRectangle;
 
         public ModelManager(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed)
@@ -44,17 +48,17 @@ namespace ITProject.Model
             ActiveSaveSlot = playerSaveSlot;
             if(worldLoadType == WorldLoadType.LoadWorld)
             {
-                World = new World(2500, 1000, worldLoadType, worldSeed);
+                World = new World(2500, 1000, worldLoadType, worldSeed, this);
             }
             else
             {
-                World = new World(2500, 1000, worldLoadType, worldSeed);
+                World = new World(2500, 1000, worldLoadType, worldSeed, this);
             }
-            
+
 
             //int playerPosY = World.SearchGround(2000);
             //Player = new Player(2000, playerPosY + 2, new System.Numerics.Vector2(1.5f, 2.8f));
-            Player = new Player(playerLoadingType, playerSaveSlot, new System.Numerics.Vector2(2000, World.SearchGround(2000)));
+            Player = new Player(playerLoadingType, playerSaveSlot, new System.Numerics.Vector2(2000, World.SearchGround(2000)), this);
 
             CollisionHandler = new CollisionHandler(this);
             PlayerIntersection = false;
@@ -65,6 +69,8 @@ namespace ITProject.Model
             ShowGrid = false;
             SelectedInventorySlot = 0;
             InventoryOpen = false;
+            OpenChest = null;
+            ActiveHoldingItem = null;
         }
     }
 }

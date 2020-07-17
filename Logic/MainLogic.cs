@@ -124,21 +124,29 @@ namespace ITProject.Logic
         public void FixedUpdate(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double fixedDeltaTime)
         {
             inputManager.Update(keyboardState, cursorState);
-            PerformViewChanges(windowPositions, keyboardState);
 
-            int mouse = inputManager.GetMouseWheelDifference();
-            if(mouse != 0)
+            switch (State)
             {
-                _mainModel.GetModelManager.SelectedInventorySlot -= mouse;
+                case GameState.InGame:
+                    PerformViewChanges(windowPositions, keyboardState);
 
-                if (_mainModel.GetModelManager.SelectedInventorySlot < 0) _mainModel.GetModelManager.SelectedInventorySlot = 9;
-                if (_mainModel.GetModelManager.SelectedInventorySlot > 9) _mainModel.GetModelManager.SelectedInventorySlot = 0;
+                    int mouse = inputManager.GetMouseWheelDifference();
+                    if (mouse != 0)
+                    {
+                        _mainModel.GetModelManager.SelectedInventorySlot -= mouse;
+
+                        if (_mainModel.GetModelManager.SelectedInventorySlot < 0) _mainModel.GetModelManager.SelectedInventorySlot = 9;
+                        if (_mainModel.GetModelManager.SelectedInventorySlot > 9) _mainModel.GetModelManager.SelectedInventorySlot = 0;
+                    }
+
+                    PerformPlayerMovement(keyboardState, cursorState, windowPositions, fixedDeltaTime);
+                    PerformPlayerActions(keyboardState, cursorState, windowPositions, fixedDeltaTime);
+                    _mainModel.Update(fixedDeltaTime);
+                    break;
+                case GameState.Menu:
+
+                    break;
             }
-
-
-            PerformPlayerMovement(keyboardState, cursorState, windowPositions, fixedDeltaTime);
-            _mainModel.Update(fixedDeltaTime);
-            PerformPlayerActions(keyboardState, cursorState, windowPositions, fixedDeltaTime);
         }
 
         public void CloseGame()
@@ -153,21 +161,6 @@ namespace ITProject.Logic
                 if (keyboardState.IsKeyDown(Key.ControlLeft))
                 {
                     _mainModel.GetModelManager.Zoom -= inputManager.GetMouseWheelDifference() * 0.5f;
-                }
-
-                if (inputManager.GetKeyPressed(Key.KeypadPlus))
-                {
-                    _mainModel.GetModelManager.RenderDistance = new Vector2(_mainModel.GetModelManager.RenderDistance.X + 1, _mainModel.GetModelManager.RenderDistance.Y + 1);
-                }
-                if (inputManager.GetKeyPressed(Key.KeypadMinus))
-                {
-                    _mainModel.GetModelManager.RenderDistance = new Vector2(_mainModel.GetModelManager.RenderDistance.X - 1, _mainModel.GetModelManager.RenderDistance.Y - 1);
-                }
-
-                if (inputManager.GetKeyPressed(Key.F))
-                {
-                    if (windowPositions.WindowState == OpenTK.WindowState.Normal) _mainModel.GetModelManager.WindowState = OpenTK.WindowState.Fullscreen;
-                    else _mainModel.GetModelManager.WindowState = OpenTK.WindowState.Normal;
                 }
 
                 if (inputManager.GetKeyPressed(Key.G))
@@ -226,23 +219,32 @@ namespace ITProject.Logic
             if (windowPositions.Focused && inputManager.GetKeyPressed(Key.Q) &&
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
-                _mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, 8);
+                _mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, 8, _mainModel.GetModelManager);
             }
 
             if(windowPositions.Focused && inputManager.GetKeyPressed(Key.E))
             {
                 _mainModel.GetModelManager.InventoryOpen = !_mainModel.GetModelManager.InventoryOpen;
+                _mainModel.GetModelManager.OpenChest = null;
             }
 
             if (_mainModel.GetModelManager.InventoryOpen && inputManager.GetKeyPressed(Key.Escape))
             {
                 _mainModel.GetModelManager.InventoryOpen = !_mainModel.GetModelManager.InventoryOpen;
+                _mainModel.GetModelManager.OpenChest = null;
             }
 
             if (windowPositions.Focused && inputManager.GetKeyPressed(Key.I) &&
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
                 _mainModel.GetModelManager.World.AddDroppedItem(new WorldItem(_mainModel.GetModelManager.WorldMousePosition, new Vector2(10f, 3f), new Vector2(0.8f, 0.8f), new Item(1, 1)));
+            }
+
+            //Debug
+            if (windowPositions.Focused && inputManager.GetKeyPressed(Key.C) &&
+                MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
+            {
+                _mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, 12, _mainModel.GetModelManager);
             }
         }
 
@@ -276,18 +278,24 @@ namespace ITProject.Logic
                 if (inputManager.GetMouseButtonPressed(MouseButton.Left))
                 {
                     int itemX, itemY;
+
+                    //Player Inventory
                     if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewItemPositions, out itemX, out itemY))
                     {
                         _mainModel.GetModelManager.Player.ItemInventory.LeftClick(itemX, itemY);
                     }
+                    else if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewChestItemPositions, out itemX, out itemY))
+                    {
+                        _mainModel.GetModelManager.OpenChest.Content.LeftClick(itemX, itemY);
+                    }
                     else if(!CheckIfWithin(ConvertVector(mousePositionMiddle), _mainModel.GetModelManager.InventoryRectangle))
                     {
-                        Item activeItem = _mainModel.GetModelManager.Player.ItemInventory.ActiveHoldingItem;
+                        Item activeItem = _mainModel.GetModelManager.ActiveHoldingItem;
 
                         if(activeItem != null)
                         {
                             _mainModel.GetModelManager.World.AddDroppedItem(new WorldItem(_mainModel.GetModelManager.Player.Position, new Vector2(10f, 3f), new Vector2(0.8f, 0.8f), activeItem));
-                            _mainModel.GetModelManager.Player.ItemInventory.ActiveHoldingItem = null;
+                            _mainModel.GetModelManager.ActiveHoldingItem = null;
                         }
                     }
                 }
@@ -297,6 +305,7 @@ namespace ITProject.Logic
             {
                 Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
                 ushort removedItem = _mainModel.GetModelManager.World.RemoveBlock(_mainModel.GetModelManager.WorldMousePosition);
+                Console.WriteLine(_mainModel.GetModelManager.WorldMousePosition);
 
                 if (removedItem != 0)
                 {
@@ -307,10 +316,10 @@ namespace ITProject.Logic
 
         private void PlayerRightClick(Vector2 mousePositionMiddle)
         {
+            //Rechtsklick, wenn Inventar offen ist
             if (_mainModel.GetModelManager.InventoryOpen)
             {
                 //Prüfen, welche Itemposition angeklickt wurde
-                
                 if (inputManager.GetMouseButtonPressed(MouseButton.Right))
                 {
                     int itemX, itemY;
@@ -318,33 +327,44 @@ namespace ITProject.Logic
                     {
                         _mainModel.GetModelManager.Player.ItemInventory.RightClick(itemX, itemY);
                     }
-                }
-                
-            }
-
-            Player player = _mainModel.GetModelManager.Player;
-            Hitbox playerHitbox = new Hitbox(player.Position, player.Size, Hitbox.HitboxType.Player);
-            Vector2 roundedMousePos = new Vector2((int)_mainModel.GetModelManager.WorldMousePosition.X, (int)_mainModel.GetModelManager.WorldMousePosition.Y);
-            Hitbox blockHitbox = new Hitbox(roundedMousePos, new Vector2(1f, 1f), Hitbox.HitboxType.Block);
-
-            if (!_mainModel.GetModelManager.CollisionHandler.Intersects(playerHitbox, blockHitbox))
-            {
-                if (!_mainModel.GetModelManager.InventoryOpen && State == GameState.InGame)
-                {
-                    Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
-                    ushort selectedItem = playerInventory.GetItemID(_mainModel.GetModelManager.SelectedInventorySlot, 0);
-
-                    if (MainModel.Item[selectedItem].Placable)
+                    else if(CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewChestItemPositions, out itemX, out itemY))
                     {
-                        if (_mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, selectedItem))
+                        _mainModel.GetModelManager.OpenChest.Content.RightClick(itemX, itemY);
+                    }
+                }
+            }
+            else
+            {
+                Vector2 mouseOverBlockPos = new Vector2((int)_mainModel.GetModelManager.WorldMousePosition.X, (int)_mainModel.GetModelManager.WorldMousePosition.Y);
+
+                //Zuerst prüfen, ob Chest geöffnet werden möchte
+                if (_mainModel.GetModelManager.World.HasInventory(mouseOverBlockPos))
+                {
+                    _mainModel.GetModelManager.OpenChest = _mainModel.GetModelManager.World.GetChest(mouseOverBlockPos);
+                    _mainModel.GetModelManager.InventoryOpen = true;
+                }
+                //Wenn keine Chest an dem Ort, dann versuchen, Block zu platzieren
+                else
+                {
+                    Player player = _mainModel.GetModelManager.Player;
+                    Hitbox playerHitbox = new Hitbox(player.Position, player.Size, Hitbox.HitboxType.Player);
+                    Hitbox blockHitbox = new Hitbox(mouseOverBlockPos, new Vector2(1f, 1f), Hitbox.HitboxType.Block);
+
+                    if (!_mainModel.GetModelManager.CollisionHandler.Intersects(playerHitbox, blockHitbox))
+                    {
+                        Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
+                        ushort selectedItem = playerInventory.GetItemID(_mainModel.GetModelManager.SelectedInventorySlot, 0);
+
+                        if (MainModel.Item[selectedItem].Placable)
                         {
-                            playerInventory.RemoveItemAmount(new Item(selectedItem, 1), _mainModel.GetModelManager.SelectedInventorySlot, 0);
+                            if (_mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, selectedItem, _mainModel.GetModelManager))
+                            {
+                                playerInventory.RemoveItemAmount(new Item(selectedItem, 1), _mainModel.GetModelManager.SelectedInventorySlot, 0);
+                            }
                         }
                     }
                 }
             }
-
-                
         }
 
         private bool CheckInventoryClickedPosition(Vector2 mousePosition, List<ViewItemPositions> viewItemPositions, out int x, out int y)
@@ -352,7 +372,9 @@ namespace ITProject.Logic
             x = 0;
             y = 0;
 
-            foreach(ViewItemPositions pos in viewItemPositions)
+            if (viewItemPositions == null) return false;
+
+            foreach (ViewItemPositions pos in viewItemPositions)
             {
                 if (CheckIfWithin(new OpenTK.Vector2(mousePosition.X, mousePosition.Y), pos.Position, pos.Size, true))
                 {

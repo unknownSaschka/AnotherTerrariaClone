@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ITProject.Model;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -12,12 +13,14 @@ namespace ITProject.Logic
 {
     public static class WorldLoader
     {
-        public static void LoadWorld(out int width, out int height, out ushort[,] world, out ushort[,] worldBack)
+        public static void LoadWorld(out int width, out int height, out ushort[,] world, out ushort[,] worldBack, out Dictionary<System.Numerics.Vector2, Chest> worldChests, ModelManager manager)
         {
             world = null;
             worldBack = null;
             width = 0;
             height = 0;
+
+            worldChests = new Dictionary<System.Numerics.Vector2, Chest>();
 
             try
             {
@@ -25,10 +28,16 @@ namespace ITProject.Logic
                 Stream stream = new FileStream("world.dat", FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
                 WorldSave worldSave = (WorldSave)formatter.Deserialize(stream);
                 stream.Close();
+
                 world = worldSave.World;
                 worldBack = worldSave.WorldBack;
                 width = worldSave.Width;
                 height = worldSave.Height;
+
+                foreach(ChestSave cs in worldSave.Chests)
+                {
+                    worldChests.Add(new System.Numerics.Vector2(cs.WorldPosX, cs.WorldPosY), new Chest(cs.Content, manager));
+                }
             }
             catch(Exception fnfE)
             {
@@ -36,9 +45,17 @@ namespace ITProject.Logic
             }
         }
 
-        public static bool SaveWorld(int width, int height, ushort[,] world, ushort[,] worldBack)
+        public static bool SaveWorld(int width, int height, ushort[,] world, ushort[,] worldBack, Dictionary<System.Numerics.Vector2, Chest> worldChests)
         {
-            WorldSave worldSave = new WorldSave(world, worldBack, width, height);
+            //Converting Chest Dictionary to Array
+            ChestSave[] savedChests = new ChestSave[worldChests.Count];
+            int count = 0;
+            foreach(KeyValuePair<System.Numerics.Vector2, Chest> chest in worldChests)
+            {
+                savedChests[count] = new ChestSave(chest.Value.Content.GetSaveInv(), (int)chest.Key.X, (int)chest.Key.Y);
+            }
+
+            WorldSave worldSave = new WorldSave(world, worldBack, savedChests, width, height);
 
             try
             {
@@ -64,13 +81,30 @@ namespace ITProject.Logic
         public int Height;
         public ushort[,] World;
         public ushort[,] WorldBack;
+        public ChestSave[] Chests;
 
-        public WorldSave(ushort[,] world, ushort[,] worldBack, int width, int height)
+        public WorldSave(ushort[,] world, ushort[,] worldBack, ChestSave[] chests, int width, int height)
         {
             Width = width;
             Height = height;
             World = world;
             WorldBack = worldBack;
+            Chests = chests;
+        }
+    }
+
+    [Serializable]
+    public class ChestSave
+    {
+        public Item[,] Content;
+        public  int WorldPosX;
+        public int WorldPosY;
+
+        public ChestSave(Item[,] content, int x, int y)
+        {
+            Content = content;
+            WorldPosX = x;
+            WorldPosY = y;
         }
     }
 }

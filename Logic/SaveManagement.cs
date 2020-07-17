@@ -18,26 +18,27 @@ namespace ITProject.Logic
             float lightBlocking = 0.1f;
 
             Dictionary<ushort, ItemJSON> itemInfo = new Dictionary<ushort, ItemJSON>();
-            itemInfo.Add(0, new ItemJSON("Air", 0.1f, true, true, true, false, false));
-            itemInfo.Add(1, new ItemJSON("Stone", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(2, new ItemJSON("Dirt", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(3, new ItemJSON("Grass", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(4, new ItemJSON("Planks", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(5, new ItemJSON("WoodStamp", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(6, new ItemJSON("Wood", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(7, new ItemJSON("Leaves", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(8, new ItemJSON("Water", 0.3f, true, true, true, true, false));
-            itemInfo.Add(9, new ItemJSON("Flowing Water", lightBlocking, false, false, true, true, false));
-            itemInfo.Add(10, new ItemJSON("Lava", lightBlocking, false, true, true, true, false));
-            itemInfo.Add(11, new ItemJSON("Lamp", 0.0f, true, true, false, false, true));
-            itemInfo.Add(20, new ItemJSON("Coal Ore", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(21, new ItemJSON("Iron Ore", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(22, new ItemJSON("Diamond Ore", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(23, new ItemJSON("Cobalt Ore", lightBlocking, true, true, false, false, false));
-            itemInfo.Add(24, new ItemJSON("Coal", lightBlocking, true, false, false, false, false));
-            itemInfo.Add(25, new ItemJSON("Iron", lightBlocking, true, false, false, false, false));
-            itemInfo.Add(26, new ItemJSON("Diamond", lightBlocking, true, false, false, false, false));
-            itemInfo.Add(27, new ItemJSON("Cobalt", lightBlocking, true, false, false, false, false));
+            itemInfo.Add(0, new ItemJSON("Air", 0.1f, true, true, true, false, false, false));
+            itemInfo.Add(1, new ItemJSON("Stone", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(2, new ItemJSON("Dirt", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(3, new ItemJSON("Grass", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(4, new ItemJSON("Planks", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(5, new ItemJSON("WoodStamp", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(6, new ItemJSON("Wood", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(7, new ItemJSON("Leaves", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(8, new ItemJSON("Water", 0.3f, true, true, true, true, false, false));
+            itemInfo.Add(9, new ItemJSON("Flowing Water", lightBlocking, false, false, true, true, false, false));
+            itemInfo.Add(10, new ItemJSON("Lava", lightBlocking, false, true, true, true, false, false));
+            itemInfo.Add(11, new ItemJSON("Lamp", 0.0f, true, true, false, false, true, false));
+            itemInfo.Add(12, new ItemJSON("Chest", 0.05f, true, true, true, false, false, true));
+            itemInfo.Add(20, new ItemJSON("Coal Ore", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(21, new ItemJSON("Iron Ore", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(22, new ItemJSON("Diamond Ore", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(23, new ItemJSON("Cobalt Ore", lightBlocking, true, true, false, false, false, false));
+            itemInfo.Add(24, new ItemJSON("Coal", lightBlocking, true, false, false, false, false, false));
+            itemInfo.Add(25, new ItemJSON("Iron", lightBlocking, true, false, false, false, false, false));
+            itemInfo.Add(26, new ItemJSON("Diamond", lightBlocking, true, false, false, false, false, false));
+            itemInfo.Add(27, new ItemJSON("Cobalt", lightBlocking, true, false, false, false, false, false));
 
             using (StreamWriter file = File.CreateText(@"items.json"))
             {
@@ -55,7 +56,7 @@ namespace ITProject.Logic
                 Dictionary<ushort, ItemInfo> itemInfo = new Dictionary<ushort, ItemInfo>();
                 foreach (KeyValuePair<ushort, ItemJSON> json in itemJson)
                 {
-                    ItemInfo item = new ItemInfo(json.Key, json.Value.LightBlocking, json.Value.Name, json.Value.Stackable, json.Value.Placable, json.Value.Walkable, json.Value.Fluid, json.Value.LightSource);
+                    ItemInfo item = new ItemInfo(json.Key, json.Value.LightBlocking, json.Value.Name, json.Value.Stackable, json.Value.Placable, json.Value.Walkable, json.Value.Fluid, json.Value.LightSource, json.Value.HasInventory);
                     itemInfo.Add(json.Key, item);
                 }
                 return itemInfo;

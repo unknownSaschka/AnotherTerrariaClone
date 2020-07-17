@@ -29,8 +29,9 @@ namespace ITProject.Model
         public bool Walkable;
         public bool Fluid;
         public bool LightSource;
+        public bool HasInventory;
 
-        public ItemInfo(ushort id, float lightBlocking, string name, bool stackable, bool placable, bool walkable, bool fluid, bool lightSource)
+        public ItemInfo(ushort id, float lightBlocking, string name, bool stackable, bool placable, bool walkable, bool fluid, bool lightSource, bool hasInventory)
         {
             ID = id;
             LightBlocking = lightBlocking;
@@ -40,6 +41,7 @@ namespace ITProject.Model
             Walkable = walkable;
             Fluid = fluid;
             LightSource = lightSource;
+            HasInventory = hasInventory;
         }
     }
 
@@ -52,8 +54,9 @@ namespace ITProject.Model
         public bool Walkable;           //Transparent = true, Solide = false
         public bool Fluid;
         public bool LightSource;
+        public bool HasInventory;
 
-        public ItemJSON(string name, float lightBlocking, bool stackable, bool placable, bool walkable, bool fluid, bool lightSource)
+        public ItemJSON(string name, float lightBlocking, bool stackable, bool placable, bool walkable, bool fluid, bool lightSource, bool hasInventory)
         {
             Name = name;
             LightBlocking = lightBlocking;
@@ -62,6 +65,7 @@ namespace ITProject.Model
             Walkable = walkable;
             Fluid = fluid;
             LightSource = lightSource;
+            HasInventory = hasInventory;
         }
     }
 }

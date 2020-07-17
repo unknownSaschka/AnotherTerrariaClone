@@ -52,26 +52,26 @@ namespace ITProject.Model
             */
         }
 
-        public Player(PlayerLoadingType loadingType, int saveSlot, Vector2 position)
+        public Player(PlayerLoadingType loadingType, int saveSlot, Vector2 position, ModelManager manager)
         {
-
             switch (loadingType)
             {
                 case PlayerLoadingType.NewPlayer:
-                    InitPlayer(position.X, position.Y + Size.Y / 2);
-                    ItemInventory = new Inventory();
+                    Console.WriteLine($"SpielerPosition: {position}");
+                    InitPlayer(position.X, position.Y + Size.Y + 2);
+                    ItemInventory = new Inventory(manager);
                     SavePlayer(saveSlot);
-                    LoadPlayer(saveSlot);
+                    LoadPlayer(saveSlot, manager);
                     break;
                 case PlayerLoadingType.SaveLoad:
                     //Gleich wie new aber mit vielleicht anderen Startitems, etc.
                     InitPlayer(position.X, position.Y);
-                    ItemInventory = new Inventory();
+                    ItemInventory = new Inventory(manager);
                     SavePlayer(saveSlot);
-                    LoadPlayer(saveSlot);
+                    LoadPlayer(saveSlot, manager);
                     break;
                 case PlayerLoadingType.LoadPlayer:
-                    LoadPlayer(saveSlot);
+                    LoadPlayer(saveSlot, manager);
                     break;
             }
         }
@@ -195,14 +195,14 @@ namespace ITProject.Model
             Position = newPosition;
         }
 
-        private bool LoadPlayer(int saveSlot)
+        private bool LoadPlayer(int saveSlot, ModelManager manager)
         {
             try
             {
                 PlayerSave playerSave = SaveManagement.LoadPlayer(saveSlot);
 
                 InitPlayer(playerSave.PosX, playerSave.PosY);
-                ItemInventory = new Inventory(playerSave.Inventory);
+                ItemInventory = new Inventory(playerSave.Inventory, manager);
                 return true;
             }
             catch(Exception e)

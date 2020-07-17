@@ -20,6 +20,8 @@ namespace ITProject.View
 {
     class MainView : GameWindow
     {
+        private enum ViewInventorytType { Inventory, Chest }
+
         private GameTextures _gameTextures;
         private MainLogic _logic;
         private MainModel _mainModel;
@@ -36,6 +38,8 @@ namespace ITProject.View
         private uint _playerVAO, _playerVBO;
         private uint _invBarVAO, _invBarVBO;
         private uint _inventoryVAO, _inventoryVBO;
+        private uint _chestVAO, _chestVBO;
+        private uint _chestItemsVAO, _chestItemsVBO;
         private uint _itemInvBarVAO, _itemInvBarVBO;
         private uint _invBarSelectorVAO, _invBarSelectorVBO;
         private uint _waterBlocksVAO, _waterBlocksVBO;
@@ -551,17 +555,41 @@ namespace ITProject.View
             DrawElements(_inventoryVAO, _inventoryVBO, 4, _gameTextures.Inventory);
 
             //Zeichne einzelne Items
+            Vector2 inventoryStartPos = new Vector2(-225f, 250f);
+            Vector2 chestStartPos = new Vector2(-225f, -100f);
+
             int itemCount;
             List<ItemPositionAmount> itemPositions;
             List<ViewItemPositions> viewItemPositions;
-            float[,] vertices = GetInventoryItemsPos(_mainModel.GetModelManager.Player.ItemInventory, out itemCount, out itemPositions, out viewItemPositions);
+            float[,] vertices = GetInventoryItemsPos(_mainModel.GetModelManager.Player.ItemInventory, inventoryStartPos, out itemCount, out itemPositions, out viewItemPositions);
             _mainModel.GetModelManager.ViewItemPositions = viewItemPositions;   //Setze aktuelle Positionen, wo die Inventar Items gezeichnet werden, für Inventar Funktionen
             
+
+            //Inventar zeichnen
             DrawElements(_invItemsPosVAO, _invItemsPosVBO, vertices.Length, vertices, itemCount * 4, _gameTextures.Items);
             DrawNumbers(itemPositions);
 
+            
+            //Chest zeichnen
             SetIdentityMatrix(_shader);
-            Item holdItem = _mainModel.GetModelManager.Player.ItemInventory.ActiveHoldingItem;
+            if (_mainModel.GetModelManager.OpenChest != null)
+            {
+                //Zeichne Hintergrund
+                DrawElements(_chestVAO, _chestVBO, 4, _gameTextures.Inventory);
+
+                int chestItemCount;
+                Chest chest = _mainModel.GetModelManager.OpenChest;
+                List<ItemPositionAmount> chestItemPositions;
+                List<ViewItemPositions> viewChestItemPositions;
+                float[,] chestItemsVertices = GetInventoryItemsPos(chest.Content, chestStartPos, out chestItemCount, out chestItemPositions, out viewChestItemPositions);
+                _mainModel.GetModelManager.ViewChestItemPositions = viewChestItemPositions;
+
+                DrawElements(_chestItemsVAO, _chestItemsVBO, chestItemsVertices.Length, chestItemsVertices, chestItemCount * 4, _gameTextures.Items);
+                DrawNumbers(chestItemPositions);
+            }
+
+            SetIdentityMatrix(_shader);
+            Item holdItem = _mainModel.GetModelManager.ActiveHoldingItem;
             if (holdItem != null)
             {
                 Vector2 mousePosition = new Vector2(PointToClient(Control.MousePosition).X, PointToClient(Control.MousePosition).Y);
@@ -738,8 +766,6 @@ namespace ITProject.View
             GL.BindVertexArray(0);
         }
 
-
-
         private void AlterVertexBufferInvBar()
         {
             float[,] indices = GetUpdatedInvBarPos();
@@ -751,12 +777,21 @@ namespace ITProject.View
             GL.BindVertexArray(0);
         }
 
-        private void AlterVertexBufferInventory()
+        private void AlterVertexBufferInventory(ViewInventorytType invType)
         {
-            float[,] indices = GetUpdatedInventoryPos();
-
-            GL.BindVertexArray(_inventoryVAO);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _inventoryVBO);
+            float[,] indices = GetUpdatedInventoryPos(invType);
+            switch (invType)
+            {
+                case ViewInventorytType.Inventory:
+                    GL.BindVertexArray(_inventoryVAO);
+                    GL.BindBuffer(BufferTarget.ArrayBuffer, _inventoryVBO);
+                    break;
+                case ViewInventorytType.Chest:
+                    GL.BindVertexArray(_chestVAO);
+                    GL.BindBuffer(BufferTarget.ArrayBuffer, _chestVBO);
+                    break;
+            }
+            
             GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, sizeof(float) * 4 * 4, indices);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
@@ -827,10 +862,20 @@ namespace ITProject.View
             return vertices;
         }
 
-        private float[,] GetUpdatedInventoryPos()
+        private float[,] GetUpdatedInventoryPos(ViewInventorytType invType)
         {
-            Vector2 position = new Vector2(0f, 0f);
-            Vector2 size = new Vector2(600f, 600f);
+            Vector2 position = Vector2.Zero;
+            switch (invType)
+            {
+                case ViewInventorytType.Inventory:
+                    position = new Vector2(0f, 170f);
+                    break;
+                case ViewInventorytType.Chest:
+                    position = new Vector2(0f, -170f);
+                    break;
+            }
+            
+            Vector2 size = new Vector2(600f, 250f);
             _mainModel.GetModelManager.InventoryRectangle = new Logic.Box2D(position, size, true);
 
             float[,] indices = GetVertices4x4(position, size, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f), true);
@@ -903,7 +948,7 @@ namespace ITProject.View
             GL.GenBuffers(1, out _invBarSelectorVBO);
 
             //Inventory
-            float[,] indicesInventory = GetUpdatedInventoryPos();
+            float[,] indicesInventory = GetUpdatedInventoryPos(ViewInventorytType.Inventory);
 
             GL.GenVertexArrays(1, out _inventoryVAO);
             GL.GenBuffers(1, out _inventoryVBO);
@@ -917,9 +962,28 @@ namespace ITProject.View
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
 
+            //ChestInventory
+            float[,] indicesChestInventory = GetUpdatedInventoryPos(ViewInventorytType.Chest);
+
+            GL.GenVertexArrays(1, out _chestVAO);
+            GL.GenBuffers(1, out _chestVBO);
+
+            GL.BindVertexArray(_chestVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _chestVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, indicesChestInventory, BufferUsageHint.StaticDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+
             //Items in Inventory
             GL.GenVertexArrays(1, out _invItemsPosVAO);
             GL.GenBuffers(1, out _invItemsPosVBO);
+
+            //items in ChestInventory
+            GL.GenVertexArrays(1, out _chestItemsVAO);
+            GL.GenBuffers(1, out _chestItemsVBO);
 
             //Inventory Hold Item
             GL.GenVertexArrays(1, out _invHoldItemVAO);
@@ -946,12 +1010,12 @@ namespace ITProject.View
             GL.BindVertexArray(0);
         }
 
-        private float[,] GetInventoryItemsPos(Inventory inventory, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)
+        private float[,] GetInventoryItemsPos(Inventory inventory, Vector2 startPos, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)
         {
             int x = 10, y = 4;
             Vector2 steps = new Vector2(50f, 50f);
             Vector2 size = new Vector2(50f, 50f);
-            Vector2 startPos = new Vector2(-225f, 200f);
+            //Vector2 startPos = new Vector2(-225f, 250f);
             Vector2 position = new Vector2(startPos.X, startPos.Y);
 
             float[,] indices = new float[x * y * 4, 4];
