@@ -305,7 +305,6 @@ namespace ITProject.Logic
             {
                 Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
                 ushort removedItem = _mainModel.GetModelManager.World.RemoveBlock(_mainModel.GetModelManager.WorldMousePosition);
-                Console.WriteLine(_mainModel.GetModelManager.WorldMousePosition);
 
                 if (removedItem != 0)
                 {

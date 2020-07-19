@@ -29,16 +29,28 @@ namespace ITProject.Logic
             itemInfo.Add(8, new ItemJSON("Water", 0.3f, true, true, true, true, false, false));
             itemInfo.Add(9, new ItemJSON("Flowing Water", lightBlocking, false, false, true, true, false, false));
             itemInfo.Add(10, new ItemJSON("Lava", lightBlocking, false, true, true, true, false, false));
-            itemInfo.Add(11, new ItemJSON("Lamp", 0.0f, true, true, false, false, true, false));
+            itemInfo.Add(11, new ItemJSON("Flowing Lava", lightBlocking, false, false, true, true, false, false));
             itemInfo.Add(12, new ItemJSON("Chest", 0.05f, true, true, true, false, false, true));
+            itemInfo.Add(13, new ItemJSON("Lamp", 0.0f, true, true, false, true, true, false));
+            itemInfo.Add(14, new ItemJSON("Lamp Block", 0.0f, true, true, false, false, true, false));
             itemInfo.Add(20, new ItemJSON("Coal Ore", lightBlocking, true, true, false, false, false, false));
             itemInfo.Add(21, new ItemJSON("Iron Ore", lightBlocking, true, true, false, false, false, false));
             itemInfo.Add(22, new ItemJSON("Diamond Ore", lightBlocking, true, true, false, false, false, false));
             itemInfo.Add(23, new ItemJSON("Cobalt Ore", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(24, new ItemJSON("Coal", lightBlocking, true, false, false, false, false, false));
-            itemInfo.Add(25, new ItemJSON("Iron", lightBlocking, true, false, false, false, false, false));
-            itemInfo.Add(26, new ItemJSON("Diamond", lightBlocking, true, false, false, false, false, false));
-            itemInfo.Add(27, new ItemJSON("Cobalt", lightBlocking, true, false, false, false, false, false));
+            itemInfo.Add(40, new ItemJSON("Coal", lightBlocking, true, false, false, false, false, false));
+            itemInfo.Add(41, new ItemJSON("Iron", lightBlocking, true, false, false, false, false, false));
+            itemInfo.Add(42, new ItemJSON("Diamond", lightBlocking, true, false, false, false, false, false));
+            itemInfo.Add(43, new ItemJSON("Cobalt", lightBlocking, true, false, false, false, false, false));
+
+            //Tree
+            itemInfo.Add(70, new ItemJSON("TreeRoot", 0.0f, false, false, true, false, false, false));
+            itemInfo.Add(71, new ItemJSON("TreeStamp", 0.0f, false, false, true, false, false, false));
+            itemInfo.Add(72, new ItemJSON("TreeLowerLeft", 0.0f, false, false, true, false, false, false));
+            itemInfo.Add(73, new ItemJSON("TreeLowerMiddle", 0.0f, false, false, true, false, false, false));
+            itemInfo.Add(74, new ItemJSON("TrereLowerRight", 0.0f, false, false, true, false, false, false));
+            itemInfo.Add(75, new ItemJSON("TreeUpperLeft", 0.0f, false, false, true, false, false, false));
+            itemInfo.Add(76, new ItemJSON("TreeUpperMiddle", 0.0f, false, false, true, false, false, false));
+            itemInfo.Add(77, new ItemJSON("TreeUpperRight", 0.0f, false, false, true, false, false, false));
 
             using (StreamWriter file = File.CreateText(@"items.json"))
             {
@@ -94,7 +106,6 @@ namespace ITProject.Logic
             {
                 Stream readStream = new FileStream("players.bin", FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
 
-                Console.WriteLine(readStream.Length);
 
                 if(readStream.Length != 0)
                 {

@@ -57,7 +57,6 @@ namespace ITProject.Model
             switch (loadingType)
             {
                 case PlayerLoadingType.NewPlayer:
-                    Console.WriteLine($"SpielerPosition: {position}");
                     InitPlayer(position.X, position.Y + Size.Y + 2);
                     ItemInventory = new Inventory(manager);
                     SavePlayer(saveSlot);

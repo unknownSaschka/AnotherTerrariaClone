@@ -58,6 +58,8 @@ namespace ITProject.WorldGeneratorStuff
                 int[] heightLine = new int[width];
                 NoiseWorldV1(world, worldBack, heightLine);
                 OverworldDirt(world, worldBack, heightLine);
+
+                GenerateTrees(world);
             }
 
             if (settings.Underground)
@@ -99,6 +101,8 @@ namespace ITProject.WorldGeneratorStuff
                     }
                 }
             }
+
+            GenerateOres(world);
 
             return;
         }
@@ -405,9 +409,137 @@ namespace ITProject.WorldGeneratorStuff
             }
         }
 
+        private int SearchGroundOnX(ushort[,] world, int posX)
+        {
+            for (int iy = height - 1; iy >= 0; iy--)
+            {
+                if (world[posX, iy] != 0)
+                {
+                    return iy + 1;
+                }
+            }
+
+            return 0;
+        }
+
         private void CreateBiomes()
         {
 
+        }
+
+        private void GenerateTrees(ushort[,] world)
+        {
+            int ix = 0;
+            int minTreeHeight = 1, maxTreeHeight = 8;
+
+            while(ix < width)
+            {
+                ix += ran.Next(3, 20);
+
+                //Prüfen, ob Baum gepflanzt werden kann
+                while (true)
+                {
+                    if (ix >= width) return;
+
+                    int y = SearchGroundOnX(world, ix);
+                    if(CheckTreePlace(world, ix, y))
+                    {
+                        Tree(ix, y, ran.Next(minTreeHeight, maxTreeHeight), world);
+                        break;
+                    }
+
+                    ix++;
+                }
+            }
+        }
+
+        private void Tree(int stampPosX, int stampPosY, int treeHeight, ushort[,] world)
+        {
+            world[stampPosX, stampPosY] = 70;   //Root
+
+            int y = stampPosY + 1;
+            while (y < stampPosY + treeHeight + 1)
+            {
+                world[stampPosX, y] = 71;
+                y++;
+            }
+
+            world[stampPosX - 1, y] = 72;
+            world[stampPosX, y] = 73;
+            world[stampPosX + 1, y] = 74;
+            world[stampPosX - 1, y + 1] = 75;
+            world[stampPosX, y + 1] = 76;
+            world[stampPosX + 1, y + 1] = 77;
+        }
+
+        private bool CheckTreePlace(ushort[,] world, int posX, int posY)
+        {
+            if (!GameExtentions.CheckIfInBound(posX - 1, posY, new System.Numerics.Vector2(width, height))) return false;
+            if (!GameExtentions.CheckIfInBound(posX + 1, posY, new System.Numerics.Vector2(width, height))) return false;
+
+            if (world[posX - 1, posY] == 0 && world[posX, posY] == 0 && world[posX + 1, posY] == 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private void GenerateOres(ushort[,] world)
+        {
+            int coalOres = 3000, ironOres = 2500, diamondOres = 1000, cobaltOres = 500;
+            ushort iron = 21, coal = 20, diamond = 22, cobalt = 23;
+
+            //Coal
+            for(int i = 0; i < coalOres; i++)
+            {
+                int x = ran.Next(0, width);
+                int y = ran.Next(5, maxStoneHeight);
+                Ore(x, y, coal, world, 1.0d);
+            }
+
+            //Iron
+            for (int i = 0; i < ironOres; i++)
+            {
+                int x = ran.Next(0, width);
+                int y = ran.Next(5, maxStoneHeight);
+                Ore(x, y, iron, world, 1.0d);
+            }
+
+            //Diamond
+            for (int i = 0; i < diamondOres; i++)
+            {
+                int x = ran.Next(0, width);
+                int y = ran.Next(5, maxStoneHeight);
+                Ore(x, y, diamond, world, 1.0d);
+            }
+
+            //Cobalt
+            for (int i = 0; i < cobaltOres; i++)
+            {
+                int x = ran.Next(0, width);
+                int y = ran.Next(5, maxStoneHeight);
+                Ore(x, y, cobalt, world, 1.0d);
+            }
+        }
+
+        private void Ore(int posX, int posY, ushort oreType, ushort[,] world, double chance)
+        {
+            if (!GameExtentions.CheckIfInBound(posX, posY, new System.Numerics.Vector2(width, height))) return;
+            if (world[posX, posY] != 1) return;
+            if (ran.NextDouble() < chance) 
+            {
+                world[posX, posY] = oreType; 
+            }
+            else return;
+
+            double chanceDecreasePerBlock = 0.25f;
+            Ore(posX + 1, posY, oreType, world, chance - chanceDecreasePerBlock);
+            Ore(posX - 1, posY, oreType, world, chance - chanceDecreasePerBlock);
+            Ore(posX, posY - 1, oreType, world, chance - chanceDecreasePerBlock);
+            Ore(posX, posY + 1, oreType, world, chance - chanceDecreasePerBlock);
         }
     }
 }

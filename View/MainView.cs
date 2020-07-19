@@ -22,6 +22,20 @@ namespace ITProject.View
     {
         private enum ViewInventorytType { Inventory, Chest }
 
+        private struct TreePositions
+        {
+            public int X;
+            public int Y;
+            public ushort itemID;
+
+            public TreePositions(int x, int y, ushort id)
+            {
+                X = x;
+                Y = y;
+                itemID = id;
+            }
+        }
+
         private GameTextures _gameTextures;
         private MainLogic _logic;
         private MainModel _mainModel;
@@ -47,6 +61,7 @@ namespace ITProject.View
         private uint _invHoldItemVAO, _invHoldItemVBO;
         private uint _background1VAO, _background1VBO;
         private uint _droppedItemsVAO, _droppedItemsVBO;
+        private uint _treesVAO, _treesVBO;
 
         private Shader _shader;
         private Shader _blockShader;
@@ -54,6 +69,9 @@ namespace ITProject.View
 
         private Vector2 _textureGridSize = new Vector2(8f, 8f);
         private float[,] _light;
+
+        private float textureOffset = 0.0042f;
+        private float textureOffsetTrees = 0.0115f;
 
         private struct ItemPositionAmount
         {
@@ -193,13 +211,14 @@ namespace ITProject.View
             Vector2 maxBoundary = new Vector2();
 
             List<Vector2> waterBlockList = new List<Vector2>();
+            List<TreePositions> treePositions = new List<TreePositions>();
             List<Vector2> lightSources = new List<Vector2>();
 
             CalculateViewBorders(player.Position, ref minBoundary, ref maxBoundary);
 
             if (world.WorldChanged)
             {
-                ResetLightMap(minBoundary, maxBoundary);
+                //ResetLightMap(minBoundary, maxBoundary);
                 world.WorldChanged = false;
             }
             
@@ -224,10 +243,16 @@ namespace ITProject.View
 
                     bool background = false;
 
-                    if (blockID == 8)
+                    if (blockID == 8)   //Wasser
                     {
                         waterBlockList.Add(new Vector2(ix, iy));
                         background = true;
+                    }
+
+                    if(blockID >= 70 && blockID <= 77)  //Tree
+                    {
+                        treePositions.Add(new TreePositions(ix, iy, blockID));
+                        continue;
                     }
 
                     if (blockID == 0)
@@ -242,9 +267,10 @@ namespace ITProject.View
                     }
 
                     Vector2 min, max;
-                    GetTextureCoord(blockID, new Vector2(8, 8), out min, out max);
+                    GetTextureCoord(blockID, new Vector2(8, 8), out min, out max, textureOffset);
 
-                    blockDarkness = _light[ix, iy];
+                    //blockDarkness = _light[ix, iy];
+                    blockDarkness = 1.0f;
                     float[,] vert = GetVertices4x5(new Vector2(ix, iy), new Vector2(w, h), min, max, blockDarkness, false);
 
                     if (background)
@@ -326,7 +352,7 @@ namespace ITProject.View
             Vector2 minWater;
             Vector2 maxWater;
 
-            GetTextureCoord(8, new Vector2(8, 8), out minWater, out maxWater);
+            GetTextureCoord(8, new Vector2(8, 8), out minWater, out maxWater, textureOffset);
 
             count = 0;
             foreach(Vector2 pos in waterBlockList)
@@ -353,14 +379,17 @@ namespace ITProject.View
             GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Items);
             GL.BindVertexArray(_waterBlocksVBO);
 
-            GL.DrawArrays(PrimitiveType.QuadsExt, 0, waterBlocks.Length * 4);
+            GL.DrawArrays(PrimitiveType.QuadsExt, 0, waterBlocks.Length);
 
             GL.BindVertexArray(0);
             GL.BindTexture(TextureTarget.Texture2D, 0);
 
             GL.Disable(EnableCap.Blend);
 
+
             _blockShader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
+            DrawTrees(treePositions);
+            
             DrawDroppedItems(world, minBoundary, maxBoundary);
         }
 
@@ -675,7 +704,7 @@ namespace ITProject.View
             foreach(WorldItem worldItem in droppedItems)
             {
                 Vector2 texCoordMin, texCoordMax;
-                GetTextureCoord(worldItem.Item.ID, _textureGridSize, out texCoordMin, out texCoordMax);
+                GetTextureCoord(worldItem.Item.ID, _textureGridSize, out texCoordMin, out texCoordMax, textureOffset);
                 float[,] vert = GetVertices4x5(ConvertVector(worldItem.Position), ConvertVector(worldItem.Size), texCoordMin, texCoordMax, _light[(int)worldItem.Position.X, (int)worldItem.Position.Y], true);
                 InsertVertices(ref vertices, ref vert, ref count, 5);
             }
@@ -832,7 +861,7 @@ namespace ITProject.View
 
                 Vector2 min, max;
 
-                GetTextureCoord(item[i].ID, gridSize, out min, out max);
+                GetTextureCoord(item[i].ID, gridSize, out min, out max, textureOffset);
                 float[,] vert = GetVertices4x4(position, size, min, max, true);
 
                 for (int ic = 0; ic < 4; ic++)
@@ -1008,6 +1037,10 @@ namespace ITProject.View
             GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
+
+            //Trees
+            GL.GenVertexArrays(1, out _treesVAO);
+            GL.GenBuffers(1, out _treesVBO);
         }
 
         private float[,] GetInventoryItemsPos(Inventory inventory, Vector2 startPos, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)
@@ -1033,7 +1066,7 @@ namespace ITProject.View
                     if (inventory.GetItem(ix, iy) != null)
                     {
                         Vector2 min, max;
-                        GetTextureCoord(inventory.GetItem(ix, iy).ID, new Vector2(8, 8), out min, out max);
+                        GetTextureCoord(inventory.GetItem(ix, iy).ID, new Vector2(8, 8), out min, out max, textureOffset);
 
                         float[,] vert = GetVertices4x4(position, size, min, max, true);
 
@@ -1064,9 +1097,63 @@ namespace ITProject.View
         {
             Vector2 size = new Vector2(40f, 40f);
             Vector2 min, max;
-            GetTextureCoord(holdItem.ID, new Vector2(8f, 8f), out min, out max);
+            GetTextureCoord(holdItem.ID, new Vector2(8f, 8f), out min, out max, textureOffset);
             float[,] vertices = GetVertices4x4(mousePosition, size, min, max, true);
             return vertices;
+        }
+
+        private void DrawTrees(List<TreePositions> treePositions)
+        {
+            
+
+            float[,] vertices = new float[treePositions.Count * 4, 5];
+            int count = 0;
+
+
+            foreach (TreePositions treePos in treePositions)
+            {
+                int treeID = 0;
+                switch (treePos.itemID)
+                {
+                    case 70: treeID = 7; break;
+                    case 71: treeID = 6; break;
+                    case 72: treeID = 3; break;
+                    case 73: treeID = 5; break;
+                    case 74: treeID = 4; break;
+                    case 75: treeID = 0; break;
+                    case 76: treeID = 1; break;
+                    case 77: treeID = 2; break;
+                }
+                Vector2 min, max;
+                GetTextureCoord(treeID, new Vector2(3, 3), out min, out max, textureOffsetTrees);
+                float[,] verts = GetVertices4x5(new Vector2(treePos.X, treePos.Y), new Vector2(1.005f, 1.005f), min, max, _light[treePos.X, treePos.Y], false);
+
+                
+                for (int ic = 0; ic < 4; ic++)
+                {
+                    for (int ia = 0; ia < 5; ia++)
+                    {
+                        vertices[count, ia] = verts[ic, ia];
+                    }
+                    count++;
+                }
+            }
+
+            AlterVertexBufferBlocks(_treesVAO, _treesVBO, vertices);
+
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Tree);
+            GL.BindVertexArray(_treesVAO);
+
+            GL.DrawArrays(PrimitiveType.QuadsExt, 0, vertices.Length);
+
+            GL.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            GL.Disable(EnableCap.Blend);
         }
 
         private void InitShaders()
@@ -1097,22 +1184,21 @@ namespace ITProject.View
             maxs.Y = upperLeft.Y;
         }
 
-        private void GetTextureCoord(int position, Vector2 gridSize, out Vector2 minTexCoord, out Vector2 maxTexCoord)
+        private void GetTextureCoord(int position, Vector2 gridSize, out Vector2 minTexCoord, out Vector2 maxTexCoord, float textureOffset)
         {
             minTexCoord = new Vector2();
             maxTexCoord = new Vector2();
 
-            float offset = 0.0042f;
             Vector2 tileSize = new Vector2();
             tileSize.X = 1 / gridSize.X;
             tileSize.Y = 1 / gridSize.Y;
             int x = (int) (position % gridSize.X);
             int y = (int) (position / gridSize.X);
 
-            minTexCoord.X = (x * tileSize.X) + offset;
-            maxTexCoord.X = ((x + 1) * tileSize.X) - offset;
-            minTexCoord.Y = (y * tileSize.Y) + offset;
-            maxTexCoord.Y = ((y + 1) * tileSize.Y) - offset;
+            minTexCoord.X = (x * tileSize.X) + textureOffset;
+            maxTexCoord.X = ((x + 1) * tileSize.X) - textureOffset;
+            minTexCoord.Y = (y * tileSize.Y) + textureOffset;
+            maxTexCoord.Y = ((y + 1) * tileSize.Y) - textureOffset;
         }
 
         private float[,] GetVertices4x5(Vector2 position, Vector2 size, Vector2 texCoordMin, Vector2 texCoordMax, float blockDarkness, bool centered)

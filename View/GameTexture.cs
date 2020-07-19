@@ -21,6 +21,7 @@ namespace ITProject.View
         public uint Items;
         public uint ItemsBack;
         public uint InventoryDebug;
+        public uint Tree;
 
         public uint Background1;
 
@@ -44,6 +45,7 @@ namespace ITProject.View
             Items = LoadTexture("Content/textures/Items.png");
             ItemsBack = LoadTexture("Content/textures/ItemsBack.png");
             InventoryDebug = LoadTexture("Content/textures/InventoryDebug.png");
+            Tree = LoadTexture("Content/textures/Tree.png");
 
             Background1 = LoadTexture("Content/images/background1.png");
 
