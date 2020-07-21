@@ -14,6 +14,7 @@ namespace ITProject.Model
         //public static List<Block> Blocks = new List<Block>();
         public static Dictionary<ushort, ItemInfo> Item;
         public static System.Numerics.Vector2 DropItemSize = new System.Numerics.Vector2(0.8f, 0.8f);
+        public static List<CraftingRecipie> CraftingRecipies;
 
         public static int InventoryHeight = 4;
         public static int InventoryWidth = 10;
@@ -27,11 +28,10 @@ namespace ITProject.Model
 
         private ModelManager _manager;
 
-        public MainModel(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed)
+        public MainModel(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed, List<CraftingRecipie> craftingRecipies, Dictionary<ushort, ItemInfo> itemList)
         {
-            SaveManagement saveManagement = new SaveManagement();
-            saveManagement.SaveItemJson();
-            Item = saveManagement.LoadItemInfo();
+            Item = itemList;
+            CraftingRecipies = craftingRecipies;
             _manager = new ModelManager(worldLoadType, playerLoadingType, playerSaveSlot, worldSeed);
         }
 
@@ -40,6 +40,8 @@ namespace ITProject.Model
             _manager.World.Update(deltaTime, _manager.Player, _manager.CollisionHandler);
             _manager.Player.Update(deltaTime, _manager.CollisionHandler);
             _manager.CollisionHandler.CheckPlayerWithDroppedItems(_manager.Player);
+
+            _manager.Player.UpdateInventory(_manager.Crafting);
         }
 
         public void CloseGame()

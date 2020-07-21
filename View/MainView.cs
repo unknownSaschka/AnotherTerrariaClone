@@ -20,7 +20,7 @@ namespace ITProject.View
 {
     class MainView : GameWindow
     {
-        private enum ViewInventorytType { Inventory, Chest }
+        private enum ViewInventorytType { Inventory, Chest, Crafting }
 
         private struct TreePositions
         {
@@ -63,6 +63,8 @@ namespace ITProject.View
         private uint _droppedItemsVAO, _droppedItemsVBO;
         private uint _treesVAO, _treesVBO;
 
+        private uint _craftingVAO, _craftingVBO;
+
         private Shader _shader;
         private Shader _blockShader;
         private float _passedTime;
@@ -70,8 +72,8 @@ namespace ITProject.View
         private Vector2 _textureGridSize = new Vector2(8f, 8f);
         private float[,] _light;
 
-        private float textureOffset = 0.0042f;
-        private float textureOffsetTrees = 0.0115f;
+        private float _textureOffset = 0.0042f;
+        private float _textureOffsetTrees = 0.0115f;
 
         private struct ItemPositionAmount
         {
@@ -267,7 +269,7 @@ namespace ITProject.View
                     }
 
                     Vector2 min, max;
-                    GetTextureCoord(blockID, new Vector2(8, 8), out min, out max, textureOffset);
+                    GetTextureCoord(blockID, new Vector2(8, 8), out min, out max, _textureOffset);
 
                     //blockDarkness = _light[ix, iy];
                     blockDarkness = 1.0f;
@@ -352,7 +354,7 @@ namespace ITProject.View
             Vector2 minWater;
             Vector2 maxWater;
 
-            GetTextureCoord(8, new Vector2(8, 8), out minWater, out maxWater, textureOffset);
+            GetTextureCoord(8, new Vector2(8, 8), out minWater, out maxWater, _textureOffset);
 
             count = 0;
             foreach(Vector2 pos in waterBlockList)
@@ -590,7 +592,7 @@ namespace ITProject.View
             int itemCount;
             List<ItemPositionAmount> itemPositions;
             List<ViewItemPositions> viewItemPositions;
-            float[,] vertices = GetInventoryItemsPos(_mainModel.GetModelManager.Player.ItemInventory, inventoryStartPos, out itemCount, out itemPositions, out viewItemPositions);
+            float[,] vertices = GetInventoryItemsPos(new Vector2(MainModel.InventoryWidth, MainModel.InventoryHeight), _mainModel.GetModelManager.Player.ItemInventory, inventoryStartPos, out itemCount, out itemPositions, out viewItemPositions);
             _mainModel.GetModelManager.ViewItemPositions = viewItemPositions;   //Setze aktuelle Positionen, wo die Inventar Items gezeichnet werden, für Inventar Funktionen
             
 
@@ -610,11 +612,28 @@ namespace ITProject.View
                 Chest chest = _mainModel.GetModelManager.OpenChest;
                 List<ItemPositionAmount> chestItemPositions;
                 List<ViewItemPositions> viewChestItemPositions;
-                float[,] chestItemsVertices = GetInventoryItemsPos(chest.Content, chestStartPos, out chestItemCount, out chestItemPositions, out viewChestItemPositions);
+                float[,] chestItemsVertices = GetInventoryItemsPos(new Vector2(10, 4), chest.Content, chestStartPos, out chestItemCount, out chestItemPositions, out viewChestItemPositions);
                 _mainModel.GetModelManager.ViewChestItemPositions = viewChestItemPositions;
 
                 DrawElements(_chestItemsVAO, _chestItemsVBO, chestItemsVertices.Length, chestItemsVertices, chestItemCount * 4, _gameTextures.Items);
                 DrawNumbers(chestItemPositions);
+            }
+
+            //CraftingMenu zeichnen
+            if (_mainModel.GetModelManager.CraftingWindowOpen)
+            {
+                //Hintergrund
+                DrawElements(_craftingVAO, _craftingVBO, 4, _gameTextures.Inventory);
+
+                List<CraftingRecipie> craftings = _mainModel.GetModelManager.Player.CraftableRecipies;
+                int craftableCount;
+                List<ItemPositionAmount> craftingItemPositions;
+                List<ViewItemPositions> viewCraftingItemPositions;
+                float[,] craftingItemsVertices = GetCraftingItemsPos(new Vector2(10, 6), craftings, chestStartPos, out craftableCount, out craftingItemPositions, out viewCraftingItemPositions);
+                _mainModel.GetModelManager.ViewCraftingItemPositions = viewCraftingItemPositions;
+
+                DrawElements(_chestItemsVAO, _chestItemsVBO, craftingItemsVertices.Length, craftingItemsVertices, craftableCount * 4, _gameTextures.Items);
+                DrawNumbers(craftingItemPositions);
             }
 
             SetIdentityMatrix(_shader);
@@ -704,7 +723,7 @@ namespace ITProject.View
             foreach(WorldItem worldItem in droppedItems)
             {
                 Vector2 texCoordMin, texCoordMax;
-                GetTextureCoord(worldItem.Item.ID, _textureGridSize, out texCoordMin, out texCoordMax, textureOffset);
+                GetTextureCoord(worldItem.Item.ID, _textureGridSize, out texCoordMin, out texCoordMax, _textureOffset);
                 float[,] vert = GetVertices4x5(ConvertVector(worldItem.Position), ConvertVector(worldItem.Size), texCoordMin, texCoordMax, _light[(int)worldItem.Position.X, (int)worldItem.Position.Y], true);
                 InsertVertices(ref vertices, ref vert, ref count, 5);
             }
@@ -808,7 +827,7 @@ namespace ITProject.View
 
         private void AlterVertexBufferInventory(ViewInventorytType invType)
         {
-            float[,] indices = GetUpdatedInventoryPos(invType);
+            float[,] indices = GetUpdatedInventoryPos(invType, new Vector2(600f, 250f));
             switch (invType)
             {
                 case ViewInventorytType.Inventory:
@@ -861,7 +880,7 @@ namespace ITProject.View
 
                 Vector2 min, max;
 
-                GetTextureCoord(item[i].ID, gridSize, out min, out max, textureOffset);
+                GetTextureCoord(item[i].ID, gridSize, out min, out max, _textureOffset);
                 float[,] vert = GetVertices4x4(position, size, min, max, true);
 
                 for (int ic = 0; ic < 4; ic++)
@@ -891,7 +910,7 @@ namespace ITProject.View
             return vertices;
         }
 
-        private float[,] GetUpdatedInventoryPos(ViewInventorytType invType)
+        private float[,] GetUpdatedInventoryPos(ViewInventorytType invType, Vector2 size)
         {
             Vector2 position = Vector2.Zero;
             switch (invType)
@@ -902,9 +921,12 @@ namespace ITProject.View
                 case ViewInventorytType.Chest:
                     position = new Vector2(0f, -170f);
                     break;
+                case ViewInventorytType.Crafting:
+                    position = new Vector2(0f, -170f);
+                    break;
             }
             
-            Vector2 size = new Vector2(600f, 250f);
+            //Vector2 size = new Vector2(600f, 250f);
             _mainModel.GetModelManager.InventoryRectangle = new Logic.Box2D(position, size, true);
 
             float[,] indices = GetVertices4x4(position, size, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f), true);
@@ -976,8 +998,8 @@ namespace ITProject.View
             GL.GenVertexArrays(1, out _invBarSelectorVAO);
             GL.GenBuffers(1, out _invBarSelectorVBO);
 
-            //Inventory
-            float[,] indicesInventory = GetUpdatedInventoryPos(ViewInventorytType.Inventory);
+            //Inventory Background
+            float[,] indicesInventory = GetUpdatedInventoryPos(ViewInventorytType.Inventory, new Vector2(600f, 250f));
 
             GL.GenVertexArrays(1, out _inventoryVAO);
             GL.GenBuffers(1, out _inventoryVBO);
@@ -992,7 +1014,7 @@ namespace ITProject.View
             GL.BindVertexArray(0);
 
             //ChestInventory
-            float[,] indicesChestInventory = GetUpdatedInventoryPos(ViewInventorytType.Chest);
+            float[,] indicesChestInventory = GetUpdatedInventoryPos(ViewInventorytType.Chest, new Vector2(600f, 250f));
 
             GL.GenVertexArrays(1, out _chestVAO);
             GL.GenBuffers(1, out _chestVBO);
@@ -1041,14 +1063,28 @@ namespace ITProject.View
             //Trees
             GL.GenVertexArrays(1, out _treesVAO);
             GL.GenBuffers(1, out _treesVBO);
+
+            //Crafting Window
+            float[,] verticesCraftingBackground = GetUpdatedInventoryPos(ViewInventorytType.Crafting, new Vector2(600f, 350f));
+
+            GL.GenVertexArrays(1, out _craftingVAO);
+            GL.GenBuffers(1, out _craftingVBO);
+
+            GL.BindVertexArray(_craftingVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _craftingVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, verticesCraftingBackground, BufferUsageHint.StaticDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
         }
 
-        private float[,] GetInventoryItemsPos(Inventory inventory, Vector2 startPos, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)
+        private float[,] GetInventoryItemsPos(Vector2 invSize, Inventory inventory, Vector2 startPos, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)
         {
-            int x = 10, y = 4;
+            int x = (int)invSize.X, y = (int)invSize.Y;
             Vector2 steps = new Vector2(50f, 50f);
             Vector2 size = new Vector2(50f, 50f);
-            //Vector2 startPos = new Vector2(-225f, 250f);
             Vector2 position = new Vector2(startPos.X, startPos.Y);
 
             float[,] indices = new float[x * y * 4, 4];
@@ -1066,7 +1102,7 @@ namespace ITProject.View
                     if (inventory.GetItem(ix, iy) != null)
                     {
                         Vector2 min, max;
-                        GetTextureCoord(inventory.GetItem(ix, iy).ID, new Vector2(8, 8), out min, out max, textureOffset);
+                        GetTextureCoord(inventory.GetItem(ix, iy).ID, new Vector2(8, 8), out min, out max, _textureOffset);
 
                         float[,] vert = GetVertices4x4(position, size, min, max, true);
 
@@ -1093,11 +1129,57 @@ namespace ITProject.View
             return indices;
         }
 
+        private float[,] GetCraftingItemsPos(Vector2 gridSize, List<CraftingRecipie> craftingRecipies, Vector2 startPos, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)
+        {
+            int x = (int)gridSize.X, y = (int)gridSize.Y;
+            Vector2 steps = new Vector2(50f, 50f);
+            Vector2 size = new Vector2(50f, 50f);
+            Vector2 position = new Vector2(startPos.X, startPos.Y);
+
+            float[,] indices = new float[x * y * 4, 4];
+            int count = 0;
+            itemCount = 0;
+            itemPositions = new List<ItemPositionAmount>();
+            viewItemPositions = new List<ViewItemPositions>();
+
+            foreach(CraftingRecipie craftingRecipie in craftingRecipies)
+            {
+                viewItemPositions.Add(new ViewItemPositions(new Vector2(position.X, position.Y), size, itemCount, 0));
+                itemPositions.Add(new ItemPositionAmount(position, craftingRecipie.ResultItem.Amount));
+
+                Vector2 min, max;
+                GetTextureCoord(craftingRecipie.ResultItem.ID, new Vector2(8f, 8f), out min, out max, _textureOffset);
+                float[,] verts = GetVertices4x4(position, size, min, max, true);
+
+                for (int ic = 0; ic < 4; ic++)
+                {
+                    for (int ia = 0; ia < 4; ia++)
+                    {
+                        indices[count, ia] = verts[ic, ia];
+                    }
+                    count++;
+                }
+
+                itemCount++;
+                if(count % gridSize.X == 0)
+                {
+                    position.X = startPos.X;
+                    position.Y += steps.Y;
+                }
+                else
+                {
+                    position.X += steps.X;
+                }
+            }
+
+            return indices;
+        }
+
         private float[,] GetVerticesHoldItem(Item holdItem, Vector2 mousePosition)
         {
             Vector2 size = new Vector2(40f, 40f);
             Vector2 min, max;
-            GetTextureCoord(holdItem.ID, new Vector2(8f, 8f), out min, out max, textureOffset);
+            GetTextureCoord(holdItem.ID, new Vector2(8f, 8f), out min, out max, _textureOffset);
             float[,] vertices = GetVertices4x4(mousePosition, size, min, max, true);
             return vertices;
         }
@@ -1125,7 +1207,7 @@ namespace ITProject.View
                     case 77: treeID = 2; break;
                 }
                 Vector2 min, max;
-                GetTextureCoord(treeID, new Vector2(3, 3), out min, out max, textureOffsetTrees);
+                GetTextureCoord(treeID, new Vector2(3, 3), out min, out max, _textureOffsetTrees);
                 float[,] verts = GetVertices4x5(new Vector2(treePos.X, treePos.Y), new Vector2(1.005f, 1.005f), min, max, _light[treePos.X, treePos.Y], false);
 
                 

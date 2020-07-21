@@ -11,6 +11,7 @@ namespace ITProject.Model
 {
     public class Inventory
     {
+
         private ModelManager _manager;
         private Item[,] _item;
 

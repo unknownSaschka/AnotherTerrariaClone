@@ -66,7 +66,15 @@ namespace ITProject.Logic
             ConsoleStart(out worldLoadType, out playerLoadingType, out saveSlot, out worldSeed);
 
             inputManager = new InputManager();
-            _mainModel = new MainModel(worldLoadType, playerLoadingType, saveSlot, worldSeed);
+
+            //LadeDaten
+            SaveManagement saveManagement = new SaveManagement();
+            saveManagement.SaveItemJson();
+            Dictionary<ushort, ItemInfo> itemList = saveManagement.LoadItemInfo();
+            SaveManagement.SaveCraftingRecipiesJSON();
+            List <CraftingRecipie> craftingRecipies = SaveManagement.LoadCraftingRecipies();
+
+            _mainModel = new MainModel(worldLoadType, playerLoadingType, saveSlot, worldSeed, craftingRecipies, itemList);
             
             MainView view = new MainView(_width, _height, OpenTK.Graphics.GraphicsMode.Default, _windowTitle, this, _mainModel);
             view.VSync = OpenTK.VSyncMode.Off;
@@ -231,6 +239,7 @@ namespace ITProject.Logic
             if (_mainModel.GetModelManager.InventoryOpen && inputManager.GetKeyPressed(Key.Escape))
             {
                 _mainModel.GetModelManager.InventoryOpen = !_mainModel.GetModelManager.InventoryOpen;
+                _mainModel.GetModelManager.CraftingWindowOpen = false;
                 _mainModel.GetModelManager.OpenChest = null;
             }
 
@@ -240,8 +249,24 @@ namespace ITProject.Logic
                 _mainModel.GetModelManager.World.AddDroppedItem(new WorldItem(_mainModel.GetModelManager.WorldMousePosition, new Vector2(10f, 3f), new Vector2(0.8f, 0.8f), new Item(1, 1)));
             }
 
+            if(windowPositions.Focused && inputManager.GetKeyPressed(Key.C))
+            {
+
+                if (_mainModel.GetModelManager.CraftingWindowOpen)
+                {
+                    _mainModel.GetModelManager.CraftingWindowOpen = false;
+                }
+                else
+                {
+                    _mainModel.GetModelManager.OpenChest = null;
+                    _mainModel.GetModelManager.CraftingWindowOpen = true;
+                }
+
+                _mainModel.GetModelManager.InventoryOpen = true;
+            }
+
             //Debug
-            if (windowPositions.Focused && inputManager.GetKeyPressed(Key.C) &&
+            if (windowPositions.Focused && inputManager.GetKeyPressed(Key.K) &&
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
                 _mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, 12, _mainModel.GetModelManager);
@@ -287,6 +312,26 @@ namespace ITProject.Logic
                     else if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewChestItemPositions, out itemX, out itemY))
                     {
                         _mainModel.GetModelManager.OpenChest.Content.LeftClick(itemX, itemY);
+                    }
+                    else if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewCraftingItemPositions, out itemX, out itemY))
+                    {
+                        CraftingRecipie clickedRecipie = _mainModel.GetModelManager.Player.CraftableRecipies[itemX];
+
+                        if(_mainModel.GetModelManager.ActiveHoldingItem != null)
+                        {
+                            if(_mainModel.GetModelManager.ActiveHoldingItem.ID == clickedRecipie.ResultItem.ID)
+                            {
+                                if((_mainModel.GetModelManager.ActiveHoldingItem.Amount + clickedRecipie.ResultItem.Amount) > 99) { return; }
+                                else{ _mainModel.GetModelManager.ActiveHoldingItem.Amount = (short)(clickedRecipie.ResultItem.Amount + _mainModel.GetModelManager.ActiveHoldingItem.Amount); }
+                            }
+                            else { return; }
+                        }
+                        else{ _mainModel.GetModelManager.ActiveHoldingItem = new Item(clickedRecipie.ResultItem.ID, clickedRecipie.ResultItem.Amount); }
+
+                        foreach(Item item in clickedRecipie.NeededItems)
+                        {
+                            _mainModel.GetModelManager.Player.ItemInventory.RemoveItemAmount(item);
+                        }
                     }
                     else if(!CheckIfWithin(ConvertVector(mousePositionMiddle), _mainModel.GetModelManager.InventoryRectangle))
                     {

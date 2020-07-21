@@ -206,5 +206,41 @@ namespace ITProject.Logic
                 return null;
             }
         }
+
+        public static List<CraftingRecipie> LoadCraftingRecipies()
+        {
+            using (StreamReader r = new StreamReader("craftings.json"))
+            {
+                string craftingFile = r.ReadToEnd();
+                List<CraftingRecipie> craftingRecipies = new List<CraftingRecipie>();
+                List<CraftingRecipie> craftingJson = JsonConvert.DeserializeObject<List<CraftingRecipie>>(craftingFile);
+
+                foreach(CraftingRecipie craft in craftingJson)
+                {
+                    craftingRecipies.Add(craft);
+                }
+
+                return craftingRecipies;
+            }
+        }
+
+        public static void SaveCraftingRecipiesJSON()
+        {
+            List<CraftingRecipie> craftingRecipies = new List<CraftingRecipie>();
+
+            craftingRecipies.Add(new CraftingRecipie(new Item(12, 1), new Item[] { new Item(4, 20) }));    //Chest
+            craftingRecipies.Add(new CraftingRecipie(new Item(40, 4), new Item[] { new Item(20, 1) }));     //Kohle
+            craftingRecipies.Add(new CraftingRecipie(new Item(41, 1), new Item[] { new Item(21, 1), new Item(40, 2) }));    //Eisen
+            craftingRecipies.Add(new CraftingRecipie(new Item(43, 1), new Item[] { new Item(23, 2), new Item(40, 4) }));    //Cobalt
+            craftingRecipies.Add(new CraftingRecipie(new Item(3, 1), new Item[] { new Item(2, 2) }));   //Grass
+
+
+            //Abspeichern
+            using (StreamWriter file = File.CreateText(@"craftings.json"))
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Serialize(file, craftingRecipies);
+            }
+        }
     }
 }

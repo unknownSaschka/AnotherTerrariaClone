@@ -14,6 +14,7 @@ namespace ITProject.Model
         public enum PlayerLoadingType { SaveLoad, NewPlayer, LoadPlayer }
 
         public Inventory ItemInventory;
+        public List<CraftingRecipie> CraftableRecipies;
 
         //public Vector2 OldPosition; //Um den Bewegungsablauf für das CDS nachzuvollziehen
         public float WalkSpeed;
@@ -126,6 +127,11 @@ namespace ITProject.Model
             newPlayerPosition = collisions.CheckCollisionY(newPlayerPosition, Size, ref Velocity.Y, this);
 
             UpdatePosition(newPlayerPosition);
+        }
+
+        public void UpdateInventory(Crafting crafting)
+        {
+            CraftableRecipies = crafting.UpdateCraftableRecipies(ItemInventory);
         }
 
         public void Jump(double deltaTime)
