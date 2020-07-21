@@ -13,6 +13,7 @@ namespace ITProject.Model
     {
         //public static List<Block> Blocks = new List<Block>();
         public static Dictionary<ushort, ItemInfo> Item;
+        public static System.Numerics.Vector2 DropItemSize = new System.Numerics.Vector2(0.8f, 0.8f);
 
         public static int InventoryHeight = 4;
         public static int InventoryWidth = 10;

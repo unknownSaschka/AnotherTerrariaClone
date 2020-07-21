@@ -37,6 +37,8 @@ namespace ITProject.Model
         private ushort[,] _world;
         private ushort[,] _worldBack;
 
+        private Random rng = new Random();
+
         public World(int width, int height, WorldLoadType loadType, int seed, ModelManager manager)
         {
             if (loadType == WorldLoadType.NewWorld)
@@ -236,8 +238,15 @@ namespace ITProject.Model
                     _worldChests.Remove(new Vector2((int)blockPosition.X, (int)blockPosition.Y));
                 }
 
+                if (removedItem >= 70 && removedItem <= 77)
+                {
+                    RemoveTreeUpwards((int)blockPosition.X, (int)blockPosition.Y);
+                    removedItem = 0;
+                }
+
                 _world[(int)blockPosition.X, (int)blockPosition.Y] = 0;
                 WorldChanged = true;
+
                 return removedItem;
             }
             else
@@ -277,6 +286,17 @@ namespace ITProject.Model
 
         public bool AddDroppedItem(WorldItem item)
         {
+            if(!MainModel.Item[_world[(int)item.Position.X, (int)item.Position.Y]].Walkable)
+            {
+                Console.WriteLine("Item in Block");
+                Vector2? newPos = SearchForItemPlace((int)item.Position.X, (int)item.Position.Y, 0);
+                if(newPos != null)
+                {
+                    item.Position = new Vector2(newPos.Value.X, newPos.Value.Y);
+                }
+                
+            }
+
             _droppedItems.Add(item);
             return true;
         }
@@ -322,6 +342,64 @@ namespace ITProject.Model
         {
             return MainModel.Item[_world[(int)position.X, (int)position.Y]].HasInventory;
         }
+
+        private void RemoveTreeUpwards(int x, int y)
+        {
+            if (!GameExtentions.CheckIfInBound(x, y, new Vector2(_width, _height))) return;
+
+            if (_world[x, y] >= 70 && _world[x, y] <= 77)
+            {
+                AddDroppedItem(new WorldItem(new Vector2(x + MainModel.DropItemSize.X / 2, y + MainModel.DropItemSize.Y / 2), new Vector2(((float)(rng.NextDouble() - 0.5d) * 8f), (float)(rng.NextDouble()) * 4f), MainModel.DropItemSize, new Item(4, (short)((rng.NextDouble() * 2d) + 1)), 2f));
+                _world[x, y] = 0;
+            }
+            else
+            {
+                return;
+            }
+
+            RemoveTreeUpwards(x + 1, y);
+            RemoveTreeUpwards(x - 1, y);
+            RemoveTreeUpwards(x, y + 1);
+        }
+
+        private Vector2? SearchForItemPlace(int x, int y, int step)
+        {
+            if (step > 2 || !GameExtentions.CheckIfInBound(x, y, new Vector2(_width, _height)))
+            {
+                return null;
+            }
+
+            if(MainModel.Item[_world[x, y]].Walkable)
+            {
+                return new Vector2(x, y);
+            }
+
+            Vector2? newPos = SearchForItemPlace(x, y + 1, step + 1);
+            if(newPos != null)
+            {
+                return newPos;
+            }
+
+            newPos = SearchForItemPlace(x, y - 1, step + 1);
+            if (newPos != null)
+            {
+                return newPos;
+            }
+
+            newPos = SearchForItemPlace(x - 1, y, step + 1);
+            if (newPos != null)
+            {
+                return newPos;
+            }
+
+            newPos = SearchForItemPlace(x + 1, y - 1, step + 1);
+            if (newPos != null)
+            {
+                return newPos;
+            }
+
+            return null;
+        }
     }
 
     public class WorldItem : GameObject
@@ -336,6 +414,15 @@ namespace ITProject.Model
             Velocity = velocity;
             Item = item;
             LayingTime = 0f;
+        }
+
+        public WorldItem(Vector2 position, Vector2 velocity, Vector2 size, Item item, float layingTime)
+        {
+            Position = position;
+            Size = size;
+            Velocity = velocity;
+            Item = item;
+            LayingTime = layingTime;
         }
 
         public void SetVelocity(Vector2 velocity)
