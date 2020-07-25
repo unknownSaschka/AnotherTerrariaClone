@@ -17,7 +17,7 @@ namespace ITProject.Model
 
         private int _inventoryWidth = 10;
         private int _inventoryHeight = 4;
-        private short _maxItemStack = 99;
+        private int _maxItemStack = 99;
 
         //public Item ActiveHoldingItem { get; internal set; }
 
@@ -48,7 +48,7 @@ namespace ITProject.Model
             InventoryPosition stackableInvPos = GetNextStackable(item.ID);
             if(stackableInvPos != null)
             {
-                short restAmount = (short) (_item[stackableInvPos.X, stackableInvPos.Y].Amount + item.Amount);
+                int restAmount = _item[stackableInvPos.X, stackableInvPos.Y].Amount + item.Amount;
 
                 if(restAmount > _maxItemStack)
                 {
@@ -129,7 +129,7 @@ namespace ITProject.Model
         }
 
         //Gibt entweder 0 zurück, wenn alles abgezogen werden konnte oder größer 0 wenn nicht alles abgezogen werden konnte
-        public short RemoveItemAmount(Item item)
+        public int RemoveItemAmount(Item item)
         {
 
             for(int iy = 0; iy < _inventoryHeight; iy++)
@@ -161,7 +161,7 @@ namespace ITProject.Model
         }
 
         //-1 wenn kein Item an dem Platz oder Fehler, 0 wenn abgezogen werden konnte, über 0 wenn nicht alles abgezogen werden konnte
-        public short RemoveItemAmount(Item item, int x, int y)
+        public int RemoveItemAmount(Item item, int x, int y)
         {
             if (_item[x, y] == null)
             {
@@ -234,7 +234,7 @@ namespace ITProject.Model
 
                         if(_item[x, y].Amount > _maxItemStack)
                         {
-                            _manager.ActiveHoldingItem.Amount = (short)(_maxItemStack - _item[x, y].Amount);
+                            _manager.ActiveHoldingItem.Amount = _item[x, y].Amount - _maxItemStack;
                             _item[x, y].Amount = _maxItemStack;
                         }
                         else
@@ -257,7 +257,7 @@ namespace ITProject.Model
             if(_manager.ActiveHoldingItem == null)
             {
                 //Nichts passiert mal (Kommt auf UX an)
-                _manager.ActiveHoldingItem = new Item(_item[x, y].ID, (short)(_item[x, y].Amount / 2));
+                _manager.ActiveHoldingItem = new Item(_item[x, y].ID, _item[x, y].Amount / 2);
                 _item[x, y].Amount -= _manager.ActiveHoldingItem.Amount;
             }
             else

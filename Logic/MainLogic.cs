@@ -322,7 +322,7 @@ namespace ITProject.Logic
                             if(_mainModel.GetModelManager.ActiveHoldingItem.ID == clickedRecipie.ResultItem.ID)
                             {
                                 if((_mainModel.GetModelManager.ActiveHoldingItem.Amount + clickedRecipie.ResultItem.Amount) > 99) { return; }
-                                else{ _mainModel.GetModelManager.ActiveHoldingItem.Amount = (short)(clickedRecipie.ResultItem.Amount + _mainModel.GetModelManager.ActiveHoldingItem.Amount); }
+                                else{ _mainModel.GetModelManager.ActiveHoldingItem.Amount = (clickedRecipie.ResultItem.Amount + _mainModel.GetModelManager.ActiveHoldingItem.Amount); }
                             }
                             else { return; }
                         }

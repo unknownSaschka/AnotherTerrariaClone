@@ -507,7 +507,7 @@ namespace ITProject.View
             GL.BindVertexArray(vao);
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
 
-            GL.BufferData(BufferTarget.ArrayBuffer, bufferSize, vertices, BufferUsageHint.DynamicDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, bufferSize * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
             GL.EnableVertexAttribArray(0);
             GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
 
@@ -594,14 +594,16 @@ namespace ITProject.View
             List<ViewItemPositions> viewItemPositions;
             float[,] vertices = GetInventoryItemsPos(new Vector2(MainModel.InventoryWidth, MainModel.InventoryHeight), _mainModel.GetModelManager.Player.ItemInventory, inventoryStartPos, out itemCount, out itemPositions, out viewItemPositions);
             _mainModel.GetModelManager.ViewItemPositions = viewItemPositions;   //Setze aktuelle Positionen, wo die Inventar Items gezeichnet werden, für Inventar Funktionen
-            
+
 
             //Inventar zeichnen
+            Console.WriteLine(vertices.Length);
             DrawElements(_invItemsPosVAO, _invItemsPosVBO, vertices.Length, vertices, itemCount * 4, _gameTextures.Items);
             DrawNumbers(itemPositions);
 
-            
+
             //Chest zeichnen
+            _mainModel.GetModelManager.ViewChestItemPositions = null;
             SetIdentityMatrix(_shader);
             if (_mainModel.GetModelManager.OpenChest != null)
             {
@@ -620,6 +622,7 @@ namespace ITProject.View
             }
 
             //CraftingMenu zeichnen
+            _mainModel.GetModelManager.ViewCraftingItemPositions = null;
             if (_mainModel.GetModelManager.CraftingWindowOpen)
             {
                 //Hintergrund
@@ -779,7 +782,18 @@ namespace ITProject.View
 
         private void InitQFont()
         {
-            _font = new QFont("fonts/Depredationpixie.ttf", 15, new QuickFont.Configuration.QFontBuilderConfiguration(true));
+            while( _font == null)
+            {
+                try
+                {
+                    _font = new QFont("fonts/Depredationpixie.ttf", 15, new QuickFont.Configuration.QFontBuilderConfiguration(true));
+                }
+                catch(Exception e)
+                {
+                    //Console.WriteLine("Fehler beim QFont Laden");
+                }
+            }
+            
             _drawing = new QFontDrawing();
         }
 

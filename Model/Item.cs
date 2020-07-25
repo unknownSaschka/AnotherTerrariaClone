@@ -10,9 +10,9 @@ namespace ITProject.Model
     public class Item
     {
         public ushort ID;
-        public short Amount;
+        public int Amount;
 
-        public Item(ushort id, short amount)
+        public Item(ushort id, int amount)
         {
             ID = id;
             Amount = amount;

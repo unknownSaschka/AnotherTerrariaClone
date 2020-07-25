@@ -11,7 +11,7 @@ namespace ITProject.Model
         public List<CraftingRecipie> UpdateCraftableRecipies(Inventory playerInventory)
         {
             List<CraftingRecipie> craftableRecipies = new List<CraftingRecipie>();
-            Dictionary<ushort, short> availableItems = new Dictionary<ushort, short>();
+            Dictionary<ushort, int> availableItems = new Dictionary<ushort, int>();
 
             //Zusammenfassen aller verfügbaren Items in Inventar in ein Dictionary
             foreach(Item item in playerInventory.GetSaveInv())
