@@ -16,46 +16,60 @@ namespace ITProject.Logic
         public void SaveItemJson()
         {
             float lightBlocking = 0.1f;
+            int miningDuration = 100;
 
-            Dictionary<ushort, ItemJSON> itemInfo = new Dictionary<ushort, ItemJSON>();
-            itemInfo.Add(0, new ItemJSON("Air", 0.1f, true, true, true, false, false, false));
-            itemInfo.Add(1, new ItemJSON("Stone", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(2, new ItemJSON("Dirt", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(3, new ItemJSON("Grass", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(4, new ItemJSON("Planks", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(5, new ItemJSON("WoodStamp", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(6, new ItemJSON("Wood", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(7, new ItemJSON("Leaves", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(8, new ItemJSON("Water", 0.3f, true, true, true, true, false, false));
-            itemInfo.Add(9, new ItemJSON("Flowing Water", lightBlocking, false, false, true, true, false, false));
-            itemInfo.Add(10, new ItemJSON("Lava", lightBlocking, false, true, true, true, false, false));
-            itemInfo.Add(11, new ItemJSON("Flowing Lava", lightBlocking, false, false, true, true, false, false));
-            itemInfo.Add(12, new ItemJSON("Chest", 0.05f, true, true, true, false, false, true));
-            itemInfo.Add(13, new ItemJSON("Lamp", 0.0f, true, true, false, true, true, false));
-            itemInfo.Add(14, new ItemJSON("Lamp Block", 0.0f, true, true, false, false, true, false));
-            itemInfo.Add(20, new ItemJSON("Coal Ore", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(21, new ItemJSON("Iron Ore", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(22, new ItemJSON("Diamond Ore", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(23, new ItemJSON("Cobalt Ore", lightBlocking, true, true, false, false, false, false));
-            itemInfo.Add(40, new ItemJSON("Coal", lightBlocking, true, false, false, false, false, false));
-            itemInfo.Add(41, new ItemJSON("Iron", lightBlocking, true, false, false, false, false, false));
-            itemInfo.Add(42, new ItemJSON("Diamond", lightBlocking, true, false, false, false, false, false));
-            itemInfo.Add(43, new ItemJSON("Cobalt", lightBlocking, true, false, false, false, false, false));
+            Dictionary<ushort, ItemInfoWorld> worldItems = new Dictionary<ushort, ItemInfoWorld>();
+            worldItems.Add(0, new ItemInfoWorld(0, "Air", 0.1f, true, true, true, false, false, false, 0, miningDuration));
+            worldItems.Add(1, new ItemInfoWorld(1, "Stone", lightBlocking, true, true, false, false, false, false, 1, miningDuration));
+            worldItems.Add(2, new ItemInfoWorld(2, "Dirt", lightBlocking, true, true, false, false, false, false, 0, miningDuration));
+            worldItems.Add(3, new ItemInfoWorld(3, "Grass", lightBlocking, true, true, false, false, false, false, 0, miningDuration));
+            worldItems.Add(4, new ItemInfoWorld(4, "Planks", lightBlocking, true, true, false, false, false, false, 0, miningDuration));
+            worldItems.Add(5, new ItemInfoWorld(5, "WoodStamp", lightBlocking, true, true, false, false, false, false, 1, miningDuration));
+            worldItems.Add(6, new ItemInfoWorld(6, "Wood", lightBlocking, true, true, false, false, false, false, 1, miningDuration));
+            worldItems.Add(7, new ItemInfoWorld(7, "Leaves", lightBlocking, true, true, false, false, false, false, 1, miningDuration));
+            worldItems.Add(8, new ItemInfoWorld(8, "Water", 0.3f, true, true, true, true, false, false, 1, miningDuration));
+            worldItems.Add(9, new ItemInfoWorld(9, "Flowing Water", lightBlocking, false, false, true, true, false, false, 1, miningDuration));
+            worldItems.Add(10, new ItemInfoWorld(10, "Lava", lightBlocking, false, true, true, true, false, false, 1, miningDuration));
+            worldItems.Add(11, new ItemInfoWorld(11, "Flowing Lava", lightBlocking, false, false, true, true, false, false, 1, miningDuration));
+            worldItems.Add(12, new ItemInfoWorld(12, "Chest", 0.05f, true, true, true, false, false, true, 1, miningDuration));
+            worldItems.Add(13, new ItemInfoWorld(13, "Torch", 0.0f, true, true, false, true, true, false, 0, miningDuration));
+            worldItems.Add(14, new ItemInfoWorld(14, "TorchWall", 0.0f, true, true, false, false, true, false, 0, miningDuration));
+            worldItems.Add(15, new ItemInfoWorld(15, "Lamp Block", 0.0f, true, true, false, false, true, false, 1, miningDuration));
+            worldItems.Add(20, new ItemInfoWorld(20, "Coal Ore", lightBlocking, true, true, false, false, false, false, 1, miningDuration));
+            worldItems.Add(21, new ItemInfoWorld(21, "Iron Ore", lightBlocking, true, true, false, false, false, false, 1, miningDuration));
+            worldItems.Add(22, new ItemInfoWorld(22, "Diamond Ore", lightBlocking, true, true, false, false, false, false, 2, miningDuration));
+            worldItems.Add(23, new ItemInfoWorld(23, "Cobalt Ore", lightBlocking, true, true, false, false, false, false, 3, miningDuration));
+            worldItems.Add(40, new ItemInfoWorld(40, "Coal", lightBlocking, true, false, false, false, false, false, 0, miningDuration));
+            worldItems.Add(41, new ItemInfoWorld(41, "Iron", lightBlocking, true, false, false, false, false, false, 0, miningDuration));
+            worldItems.Add(42, new ItemInfoWorld(42, "Diamond", lightBlocking, true, false, false, false, false, false, 0, miningDuration));
+            worldItems.Add(43, new ItemInfoWorld(43, "Cobalt", lightBlocking, true, false, false, false, false, false, 0, miningDuration));
 
             //Tree
-            itemInfo.Add(70, new ItemJSON("TreeRoot", 0.0f, false, false, true, false, false, false));
-            itemInfo.Add(71, new ItemJSON("TreeStamp", 0.0f, false, false, true, false, false, false));
-            itemInfo.Add(72, new ItemJSON("TreeLowerLeft", 0.0f, false, false, true, false, false, false));
-            itemInfo.Add(73, new ItemJSON("TreeLowerMiddle", 0.0f, false, false, true, false, false, false));
-            itemInfo.Add(74, new ItemJSON("TrereLowerRight", 0.0f, false, false, true, false, false, false));
-            itemInfo.Add(75, new ItemJSON("TreeUpperLeft", 0.0f, false, false, true, false, false, false));
-            itemInfo.Add(76, new ItemJSON("TreeUpperMiddle", 0.0f, false, false, true, false, false, false));
-            itemInfo.Add(77, new ItemJSON("TreeUpperRight", 0.0f, false, false, true, false, false, false));
+            worldItems.Add(70, new ItemInfoWorld(70, "TreeRoot", 0.0f, false, false, true, false, false, false, 0, miningDuration));
+            worldItems.Add(71, new ItemInfoWorld(71, "TreeStamp", 0.0f, false, false, true, false, false, false, 0, miningDuration));
+            worldItems.Add(72, new ItemInfoWorld(72, "TreeLowerLeft", 0.0f, false, false, true, false, false, false, 0, miningDuration));
+            worldItems.Add(73, new ItemInfoWorld(73, "TreeLowerMiddle", 0.0f, false, false, true, false, false, false, 0, miningDuration));
+            worldItems.Add(74, new ItemInfoWorld(74, "TrereLowerRight", 0.0f, false, false, true, false, false, false, 0, miningDuration));
+            worldItems.Add(75, new ItemInfoWorld(75, "TreeUpperLeft", 0.0f, false, false, true, false, false, false, 0, miningDuration));
+            worldItems.Add(76, new ItemInfoWorld(76, "TreeUpperMiddle", 0.0f, false, false, true, false, false, false, 0, miningDuration));
+            worldItems.Add(77, new ItemInfoWorld(77, "TreeUpperRight", 0.0f, false, false, true, false, false, false, 0, miningDuration));
+
+            Dictionary<ushort, ItemInfoTools> toolItems = new Dictionary<ushort, ItemInfoTools>();
+
+            //Tools
+            toolItems.Add(48, new ItemInfoTools(48, "Pickaxe", ItemInfoTools.ItemToolType.Pickaxe, 1, 3.0f, false, false));
+            toolItems.Add(49, new ItemInfoTools(49, "Iron Pickaxe", ItemInfoTools.ItemToolType.Pickaxe, 2, 1.5f, false, false));
+            toolItems.Add(51, new ItemInfoTools(51, "Hammer", ItemInfoTools.ItemToolType.Hammer, 1, 3.0f, false, false));
+            toolItems.Add(52, new ItemInfoTools(52, "Iron Hammer", ItemInfoTools.ItemToolType.Hammer, 2, 1.5f, false, false));
+            toolItems.Add(54, new ItemInfoTools(54, "Axe", ItemInfoTools.ItemToolType.Axe, 1, 3.0f, false, false));
+            toolItems.Add(55, new ItemInfoTools(55, "Iron Axe", ItemInfoTools.ItemToolType.Axe, 2, 1.5f, false, false));
+
+            ItemJSON json = new ItemJSON(worldItems, toolItems);
 
             using (StreamWriter file = File.CreateText(@"items.json"))
             {
                 JsonSerializer serializer = new JsonSerializer();
-                serializer.Serialize(file, itemInfo);
+                serializer.Serialize(file, json);
             }
         }
 
@@ -64,13 +78,20 @@ namespace ITProject.Logic
             using (StreamReader r = new StreamReader("items.json"))
             {
                 string itemFile = r.ReadToEnd();
-                Dictionary<ushort, ItemJSON> itemJson = JsonConvert.DeserializeObject<Dictionary<ushort, ItemJSON>>(itemFile);
+
+                ItemJSON json = JsonConvert.DeserializeObject<ItemJSON>(itemFile);
                 Dictionary<ushort, ItemInfo> itemInfo = new Dictionary<ushort, ItemInfo>();
-                foreach (KeyValuePair<ushort, ItemJSON> json in itemJson)
+
+                foreach(var item in json.WorldItems)
                 {
-                    ItemInfo item = new ItemInfo(json.Key, json.Value.LightBlocking, json.Value.Name, json.Value.Stackable, json.Value.Placable, json.Value.Walkable, json.Value.Fluid, json.Value.LightSource, json.Value.HasInventory);
-                    itemInfo.Add(json.Key, item);
+                    itemInfo.Add(item.Key, item.Value);
                 }
+
+                foreach(var item in json.ToolItems)
+                {
+                    itemInfo.Add(item.Key, item.Value);
+                }
+
                 return itemInfo;
             }
         }

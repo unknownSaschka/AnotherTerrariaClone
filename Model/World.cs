@@ -1,5 +1,6 @@
 ﻿using ITProject.Logic;
 using ITProject.WorldGeneratorStuff;
+using OpenTK.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,6 +31,9 @@ namespace ITProject.Model
 
         private List<WorldItem> _droppedItems = new List<WorldItem>();
         private Dictionary<Vector2, Chest> _worldChests;
+        private Dictionary<Vector2, float> _blockDamage = new Dictionary<Vector2, float>();
+
+        private float _maxBlockDurability = 100f;
 
         public bool WorldChanged = false;
 
@@ -90,6 +94,16 @@ namespace ITProject.Model
 
                 //Physikupdate machen
                 worldItem.Update(deltaTime, collisionHandler);
+            }
+
+            foreach(var item in _blockDamage.ToList())
+            {
+                _blockDamage[item.Key] += 0.5f;
+
+                if(_blockDamage[item.Key] >= ((ItemInfoWorld)MainModel.Item[_world[(int)item.Key.X, (int)item.Key.Y]]).MiningDuration)
+                {
+                    _blockDamage.Remove(item.Key);
+                }
             }
         }
 
@@ -209,18 +223,17 @@ namespace ITProject.Model
             return _world[(int)position.X, (int)position.Y];
         }
 
-        public bool GetWalkable(Vector2 position)
-        {
-            if (!GameExtentions.CheckIfInBound((int)position.X, (int)position.Y, WorldSize)) return false;
-            return MainModel.Item[_world[(int)position.X, (int)position.Y]].Walkable;
-        }
-
         //Gibt den Block zurück, der Abgebaut wurde
-        public ushort RemoveBlock(Vector2 blockPosition)
+        public ushort RemoveBlock(Vector2 blockPosition, float miningSpeed, int toolLevel, ItemInfoTools.ItemToolType toolType)
         {
             if (GameExtentions.CheckIfInBound((int)blockPosition.X, (int)blockPosition.Y, WorldSize))
             {
                 ushort removedItem = _world[(int)blockPosition.X, (int)blockPosition.Y];
+
+                if(!DecreaseBlockDurability(blockPosition, miningSpeed, toolLevel, toolType))
+                {
+                    return 0;
+                }
 
                 if(removedItem == 12)   //Chest
                 {
@@ -255,6 +268,30 @@ namespace ITProject.Model
             }
         }
 
+        private bool DecreaseBlockDurability(Vector2 position, float miningSpeed, int toolLevel, ItemInfoTools.ItemToolType toolType)
+        {
+            ItemInfoWorld item = (ItemInfoWorld) MainModel.Item[_world[(int)position.X, (int)position.Y]];
+
+            if (item.NeededToolLevel > toolLevel) return false;
+
+            if (!_blockDamage.ContainsKey(position))
+            {
+                _blockDamage.Add(position, item.MiningDuration);
+            }
+
+            _blockDamage[position] -= miningSpeed;
+
+            if(_blockDamage[position] < 0f)
+            {
+                _blockDamage.Remove(position);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         //Gibt true zurück, wenn ein Block gesetzt werden konnte
         public bool PlaceBlock(Vector2 blockPosition, ushort blockType, ModelManager manager)
         {
@@ -286,7 +323,7 @@ namespace ITProject.Model
 
         public bool AddDroppedItem(WorldItem item)
         {
-            if(!MainModel.Item[_world[(int)item.Position.X, (int)item.Position.Y]].Walkable)
+            if(!((ItemInfoWorld)MainModel.Item[_world[(int)item.Position.X, (int)item.Position.Y]]).Walkable)
             {
                 Console.WriteLine("Item in Block");
                 Vector2? newPos = SearchForItemPlace((int)item.Position.X, (int)item.Position.Y, 0);
@@ -340,7 +377,7 @@ namespace ITProject.Model
 
         public bool HasInventory(Vector2 position)
         {
-            return MainModel.Item[_world[(int)position.X, (int)position.Y]].HasInventory;
+            return ((ItemInfoWorld)MainModel.Item[_world[(int)position.X, (int)position.Y]]).HasInventory;
         }
 
         private void RemoveTreeUpwards(int x, int y)
@@ -369,7 +406,7 @@ namespace ITProject.Model
                 return null;
             }
 
-            if(MainModel.Item[_world[x, y]].Walkable)
+            if(((ItemInfoWorld)MainModel.Item[_world[x, y]]).Walkable)
             {
                 return new Vector2(x, y);
             }

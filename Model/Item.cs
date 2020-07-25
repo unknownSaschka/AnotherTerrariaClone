@@ -19,19 +19,26 @@ namespace ITProject.Model
         }
     }
 
-    public class ItemInfo
+    public abstract class ItemInfo
     {
         public ushort ID;
         public string Name;
-        public float LightBlocking;
         public bool Stackable;
         public bool Placable;
+    }
+
+    public class ItemInfoWorld : ItemInfo
+    {
+        public float LightBlocking;
+        
         public bool Walkable;
         public bool Fluid;
         public bool LightSource;
         public bool HasInventory;
+        public int NeededToolLevel;
+        public int MiningDuration;
 
-        public ItemInfo(ushort id, float lightBlocking, string name, bool stackable, bool placable, bool walkable, bool fluid, bool lightSource, bool hasInventory)
+        public ItemInfoWorld(ushort id, string name, float lightBlocking, bool stackable, bool placable, bool walkable, bool fluid, bool lightSource, bool hasInventory, int neededToolLevel, int miningDuration)
         {
             ID = id;
             LightBlocking = lightBlocking;
@@ -42,9 +49,44 @@ namespace ITProject.Model
             Fluid = fluid;
             LightSource = lightSource;
             HasInventory = hasInventory;
+            NeededToolLevel = neededToolLevel;
+            MiningDuration = miningDuration;
         }
     }
 
+    public class ItemInfoTools : ItemInfo
+    {
+        public enum ItemToolType { Pickaxe, Axe, Hammer, Hand }
+
+        public ItemToolType ToolType;
+        public int ToolLevel;
+        public float MiningDuration;
+
+        public ItemInfoTools(ushort id, string name, ItemToolType toolType, int toolLevel, float miningDuration, bool placable, bool stackable)
+        {
+            ID = id;
+            Name = name;
+            ToolType = toolType;
+            ToolLevel = toolLevel;
+            MiningDuration = miningDuration;
+            Stackable = stackable;
+            Placable = placable;
+        }
+    }
+
+    public class ItemJSON
+    {
+        public Dictionary<ushort, ItemInfoWorld> WorldItems;
+        public Dictionary<ushort, ItemInfoTools> ToolItems;
+
+        public ItemJSON(Dictionary<ushort, ItemInfoWorld> worldItems, Dictionary<ushort, ItemInfoTools> toolItems)
+        {
+            WorldItems = worldItems;
+            ToolItems = toolItems;
+        }
+    }
+
+    /*
     public class ItemJSON
     {
         public string Name;
@@ -67,5 +109,9 @@ namespace ITProject.Model
             LightSource = lightSource;
             HasInventory = hasInventory;
         }
+
+        public ItemJSON(string name, )
+    
     }
+    */
 }

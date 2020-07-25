@@ -349,7 +349,20 @@ namespace ITProject.Logic
             if(!_mainModel.GetModelManager.InventoryOpen && State == GameState.InGame)
             {
                 Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
-                ushort removedItem = _mainModel.GetModelManager.World.RemoveBlock(_mainModel.GetModelManager.WorldMousePosition);
+                ItemInfo itemInfo = MainModel.Item[playerInventory.GetItemID(_mainModel.GetModelManager.SelectedInventorySlot, 0)];
+
+                float miningSpeed = 1;
+                int toolLevel = 0;
+                ItemInfoTools.ItemToolType toolType = ItemInfoTools.ItemToolType.Hand;
+
+                if(itemInfo.GetType().Name == "ItemInfoTools")
+                {
+                    miningSpeed = ((ItemInfoTools)itemInfo).MiningDuration;
+                    toolLevel = ((ItemInfoTools)itemInfo).ToolLevel;
+                    toolType = ((ItemInfoTools)itemInfo).ToolType;
+                }
+
+                ushort removedItem = _mainModel.GetModelManager.World.RemoveBlock(_mainModel.GetModelManager.WorldMousePosition, miningSpeed, toolLevel, toolType);
 
                 if (removedItem != 0)
                 {

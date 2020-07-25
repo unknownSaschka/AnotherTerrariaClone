@@ -263,7 +263,7 @@ namespace ITProject.View
                         background = true;
                     }
 
-                    if (blockID == 0 || MainModel.Item[world.GetWorld[ix, iy]].LightSource)
+                    if (blockID == 0 || ((ItemInfoWorld)MainModel.Item[world.GetWorld[ix, iy]]).LightSource)
                     {
                         ApplyLightRec(ix, iy, 1.0f, worldSize);
                     }
@@ -750,7 +750,7 @@ namespace ITProject.View
         private void ApplyLightRec(int currentX, int currentY, float lastLight, System.Numerics.Vector2 worldSize)
         {
             if (!GameExtentions.CheckIfInBound(currentX, currentY, worldSize)) return;
-            float newLight = lastLight - MainModel.Item[_mainModel.GetModelManager.World.GetWorld[currentX, currentY]].LightBlocking;
+            float newLight = lastLight - ((ItemInfoWorld)MainModel.Item[_mainModel.GetModelManager.World.GetWorld[currentX, currentY]]).LightBlocking;
             if (newLight <= _light[currentX, currentY]) return;
 
             _light[currentX, currentY] = newLight;

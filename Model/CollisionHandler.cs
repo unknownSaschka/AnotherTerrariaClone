@@ -32,15 +32,15 @@ namespace ITProject.Model
                 for(int ix = (int)playerHitbox.MinX; ix <= (int)playerHitbox.MaxX; ix++)
                 {
                     if (!GameExtentions.CheckIfInBound(ix, iy, world.WorldSize)) continue;
-                    if (MainModel.Item[_modelManager.World.GetWorld[ix, iy]].Walkable) continue;
+                    if (((ItemInfoWorld)MainModel.Item[_modelManager.World.GetWorld[ix, iy]]).Walkable) continue;
 
                     Hitbox blockHitbox = new Hitbox(new Vector2(ix, iy), new Vector2(1.0f, 1.0f), Hitbox.HitboxType.Block);
                     if (!Intersects(playerHitbox, blockHitbox)) continue;
 
                     //Prüfen, ob geeignet für Stairs
-                    if (MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 1]].Walkable &&
-                        MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 2]].Walkable &&
-                        MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 3]].Walkable &&
+                    if (((ItemInfoWorld)MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 1]]).Walkable &&
+                        ((ItemInfoWorld)MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 2]]).Walkable &&
+                        ((ItemInfoWorld)MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 3]]).Walkable &&
                         position.Y > blockHitbox.MaxY && gameObject.Grounded)
                     {
                         newPlayerPositionSlope.Y = blockHitbox.MaxY + size.Y / 2;
@@ -75,7 +75,7 @@ namespace ITProject.Model
                     for (int ix = (int)playerHitboxSlope.MinX; ix <= (int)playerHitboxSlope.MaxX; ix++)
                     {
                         if (!GameExtentions.CheckIfInBound(ix, iy, world.WorldSize)) continue;
-                        if (MainModel.Item[_modelManager.World.GetWorld[ix, iy]].Walkable) continue;
+                        if (((ItemInfoWorld)MainModel.Item[_modelManager.World.GetWorld[ix, iy]]).Walkable) continue;
 
                         Hitbox blockHitbox = new Hitbox(new Vector2(ix, iy), new Vector2(1.0f, 1.0f), Hitbox.HitboxType.Block);
                         if (Intersects(playerHitboxSlope, blockHitbox))
@@ -108,7 +108,7 @@ namespace ITProject.Model
                 {
                     if (!GameExtentions.CheckIfInBound(ix, iy, world.WorldSize)) continue;
                     ushort itemID = _modelManager.World.GetWorld[ix, iy];
-                    if (MainModel.Item[itemID].Walkable) continue;
+                    if (((ItemInfoWorld)MainModel.Item[itemID]).Walkable) continue;
 
                     Hitbox blockHitbox = new Hitbox(new Vector2(ix, iy), new Vector2(1.0f, 1.0f), Hitbox.HitboxType.Block);
                     if (!Intersects(playerHitbox, blockHitbox)) continue;
