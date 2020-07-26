@@ -62,6 +62,7 @@ namespace ITProject.View
         private uint _background1VAO, _background1VBO;
         private uint _droppedItemsVAO, _droppedItemsVBO;
         private uint _treesVAO, _treesVBO;
+        private uint _damagedBlocksVAO, _damagedBlocksVBO;
 
         private uint _craftingVAO, _craftingVBO;
 
@@ -339,6 +340,9 @@ namespace ITProject.View
             GL.BindTexture(TextureTarget.Texture2D, 0);
             GL.Disable(EnableCap.Blend);
 
+            //Block Damage zeichnen
+            DrawBlockDamage(w, h);
+
             //Player zeichnen
             SetMatrix(_shader, transformation, translation);
             _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
@@ -491,7 +495,7 @@ namespace ITProject.View
 
             List<ItemPositionAmount> itemPositions;
             float [,] vertices = GetInvBarItemIndices(items, itemLength, out itemPositions);
-            DrawElements(_itemInvBarVAO, _itemInvBarVBO, vertices.Length * sizeof(float), vertices, itemLength * 4, _gameTextures.Items);
+            DrawElements(_itemInvBarVAO, _itemInvBarVBO, vertices.Length, vertices, itemLength * 4, _gameTextures.Items);
             
 
             //DrawItemSelector
@@ -597,7 +601,6 @@ namespace ITProject.View
 
 
             //Inventar zeichnen
-            Console.WriteLine(vertices.Length);
             DrawElements(_invItemsPosVAO, _invItemsPosVBO, vertices.Length, vertices, itemCount * 4, _gameTextures.Items);
             DrawNumbers(itemPositions);
 
@@ -693,6 +696,48 @@ namespace ITProject.View
             GL.BindTexture(TextureTarget.Texture2D, 0);
             GL.Disable(EnableCap.Blend);
             
+        }
+
+        private void DrawBlockDamage(float blockWidth, float blockHeight)
+        {
+            Dictionary<System.Numerics.Vector2, float> damagedBlocks = _mainModel.GetModelManager.World.GetAllDamagedBlocks();
+
+            float[,] vertices = new float[4 * damagedBlocks.Count, 5];
+            int count = 0;
+            float blockDarkness = 1.0f;
+
+            foreach (var blocks in damagedBlocks)
+            {
+                int texPos = (int)GameExtentions.Remap(blocks.Value, 0, 100, 8, 0);
+                Vector2 min, max;
+                GetTextureCoord(texPos, new Vector2(9, 1), out min, out max, 0);
+                float[,] vertsOfBlock = GetVertices4x5(ConvertVector(blocks.Key), new Vector2(blockWidth, blockHeight), min, max, blockDarkness, false);
+
+                for (int ic = 0; ic < 4; ic++)
+                {
+                    for (int ia = 0; ia < 5; ia++)
+                    {
+                        vertices[count, ia] = vertsOfBlock[ic, ia];
+                    }
+                    count++;
+                }
+            }
+
+            AlterVertexBufferBlocks(_damagedBlocksVAO, _damagedBlocksVBO, vertices);
+
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.BlockDamage);
+            GL.BindVertexArray(_damagedBlocksVBO);
+
+            GL.DrawArrays(PrimitiveType.QuadsExt, 0, vertices.Length);
+
+            GL.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            GL.Disable(EnableCap.Blend);
         }
 
         private void DrawFont()
@@ -1092,6 +1137,10 @@ namespace ITProject.View
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
+
+            //DamagedBlocks
+            GL.GenVertexArrays(1, out _damagedBlocksVAO);
+            GL.GenBuffers(1, out _damagedBlocksVBO);
         }
 
         private float[,] GetInventoryItemsPos(Vector2 invSize, Inventory inventory, Vector2 startPos, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)

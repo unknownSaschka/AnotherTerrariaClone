@@ -229,8 +229,9 @@ namespace ITProject.Model
             if (GameExtentions.CheckIfInBound((int)blockPosition.X, (int)blockPosition.Y, WorldSize))
             {
                 ushort removedItem = _world[(int)blockPosition.X, (int)blockPosition.Y];
+                if (removedItem == 0) return 0;
 
-                if(!DecreaseBlockDurability(blockPosition, miningSpeed, toolLevel, toolType))
+                if(!DecreaseBlockDurability(new Vector2((int)blockPosition.X, (int)blockPosition.Y), miningSpeed, toolLevel, toolType))
                 {
                     return 0;
                 }
@@ -272,6 +273,7 @@ namespace ITProject.Model
         {
             ItemInfoWorld item = (ItemInfoWorld) MainModel.Item[_world[(int)position.X, (int)position.Y]];
 
+            if (!(item.NeededToolType == toolType || item.NeededToolType == ItemInfoTools.ItemToolType.Hand)) return false;
             if (item.NeededToolLevel > toolLevel) return false;
 
             if (!_blockDamage.ContainsKey(position))
@@ -436,6 +438,11 @@ namespace ITProject.Model
             }
 
             return null;
+        }
+
+        public Dictionary<Vector2, float> GetAllDamagedBlocks()
+        {
+            return _blockDamage;
         }
     }
 

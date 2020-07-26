@@ -228,7 +228,12 @@ namespace ITProject.Model
                 }
                 else
                 {
-                    if(_item[x, y].ID == _manager.ActiveHoldingItem.ID)
+                    if(!MainModel.Item[_manager.ActiveHoldingItem.ID].Stackable || !MainModel.Item[_item[x, y].ID].Stackable)
+                    {
+                        _item[x, y] = _manager.ActiveHoldingItem;
+                        _manager.ActiveHoldingItem = null;
+                    }
+                    else if(_item[x, y].ID == _manager.ActiveHoldingItem.ID)
                     {
                         _item[x, y].Amount += _manager.ActiveHoldingItem.Amount;
 
@@ -281,7 +286,12 @@ namespace ITProject.Model
                 }
                 else
                 {
-                    if(_item[x, y].ID == _manager.ActiveHoldingItem.ID)
+                    if (!MainModel.Item[_manager.ActiveHoldingItem.ID].Stackable || !MainModel.Item[_item[x, y].ID].Stackable)
+                    {
+                        _item[x, y] = _manager.ActiveHoldingItem;
+                        _manager.ActiveHoldingItem = null;
+                    }
+                    else if (_item[x, y].ID == _manager.ActiveHoldingItem.ID)
                     {
                         if(_item[x, y].Amount < _maxItemStack)
                         {

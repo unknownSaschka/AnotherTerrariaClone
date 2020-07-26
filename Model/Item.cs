@@ -37,8 +37,9 @@ namespace ITProject.Model
         public bool HasInventory;
         public int NeededToolLevel;
         public int MiningDuration;
+        public ItemInfoTools.ItemToolType NeededToolType;
 
-        public ItemInfoWorld(ushort id, string name, float lightBlocking, bool stackable, bool placable, bool walkable, bool fluid, bool lightSource, bool hasInventory, int neededToolLevel, int miningDuration)
+        public ItemInfoWorld(ushort id, string name, float lightBlocking, bool stackable, bool placable, bool walkable, bool fluid, bool lightSource, bool hasInventory, int neededToolLevel, int miningDuration, ItemInfoTools.ItemToolType neededToolType)
         {
             ID = id;
             LightBlocking = lightBlocking;
@@ -51,12 +52,13 @@ namespace ITProject.Model
             HasInventory = hasInventory;
             NeededToolLevel = neededToolLevel;
             MiningDuration = miningDuration;
+            NeededToolType = neededToolType;
         }
     }
 
     public class ItemInfoTools : ItemInfo
     {
-        public enum ItemToolType { Pickaxe, Axe, Hammer, Hand }
+        public enum ItemToolType { Pickaxe, Axe, Hammer, Hand, None }
 
         public ItemToolType ToolType;
         public int ToolLevel;

@@ -321,7 +321,8 @@ namespace ITProject.Logic
                         {
                             if(_mainModel.GetModelManager.ActiveHoldingItem.ID == clickedRecipie.ResultItem.ID)
                             {
-                                if((_mainModel.GetModelManager.ActiveHoldingItem.Amount + clickedRecipie.ResultItem.Amount) > 99) { return; }
+                                if(!MainModel.Item[_mainModel.GetModelManager.ActiveHoldingItem.ID].Stackable || !MainModel.Item[clickedRecipie.ResultItem.ID].Stackable) { return; }
+                                else if((_mainModel.GetModelManager.ActiveHoldingItem.Amount + clickedRecipie.ResultItem.Amount) > 99) { return; }
                                 else{ _mainModel.GetModelManager.ActiveHoldingItem.Amount = (clickedRecipie.ResultItem.Amount + _mainModel.GetModelManager.ActiveHoldingItem.Amount); }
                             }
                             else { return; }

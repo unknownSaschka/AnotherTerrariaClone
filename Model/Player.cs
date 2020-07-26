@@ -60,6 +60,7 @@ namespace ITProject.Model
                 case PlayerLoadingType.NewPlayer:
                     InitPlayer(position.X, position.Y + Size.Y + 2);
                     ItemInventory = new Inventory(manager);
+                    InitInventory();
                     SavePlayer(saveSlot);
                     LoadPlayer(saveSlot, manager);
                     break;
@@ -67,6 +68,7 @@ namespace ITProject.Model
                     //Gleich wie new aber mit vielleicht anderen Startitems, etc.
                     InitPlayer(position.X, position.Y);
                     ItemInventory = new Inventory(manager);
+                    InitInventory();
                     SavePlayer(saveSlot);
                     LoadPlayer(saveSlot, manager);
                     break;
@@ -232,6 +234,14 @@ namespace ITProject.Model
             Gravity = -20f;
             Size = new Vector2(1.5f, 2.8f);
             SetGrounded(false);
+        }
+
+        //Hier werden u.a. die Startitems dem Inventar hinzugefügt
+        private void InitInventory()
+        {
+            ItemInventory.SetItem(0, 0, new Item(48, 1));   //Pickaxe
+            ItemInventory.SetItem(1, 0, new Item(54, 1));   //Axe
+            ItemInventory.SetItem(2, 0, new Item(51, 1));   //Hammer
         }
 
         public Hitbox GetHitbox()

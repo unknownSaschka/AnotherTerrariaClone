@@ -27,6 +27,7 @@ namespace ITProject.View
 
         public uint Darkness;
         public uint LightSource1;
+        public uint BlockDamage;
 
         public GameTextures()
         {
@@ -51,6 +52,7 @@ namespace ITProject.View
 
             Darkness = LoadTexture("Content/textures/Darkness.png");
             LightSource1 = LoadTexture("Content/textures/LightSource1.png");
+            BlockDamage = LoadTexture("Content/textures/Block_Damage.png");
         }
 
         private uint LoadTexture(string file)
