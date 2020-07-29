@@ -150,6 +150,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="View\Camera.cs" />
     <Compile Include="View\Fonts.cs" />
+    <Compile Include="View\InGameView.cs" />
+    <Compile Include="View\MainMenuView.cs" />
     <Compile Include="View\MainView.cs" />
     <Compile Include="View\MainViewOld.cs" />
     <Compile Include="View\Shader.cs" />
