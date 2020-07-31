@@ -310,4 +310,16 @@ namespace ITProject.Model
     {
         public PlayerSave[] Saves = new PlayerSave[10];
     }
+
+    public class PlayerSaveInfo
+    {
+        public int SaveSlot;
+        public string Name;
+
+        public PlayerSaveInfo(int saveSlot, string name)
+        {
+            SaveSlot = saveSlot;
+            Name = name;
+        }
+    }
 }

@@ -89,14 +89,18 @@ namespace ITProject.View
             public int Amount { get; }
         }
 
-        public InGameView(int width, int height, MainLogic logic, MainModel mainModel, MainView mainView)
+        public InGameView(MainLogic logic, MainModel mainModel, MainView mainView)
         {
-            _gameTextures = new GameTextures();
             _logic = logic;
             _mainModel = mainModel;
+            _mainView = mainView;
+        }
+
+        public void Init()
+        {
+            _gameTextures = new GameTextures();
             _oldPlayerPosition = new Vector2(-_mainModel.GetModelManager.Player.Position.X, -_mainModel.GetModelManager.Player.Position.Y);
             _zoom = _mainModel.GetModelManager.Zoom;
-            _mainView = mainView;
         }
 
         public void OnLoad()
@@ -110,7 +114,7 @@ namespace ITProject.View
         public void OnUpdateFrame(FrameEventArgs e)
         {
             _zoom = GameExtentions.Lerp(_zoom, _mainModel.GetModelManager.Zoom, 3.0f * (float)e.Time);
-            _logic.Update(Keyboard.GetState(), Mouse.GetCursorState(), UpdateWindowPositions(), e.Time);
+            _logic.Update(Keyboard.GetState(), Mouse.GetCursorState(), _mainView.WindowPositions, e.Time, _zoom);
         }
 
         public void OnRenderFrame(FrameEventArgs e)
@@ -126,16 +130,66 @@ namespace ITProject.View
 
         public void OnUnload()
         {
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
-            GL.UseProgram(0);
-
-            GL.DeleteBuffer(_blockVBO);
-            GL.DeleteVertexArray(_blockVAO);
+            UnloadGame();
         }
         public void OnResize()
         {
             AlterVertexBufferInvBar();
+        }
+
+        public void UnloadGame()
+        {
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+            GL.UseProgram(0);
+
+            //Buffer clearen
+            GL.DeleteBuffer(_blockVBO);
+            GL.DeleteBuffer(_blockWallVBO);
+            GL.DeleteBuffer(_mouseVBO);
+            GL.DeleteBuffer(_playerVBO);
+            GL.DeleteBuffer(_invBarVBO);
+            GL.DeleteBuffer(_inventoryVBO);
+            GL.DeleteBuffer(_chestVBO);
+            GL.DeleteBuffer(_chestItemsVBO);
+            GL.DeleteBuffer(_itemInvBarVBO);
+            GL.DeleteBuffer(_invBarSelectorVBO);
+            GL.DeleteBuffer(_waterBlocksVBO);
+            GL.DeleteBuffer(_invItemsPosVBO);
+            GL.DeleteBuffer(_invHoldItemVBO);
+            GL.DeleteBuffer(_droppedItemsVBO);
+            GL.DeleteBuffer(_treesVBO);
+            GL.DeleteBuffer(_damagedBlocksVBO);
+            GL.DeleteBuffer(_craftingVBO);
+
+            //Vertex Arrays clearen
+            GL.DeleteVertexArray(_blockVBO);
+            GL.DeleteVertexArray(_blockWallVBO);
+            GL.DeleteVertexArray(_mouseVBO);
+            GL.DeleteVertexArray(_playerVBO);
+            GL.DeleteVertexArray(_invBarVBO);
+            GL.DeleteVertexArray(_inventoryVBO);
+            GL.DeleteVertexArray(_chestVBO);
+            GL.DeleteVertexArray(_chestItemsVBO);
+            GL.DeleteVertexArray(_itemInvBarVBO);
+            GL.DeleteVertexArray(_invBarSelectorVBO);
+            GL.DeleteVertexArray(_waterBlocksVBO);
+            GL.DeleteVertexArray(_invItemsPosVBO);
+            GL.DeleteVertexArray(_invHoldItemVBO);
+            GL.DeleteVertexArray(_droppedItemsVBO);
+            GL.DeleteVertexArray(_treesVBO);
+            GL.DeleteVertexArray(_damagedBlocksVBO);
+            GL.DeleteVertexArray(_craftingVBO);
+
+            //Shader löschen
+            GL.DeleteProgram(_shader.Handle);
+            GL.DeleteProgram(_blockShader.Handle);
+
+            //Texturen aus dem VRAM verfen
+            _gameTextures.DeleteTextures();
+
+            _drawing.Dispose();
+            _font.Dispose();
         }
 
         private void SetIdentityMatrix(Shader shader)
@@ -1298,21 +1352,11 @@ namespace ITProject.View
             _blockShader = new Shader("Shader/blockShader.vert", "Shader/blockShader.frag");
         }
 
-        private WindowPositions UpdateWindowPositions()
-        {
-            float cursorPosX = (float)_mainView.PointToClient(Control.MousePosition).X;
-            float cursorPosY = (float)_mainView.PointToClient(Control.MousePosition).Y;
-
-            WindowPositions windowPositions = new WindowPositions(_mainView.Width, _mainView.Height, _mainView.X, _mainView.Y, _zoom, _mainView.WindowState, _mainView.Focused, new System.Numerics.Vector2(cursorPosX, cursorPosY));
-            return windowPositions;
-        }
-
         private void CalculateViewBorders(System.Numerics.Vector2 playerPosition, ref Vector2 mins, ref Vector2 maxs)
         {
-            WindowPositions winPos = UpdateWindowPositions();
 
-            System.Numerics.Vector2 upperLeft = _logic.CalculateViewToWorldPosition(new System.Numerics.Vector2(0f, 0f), playerPosition, winPos);
-            System.Numerics.Vector2 lowerRight = _logic.CalculateViewToWorldPosition(new System.Numerics.Vector2(winPos.Width, winPos.Height), playerPosition, winPos);
+            System.Numerics.Vector2 upperLeft = _logic.CalculateViewToWorldPosition(new System.Numerics.Vector2(0f, 0f), playerPosition, _mainView.WindowPositions);
+            System.Numerics.Vector2 lowerRight = _logic.CalculateViewToWorldPosition(new System.Numerics.Vector2(_mainView.WindowPositions.Width, _mainView.WindowPositions.Height), playerPosition, _mainView.WindowPositions);
 
             mins.X = upperLeft.X;
             mins.Y = lowerRight.Y;

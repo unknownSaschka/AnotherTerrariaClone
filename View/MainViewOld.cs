@@ -102,7 +102,7 @@ namespace ITProject.View
             zoom = GameExtentions.Lerp(zoom, _modelManager.Zoom, 3.0f * (float)e.Time);
             _renderDistance = new Vector2(_modelManager.RenderDistance.X, _modelManager.RenderDistance.Y);
             
-            _logic.Update(Keyboard.GetState(), Mouse.GetCursorState(), UpdateWindowPositions(), e.Time);
+            _logic.Update(Keyboard.GetState(), Mouse.GetCursorState(), UpdateWindowPositions(), e.Time, null);
             Title = $"{Math.Round(UpdateFrequency, 2)} fps";
             
             //Draw();
@@ -476,7 +476,6 @@ namespace ITProject.View
             windowPositions.WindowState = WindowState;
             windowPositions.Focused = Focused;
             windowPositions.WindowMousePosition = new System.Numerics.Vector2(cursorPosX, cursorPosY);
-            windowPositions.Zoom = zoom;
 
             return windowPositions;
         }

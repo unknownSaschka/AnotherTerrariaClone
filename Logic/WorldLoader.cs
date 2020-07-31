@@ -13,7 +13,7 @@ namespace ITProject.Logic
 {
     public static class WorldLoader
     {
-        public static void LoadWorld(out int width, out int height, out ushort[,] world, out ushort[,] worldBack, out Dictionary<System.Numerics.Vector2, Chest> worldChests, ModelManager manager)
+        public static void LoadWorld(out int width, out int height, out ushort[,] world, out ushort[,] worldBack, out Dictionary<System.Numerics.Vector2, Chest> worldChests, ModelManager manager, int saveSlot)
         {
             world = null;
             worldBack = null;
@@ -26,15 +26,16 @@ namespace ITProject.Logic
             {
                 IFormatter formatter = new BinaryFormatter();
                 Stream stream = new FileStream("world.dat", FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
-                WorldSave worldSave = (WorldSave)formatter.Deserialize(stream);
+                //WorldSave worldSave = (WorldSave)formatter.Deserialize(stream);
+                WorldSaves worldSaves = (WorldSaves)formatter.Deserialize(stream);
                 stream.Close();
 
-                world = worldSave.World;
-                worldBack = worldSave.WorldBack;
-                width = worldSave.Width;
-                height = worldSave.Height;
+                world = worldSaves.SavedWorlds[saveSlot].World;
+                worldBack = worldSaves.SavedWorlds[saveSlot].WorldBack;
+                width = worldSaves.SavedWorlds[saveSlot].Width;
+                height = worldSaves.SavedWorlds[saveSlot].Height;
 
-                foreach(ChestSave cs in worldSave.Chests)
+                foreach(ChestSave cs in worldSaves.SavedWorlds[saveSlot].Chests)
                 {
                     worldChests.Add(new System.Numerics.Vector2(cs.WorldPosX, cs.WorldPosY), new Chest(cs.Content, manager));
                 }
@@ -45,7 +46,7 @@ namespace ITProject.Logic
             }
         }
 
-        public static bool SaveWorld(int width, int height, ushort[,] world, ushort[,] worldBack, Dictionary<System.Numerics.Vector2, Chest> worldChests)
+        public static bool SaveWorld(int width, int height, ushort[,] world, ushort[,] worldBack, Dictionary<System.Numerics.Vector2, Chest> worldChests, int saveSlot)
         {
             //Converting Chest Dictionary to Array
             ChestSave[] savedChests = new ChestSave[worldChests.Count];
@@ -56,12 +57,22 @@ namespace ITProject.Logic
             }
 
             WorldSave worldSave = new WorldSave(world, worldBack, savedChests, width, height);
+            WorldSaves worldSaves = null;
 
             try
             {
                 IFormatter formatter = new BinaryFormatter();
-                Stream stream = new FileStream("world.dat", FileMode.Create, FileAccess.Write, FileShare.None);
-                formatter.Serialize(stream, worldSave);
+                Stream stream = new FileStream("world.dat", FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
+
+                if(stream.Length == 0)
+                {
+                    worldSaves = new WorldSaves();
+                }
+                else
+                {
+                    worldSaves = (WorldSaves)formatter.Deserialize(stream);
+                }
+
                 stream.Close();
             }
             catch(Exception e)
@@ -70,7 +81,34 @@ namespace ITProject.Logic
                 return false;
             }
 
+            worldSaves.SavedWorlds[saveSlot] = worldSave;
+
+            try
+            {
+                IFormatter formatter = new BinaryFormatter();
+                Stream stream = new FileStream("world.dat", FileMode.Create, FileAccess.Write, FileShare.None);
+
+                formatter.Serialize(stream, worldSaves);
+
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e);
+                return false;
+            }
+
             return true;
+        }
+    }
+
+    [Serializable]
+    public class WorldSaves
+    {
+        public WorldSave[] SavedWorlds;
+
+        public WorldSaves()
+        {
+            SavedWorlds = new WorldSave[10];
         }
     }
 

@@ -14,17 +14,22 @@ namespace ITProject.Logic
 {
     public class MainLogic
     {
-        public enum GameState { Menu, InGame }
+        public enum GameState { Menu, InGame, None }
         public GameState State;
+        public GameState LastState;
+        public bool GameStateChanged = true;
 
         private int _width = 800, _height = 800;
         private string _windowTitle = "Game";
         private InputManager inputManager;
         private MainModel _mainModel;
+        private MainMenuModel _mainMenuModel;
 
         //Accumulator Prinzip zum fixen einer zu hohen deltaTime
         private double fixedDeltaTime = 0.01;
         private double accumulator = 0.0;
+
+        private float? _zoom;
 
         public struct WindowPositions
         {
@@ -32,18 +37,16 @@ namespace ITProject.Logic
             public int Height;
             public int X;
             public int Y;
-            public float Zoom;
             public OpenTK.WindowState WindowState;
             public bool Focused;
             public Vector2 WindowMousePosition;
 
-            public WindowPositions(int width, int height, int x, int y, float zoom, OpenTK.WindowState windowState, bool focused, Vector2 windowMousePosition)
+            public WindowPositions(int width, int height, int x, int y, OpenTK.WindowState windowState, bool focused, Vector2 windowMousePosition)
             {
                 Width = width;
                 Height = height;
                 X = x;
                 Y = y;
-                Zoom = zoom;
                 WindowState = windowState;
                 Focused = focused;
                 WindowMousePosition = windowMousePosition;
@@ -53,7 +56,8 @@ namespace ITProject.Logic
         public MainLogic()
         {
             //Console.WriteLine(Convert.ToUInt32("a"[0]));
-            State = GameState.InGame;   //Später wird zuerst View in Menu State gestartet und das Game später geladen
+            State = GameState.Menu;   //Später wird zuerst View in Menu State gestartet und das Game später geladen
+            LastState = GameState.None;
 
             //World.WorldLoadType worldLoadType = World.WorldLoadType.LoadWorld;
             //Player.PlayerLoadingType playerLoadingType = Player.PlayerLoadingType.LoadPlayer;
@@ -61,9 +65,10 @@ namespace ITProject.Logic
 
             World.WorldLoadType worldLoadType;
             Player.PlayerLoadingType playerLoadingType;
-            int saveSlot;
+            int playerSaveSlot;
+            int worldSaveSlot;
             int worldSeed;
-            ConsoleStart(out worldLoadType, out playerLoadingType, out saveSlot, out worldSeed);
+            //ConsoleStart(out worldLoadType, out playerLoadingType, out playerSaveSlot, out worldSaveSlot, out worldSeed);
 
             inputManager = new InputManager();
 
@@ -74,20 +79,22 @@ namespace ITProject.Logic
             SaveManagement.SaveCraftingRecipiesJSON();
             List <CraftingRecipie> craftingRecipies = SaveManagement.LoadCraftingRecipies();
 
-            _mainModel = new MainModel(worldLoadType, playerLoadingType, saveSlot, worldSeed, craftingRecipies, itemList);
-            
-            MainView view = new MainView(_width, _height, OpenTK.Graphics.GraphicsMode.Default, _windowTitle, this, _mainModel);
+            _mainMenuModel = new MainMenuModel();
+            //_mainModel = new MainModel(worldLoadType, playerLoadingType, playerSaveSlot, worldSaveSlot, worldSeed, craftingRecipies, itemList);
+
+            MainView view = new MainView(_width, _height, OpenTK.Graphics.GraphicsMode.Default, _windowTitle, this, _mainModel, _mainMenuModel);
             view.VSync = OpenTK.VSyncMode.Off;
             view.Run();
         }
 
-        private void ConsoleStart(out World.WorldLoadType worldLoadType, out Player.PlayerLoadingType playerLoadingType, out int saveSlot, out int worldSeed)
+        private void ConsoleStart(out World.WorldLoadType worldLoadType, out Player.PlayerLoadingType playerLoadingType, out int saveSlot, out int worldSaveSlot, out int worldSeed)
         {
             Console.WriteLine("Wie soll die Welt geladen werden?");
             Console.WriteLine("1: Neue Welt, 2: Lade Welt");
             string worldLoad = Console.ReadLine();
             worldLoadType = (World.WorldLoadType) int.Parse(worldLoad);
             worldSeed = 1337;
+            worldSaveSlot = -1;
 
             if((int)worldLoadType == 1)
             {
@@ -99,6 +106,16 @@ namespace ITProject.Logic
                     byte[] bytes = System.Text.Encoding.ASCII.GetBytes(seed);
                     worldSeed = BitConverter.ToInt32(bytes, 0);
                 }
+
+                Console.WriteLine("Welcher Save Slot? (0 - 9)");
+                string worldSlot = Console.ReadLine();
+                worldSaveSlot = int.Parse(worldSlot);
+            }
+            else if((int)worldLoadType == 2)
+            {
+                Console.WriteLine("Von welchem Save Slot? (0 - 9)");
+                string worldSlot = Console.ReadLine();
+                worldSaveSlot = int.Parse(worldSlot);
             }
 
             Console.WriteLine("Wie soll der Spieler geladen werden?");
@@ -116,9 +133,9 @@ namespace ITProject.Logic
             }
         }
 
-        public void Update(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double deltaTime)
+        public void Update(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double deltaTime, float? zoom)
         {
-            _mainModel.GetModelManager.WorldMousePosition = CalculateViewToWorldPosition(new Vector2(windowPositions.WindowMousePosition.X, windowPositions.WindowMousePosition.Y), _mainModel.GetModelManager.Player.Position, windowPositions);
+            _zoom = zoom;
             
             accumulator += deltaTime;
 
@@ -129,6 +146,12 @@ namespace ITProject.Logic
             }
         }
 
+        public void ChangeGameState(GameState gameState)
+        {
+            LastState = State;
+            State = gameState;
+        }
+
         public void FixedUpdate(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double fixedDeltaTime)
         {
             inputManager.Update(keyboardState, cursorState);
@@ -137,6 +160,7 @@ namespace ITProject.Logic
             {
                 case GameState.InGame:
                     PerformViewChanges(windowPositions, keyboardState);
+                    _mainModel.GetModelManager.WorldMousePosition = CalculateViewToWorldPosition(new Vector2(windowPositions.WindowMousePosition.X, windowPositions.WindowMousePosition.Y), _mainModel.GetModelManager.Player.Position, windowPositions);
 
                     int mouse = inputManager.GetMouseWheelDifference();
                     if (mouse != 0)
@@ -152,6 +176,11 @@ namespace ITProject.Logic
                     _mainModel.Update(fixedDeltaTime);
                     break;
                 case GameState.Menu:
+                    if (inputManager.GetMouseButtonPressed(MouseButton.Left) && windowPositions.Focused)
+                    {
+                        Vector2 mouseMiddle = new Vector2(windowPositions.WindowMousePosition.X - (windowPositions.Width / 2), -(windowPositions.WindowMousePosition.Y - (windowPositions.Height / 2)));
+                        MenuButtonPresses(mouseMiddle, _mainMenuModel.ButtonPositions);
+                    }
 
                     break;
             }
@@ -160,8 +189,11 @@ namespace ITProject.Logic
         public void CloseGame()
         {
             _mainModel.CloseGame();
+
+            //Console.ReadLine();
         }
 
+        //In-Game Functions
         public void PerformViewChanges(WindowPositions windowPositions, KeyboardState keyboardState)
         {
             if (windowPositions.Focused)
@@ -279,20 +311,10 @@ namespace ITProject.Logic
             float ratio = (float)windowPositions.Width / (float)windowPositions.Height;
 
             Vector2 centeredPos = new Vector2(viewPosition.X - windowPositions.Width / 2, windowPositions.Height / 2 - viewPosition.Y);
-            worldPosition.X = playerPosition.X + ((centeredPos.X *  windowPositions.Zoom) / (500));
-            worldPosition.Y = playerPosition.Y + ((centeredPos.Y * windowPositions.Zoom) / (500));
+            worldPosition.X = playerPosition.X + ((centeredPos.X *  (float)_zoom) / (500));
+            worldPosition.Y = playerPosition.Y + ((centeredPos.Y * (float)_zoom) / (500));
 
             return worldPosition;
-        }
-
-        private bool MouseInsideWindow(Vector2 mousePosition, Vector2 WindowSize)
-        {
-            if(mousePosition.X >= 0 && mousePosition.X <= WindowSize.X &&
-               mousePosition.Y >= 0 && mousePosition.Y <= WindowSize.Y)
-            {
-                return true;
-            }
-            return false;
         }
 
         private void PlayerLeftClick(Vector2 mousePositionMiddle)
@@ -317,28 +339,28 @@ namespace ITProject.Logic
                     {
                         CraftingRecipie clickedRecipie = _mainModel.GetModelManager.Player.CraftableRecipies[itemX];
 
-                        if(_mainModel.GetModelManager.ActiveHoldingItem != null)
+                        if (_mainModel.GetModelManager.ActiveHoldingItem != null)
                         {
-                            if(_mainModel.GetModelManager.ActiveHoldingItem.ID == clickedRecipie.ResultItem.ID)
+                            if (_mainModel.GetModelManager.ActiveHoldingItem.ID == clickedRecipie.ResultItem.ID)
                             {
-                                if(!MainModel.Item[_mainModel.GetModelManager.ActiveHoldingItem.ID].Stackable || !MainModel.Item[clickedRecipie.ResultItem.ID].Stackable) { return; }
-                                else if((_mainModel.GetModelManager.ActiveHoldingItem.Amount + clickedRecipie.ResultItem.Amount) > 99) { return; }
-                                else{ _mainModel.GetModelManager.ActiveHoldingItem.Amount = (clickedRecipie.ResultItem.Amount + _mainModel.GetModelManager.ActiveHoldingItem.Amount); }
+                                if (!MainModel.Item[_mainModel.GetModelManager.ActiveHoldingItem.ID].Stackable || !MainModel.Item[clickedRecipie.ResultItem.ID].Stackable) { return; }
+                                else if ((_mainModel.GetModelManager.ActiveHoldingItem.Amount + clickedRecipie.ResultItem.Amount) > 99) { return; }
+                                else { _mainModel.GetModelManager.ActiveHoldingItem.Amount = (clickedRecipie.ResultItem.Amount + _mainModel.GetModelManager.ActiveHoldingItem.Amount); }
                             }
                             else { return; }
                         }
-                        else{ _mainModel.GetModelManager.ActiveHoldingItem = new Item(clickedRecipie.ResultItem.ID, clickedRecipie.ResultItem.Amount); }
+                        else { _mainModel.GetModelManager.ActiveHoldingItem = new Item(clickedRecipie.ResultItem.ID, clickedRecipie.ResultItem.Amount); }
 
-                        foreach(Item item in clickedRecipie.NeededItems)
+                        foreach (Item item in clickedRecipie.NeededItems)
                         {
                             _mainModel.GetModelManager.Player.ItemInventory.RemoveItemAmount(item);
                         }
                     }
-                    else if(!CheckIfWithin(ConvertVector(mousePositionMiddle), _mainModel.GetModelManager.InventoryRectangle))
+                    else if (!CheckIfWithin(ConvertVector(mousePositionMiddle), _mainModel.GetModelManager.InventoryRectangle))
                     {
                         Item activeItem = _mainModel.GetModelManager.ActiveHoldingItem;
 
-                        if(activeItem != null)
+                        if (activeItem != null)
                         {
                             _mainModel.GetModelManager.World.AddDroppedItem(new WorldItem(_mainModel.GetModelManager.Player.Position, new Vector2(10f, 3f), new Vector2(0.8f, 0.8f), activeItem));
                             _mainModel.GetModelManager.ActiveHoldingItem = null;
@@ -347,7 +369,7 @@ namespace ITProject.Logic
                 }
             }
 
-            if(!_mainModel.GetModelManager.InventoryOpen && State == GameState.InGame)
+            if (!_mainModel.GetModelManager.InventoryOpen && State == GameState.InGame)
             {
                 Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
                 ItemInfo itemInfo = MainModel.Item[playerInventory.GetItemID(_mainModel.GetModelManager.SelectedInventorySlot, 0)];
@@ -356,7 +378,7 @@ namespace ITProject.Logic
                 int toolLevel = 0;
                 ItemInfoTools.ItemToolType toolType = ItemInfoTools.ItemToolType.Hand;
 
-                if(itemInfo.GetType().Name == "ItemInfoTools")
+                if (itemInfo.GetType().Name == "ItemInfoTools")
                 {
                     miningSpeed = ((ItemInfoTools)itemInfo).MiningDuration;
                     toolLevel = ((ItemInfoTools)itemInfo).ToolLevel;
@@ -385,7 +407,7 @@ namespace ITProject.Logic
                     {
                         _mainModel.GetModelManager.Player.ItemInventory.RightClick(itemX, itemY);
                     }
-                    else if(CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewChestItemPositions, out itemX, out itemY))
+                    else if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewChestItemPositions, out itemX, out itemY))
                     {
                         _mainModel.GetModelManager.OpenChest.Content.RightClick(itemX, itemY);
                     }
@@ -442,6 +464,31 @@ namespace ITProject.Logic
                 }
             }
 
+            return false;
+        }
+
+        //Menu Functions
+        private void MenuButtonPresses(Vector2 mousePositionMiddle, List<ViewButtonPositions> buttonPositions)
+        {
+            
+            Console.WriteLine(mousePositionMiddle);
+            foreach(ViewButtonPositions button in buttonPositions)
+            {
+                if (CheckIfWithin(new OpenTK.Vector2(mousePositionMiddle.X, mousePositionMiddle.Y), button.Position, button.Size, true))
+                {
+                    Console.WriteLine(button.ButtonInput);
+                    _mainMenuModel.LeftClick(button.ButtonInput);
+                }
+            }
+        }
+
+        private bool MouseInsideWindow(Vector2 mousePosition, Vector2 WindowSize)
+        {
+            if(mousePosition.X >= 0 && mousePosition.X <= WindowSize.X &&
+               mousePosition.Y >= 0 && mousePosition.Y <= WindowSize.Y)
+            {
+                return true;
+            }
             return false;
         }
     }

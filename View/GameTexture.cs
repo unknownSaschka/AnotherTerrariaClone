@@ -77,5 +77,70 @@ namespace ITProject.View
 
             return tex;
         }
+
+        public void DeleteTextures()
+        {
+            GL.DeleteTexture(InventoryBar);
+            GL.DeleteTexture(Itembar_Selector);
+            GL.DeleteTexture(Inventory);
+            GL.DeleteTexture(Block);
+            GL.DeleteTexture(Debug);
+            GL.DeleteTexture(lolDoerte);
+            GL.DeleteTexture(Debug2);
+            GL.DeleteTexture(Items);
+            GL.DeleteTexture(ItemsBack);
+            GL.DeleteTexture(InventoryDebug);
+            GL.DeleteTexture(Tree);
+            GL.DeleteTexture(Background1);
+            GL.DeleteTexture(Darkness);
+            GL.DeleteTexture(LightSource1);
+            GL.DeleteTexture(BlockDamage);
+        }
+    }
+
+    class MenuTextures
+    {
+        public uint MenuBackground;
+        public uint Button;
+
+        public MenuTextures()
+        {
+            LoadTextures();
+        }
+
+        private void LoadTextures()
+        {
+            MenuBackground = LoadTexture("Content/images/background2.png");
+            Button = LoadTexture("Content/textures/Inventory.png");
+        }
+
+        private uint LoadTexture(string file)
+        {
+            uint tex;
+
+            Bitmap bitmap = new Bitmap(file);
+
+            GL.GenTextures(1, out tex);
+            GL.BindTexture(TextureTarget.Texture2D, tex);
+
+            BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, bitmap.Width, bitmap.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bitmapData.Scan0);
+            bitmap.UnlockBits(bitmapData);
+
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+            return tex;
+        }
+
+        public void UnloadTextures()
+        {
+            GL.DeleteTexture(MenuBackground);
+            GL.DeleteTexture(Button);
+        }
     }
 }

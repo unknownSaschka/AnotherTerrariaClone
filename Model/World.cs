@@ -43,7 +43,7 @@ namespace ITProject.Model
 
         private Random rng = new Random();
 
-        public World(int width, int height, WorldLoadType loadType, int seed, ModelManager manager)
+        public World(int width, int height, WorldLoadType loadType, int seed, ModelManager manager, int saveSlot)
         {
             if (loadType == WorldLoadType.NewWorld)
             {
@@ -57,7 +57,7 @@ namespace ITProject.Model
             {
                 _width = width;
                 _height = height;
-                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack, out _worldChests, manager);
+                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack, out _worldChests, manager, saveSlot);
 
                 if(_world.Length == 0)
                 {
@@ -71,8 +71,8 @@ namespace ITProject.Model
                 _height = height;
                 _worldChests = new Dictionary<Vector2, Chest>();
                 NewWorld(seed);
-                SaveWorld();
-                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack, out _worldChests, manager);
+                //SaveWorld(saveSlot);
+                //WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack, out _worldChests, manager, saveSlot);
             }
         }
 
@@ -107,9 +107,9 @@ namespace ITProject.Model
             }
         }
 
-        public void SaveWorld()
+        public void SaveWorld(int saveSlot)
         {
-            WorldLoader.SaveWorld(_width, _height, _world, _worldBack, _worldChests);
+            WorldLoader.SaveWorld(_width, _height, _world, _worldBack, _worldChests, saveSlot);
         }
 
         public void NewWorld(int? seed)
@@ -477,6 +477,18 @@ namespace ITProject.Model
         public Hitbox GetHitbox()
         {
             return new Hitbox(Position, Size, Hitbox.HitboxType.Player);
+        }
+    }
+
+    public class WorldSaveInfo
+    {
+        public int SaveSlot;
+        public string Name;
+
+        public WorldSaveInfo(int saveSlot, string name)
+        {
+            SaveSlot = saveSlot;
+            Name = name;
         }
     }
 }

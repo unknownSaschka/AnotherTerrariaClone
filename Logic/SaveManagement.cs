@@ -263,5 +263,45 @@ namespace ITProject.Logic
                 serializer.Serialize(file, craftingRecipies);
             }
         }
+
+        public static void SavePlayerWorldJSON(PlayerSaveInfo[] playerSave, WorldSaveInfo[] worldSave)
+        {
+            PlayerWorldSaves saves = new PlayerWorldSaves();
+            saves.PlayerSaves = playerSave;
+            saves.WorldSaves = worldSave;
+
+            using(StreamWriter w = File.CreateText("saves.json"))
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Serialize(w, saves);
+            }
+        }
+
+        public static void LoadPlayerWorldJSON(out PlayerSaveInfo[] playerSaves, out WorldSaveInfo[] worldSaves)
+        {
+            if (!File.Exists(@"saves.json"))
+            {
+                playerSaves = new PlayerSaveInfo[10];
+                worldSaves = new WorldSaveInfo[10];
+
+                return;
+            }
+
+            using (StreamReader r = File.OpenText(@"saves.json"))
+            {
+                string savesJson = r.ReadToEnd();
+
+                //JSON Laden
+                PlayerWorldSaves saves = JsonConvert.DeserializeObject<PlayerWorldSaves>(savesJson);
+                playerSaves = saves.PlayerSaves;
+                worldSaves = saves.WorldSaves;
+            }
+        }
+    }
+
+    public class PlayerWorldSaves
+    {
+        public PlayerSaveInfo[] PlayerSaves;
+        public WorldSaveInfo[] WorldSaves;
     }
 }

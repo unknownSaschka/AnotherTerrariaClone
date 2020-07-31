@@ -1,4 +1,6 @@
-﻿using System;
+﻿using OpenTK;
+using SharpFont;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -25,6 +27,22 @@ namespace ITProject.Logic
                 InventoryY = invY;
             }
         }
+
+        public struct ViewButtonPositions
+        {
+            public OpenTK.Vector2 Position;
+            public OpenTK.Vector2 Size;
+            public string ButtonInput;
+
+            public ViewButtonPositions(Vector2 postition, Vector2 size, string text)
+            {
+                Position = postition;
+                Size = size;
+                ButtonInput = text;
+            }
+        }
+
+        public enum ButtonType { StartGame, Back, CloseGame }
 
         /// <summary>
         /// Gibt true zurück, falls sich der Punkt innerhalb der Welt befindet

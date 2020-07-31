@@ -25,46 +25,156 @@ namespace ITProject.View
         private MainMenuView _mainMenuView;
         private MainLogic _logic;
 
-        public MainView(int width, int height, GraphicsMode graphicsMode, string title, MainLogic logic, MainModel mainModel) : base(width, height, graphicsMode, title)
+        private MainModel _mainModel;
+        private MainMenuModel _menuModel;
+
+        public WindowPositions WindowPositions;
+
+        public MainView(int width, int height, GraphicsMode graphicsMode, string title, MainLogic logic, MainModel mainModel, MainMenuModel mainMenuModel) : base(width, height, graphicsMode, title)
         {
             _logic = logic;
-            _inGameView = new InGameView(width, height, logic, mainModel, this);
+            _mainModel = mainModel;
+            _menuModel = mainMenuModel;
+
+            _inGameView = new InGameView(logic, mainModel, this);
+            _mainMenuView = new MainMenuView(logic, this, mainMenuModel);
         }
 
         protected override void OnLoad(EventArgs e)
         {
-            _inGameView.OnLoad();
+            //_inGameView.OnLoad();
+
+            /*
+            switch (_logic.State)
+            {
+                case GameState.InGame:
+                    _inGameView.OnLoad();
+                    break;
+                case GameState.Menu:
+                    _mainMenuView.OnLoad();
+                    break;
+            }
+            */
+
             base.OnLoad(e);
         }
 
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
-            _inGameView.OnUpdateFrame(e);
+            WindowPositions = UpdateWindowPositions();
+
+            if (_logic.GameStateChanged)
+            {
+                _logic.GameStateChanged = false;
+
+                //Unload current State
+                switch (_logic.LastState)
+                {
+                    case GameState.InGame:
+                        _inGameView.OnUnload();
+                        break;
+                    case GameState.Menu:
+                        _mainMenuView.OnUnload();
+                        break;
+                    default:
+
+                        break;
+                }
+
+                //Load next State
+                switch (_logic.State)
+                {
+                    case GameState.InGame:
+                        _inGameView.Init();
+                        _inGameView.OnLoad();
+                        break;
+                    case GameState.Menu:
+                        _mainMenuView.OnLoad();
+                        break;
+                }
+            }
+
+            switch (_logic.State)
+            {
+                case GameState.InGame:
+                    _inGameView.OnUpdateFrame(e);
+                    break;
+                case GameState.Menu:
+                    _mainMenuView.OnUpdateFrame(e);
+                    break;
+            }
+            
             Title = $"{Math.Round(UpdateFrequency, 2)} fps";
             base.OnUpdateFrame(e);
         }
 
         protected override void OnRenderFrame(FrameEventArgs e)
         {
-            _inGameView.OnRenderFrame(e);
+            switch (_logic.State)
+            {
+                case GameState.InGame:
+                    _inGameView.OnRenderFrame(e);
+                    break;
+                case GameState.Menu:
+                    _mainMenuView.OnRenderFrame(e);
+                    break;
+            }
+
             base.OnRenderFrame(e);
         }
 
         protected override void OnClosed(EventArgs e)
         {
-            _logic.CloseGame();
+            switch (_logic.State)
+            {
+                case GameState.InGame:
+                    _inGameView.OnClosed();
+                    break;
+                case GameState.Menu:
+                    _mainMenuView.OnClose();
+                    break;
+            }
+
             base.OnClosed(e);
         }
 
         protected override void OnUnload(EventArgs e)
         {
-            _inGameView.OnUnload();
+            switch (_logic.State)
+            {
+                case GameState.InGame:
+                    _inGameView.OnUnload();
+                    break;
+                case GameState.Menu:
+                    _mainMenuView.OnUnload();
+                    break;
+            }
+
+            
             base.OnUnload(e);
         }
         protected override void OnResize(EventArgs e)
         {
-            _inGameView.OnResize();
+            switch (_logic.State)
+            {
+                case GameState.InGame:
+                    _inGameView.OnResize();
+                    break;
+                case GameState.Menu:
+                    _mainMenuView.OnResize();
+                    break;
+            }
+            
             base.OnResize(e);
+        }
+
+        private WindowPositions UpdateWindowPositions()
+        {
+            float cursorPosX = (float)PointToClient(Control.MousePosition).X;
+            float cursorPosY = (float)PointToClient(Control.MousePosition).Y;
+
+            WindowPositions windowPositions = new WindowPositions(Width, Height, X, Y, WindowState, Focused, new System.Numerics.Vector2(cursorPosX, cursorPosY));
+            return windowPositions;
         }
     }
 }

@@ -28,11 +28,11 @@ namespace ITProject.Model
 
         private ModelManager _manager;
 
-        public MainModel(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed, List<CraftingRecipie> craftingRecipies, Dictionary<ushort, ItemInfo> itemList)
+        public MainModel(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSaveSlot, int worldSeed, List<CraftingRecipie> craftingRecipies, Dictionary<ushort, ItemInfo> itemList)
         {
             Item = itemList;
             CraftingRecipies = craftingRecipies;
-            _manager = new ModelManager(worldLoadType, playerLoadingType, playerSaveSlot, worldSeed);
+            _manager = new ModelManager(worldLoadType, playerLoadingType, playerSaveSlot, worldSaveSlot, worldSeed);
         }
 
         public void Update(double deltaTime)
@@ -40,14 +40,32 @@ namespace ITProject.Model
             _manager.World.Update(deltaTime, _manager.Player, _manager.CollisionHandler);
             _manager.Player.Update(deltaTime, _manager.CollisionHandler);
             _manager.CollisionHandler.CheckPlayerWithDroppedItems(_manager.Player);
-
+            
             _manager.Player.UpdateInventory(_manager.Crafting);
         }
 
         public void CloseGame()
         {
-            _manager.World.SaveWorld();
-            _manager.Player.SavePlayer(_manager.ActiveSaveSlot);
+            Console.WriteLine("Close Game");
+
+            SaveGame(_manager.ActivePlayerSaveSlot, _manager.ActiveWorldSaveSlot);
+        }
+
+        private void SaveGame(int playerSlot, int worldSlot)
+        {
+            //Vielleicht noch später Delete Funktion einbauen
+
+            PlayerSaveInfo[] playerSaves;
+            WorldSaveInfo[] worldSaves;
+            SaveManagement.LoadPlayerWorldJSON(out playerSaves, out worldSaves);
+
+            playerSaves[playerSlot] = new PlayerSaveInfo(playerSlot, $"Slot{playerSlot}");
+            worldSaves[worldSlot] = new WorldSaveInfo(worldSlot, $"Slot{worldSlot}");
+
+            SaveManagement.SavePlayerWorldJSON(playerSaves, worldSaves);
+
+            _manager.World.SaveWorld(worldSlot);
+            _manager.Player.SavePlayer(playerSlot);
         }
     }
 }

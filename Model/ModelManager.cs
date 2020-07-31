@@ -34,28 +34,31 @@ namespace ITProject.Model
         public System.Numerics.Vector2 RenderDistance;
         public WindowState WindowState;
         public bool ShowGrid;
-        public int ActiveSaveSlot;
+        public int ActivePlayerSaveSlot;
+        public int ActiveWorldSaveSlot;
 
         public List<ViewItemPositions> ViewItemPositions;
         public List<ViewItemPositions> ViewChestItemPositions;
         public List<ViewItemPositions> ViewCraftingItemPositions;
         public Box2D InventoryRectangle;
 
-        public ModelManager(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed)
+        public ModelManager(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSaveSlot, int worldSeed)
         {
-            InitGame(worldLoadType, playerLoadingType, playerSaveSlot, worldSeed);
+            InitGame(worldLoadType, playerLoadingType, playerSaveSlot, worldSaveSlot, worldSeed);
         }
 
-        private void InitGame(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSeed)
+        private void InitGame(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSaveSlot, int worldSeed)
         {
-            ActiveSaveSlot = playerSaveSlot;
+            ActivePlayerSaveSlot = playerSaveSlot;
+            ActiveWorldSaveSlot = worldSaveSlot;
+
             if(worldLoadType == WorldLoadType.LoadWorld)
             {
-                World = new World(2500, 1000, worldLoadType, worldSeed, this);
+                World = new World(2500, 1000, worldLoadType, worldSeed, this, worldSaveSlot);
             }
             else
             {
-                World = new World(2500, 1000, worldLoadType, worldSeed, this);
+                World = new World(2500, 1000, worldLoadType, worldSeed, this, worldSaveSlot);
             }
 
 

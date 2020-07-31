@@ -1,0 +1,36 @@
+﻿using ITProject.Logic;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static ITProject.Logic.GameExtentions;
+
+namespace ITProject.Model
+{
+    class MainMenuModel
+    {
+        public enum Screen { MainMenuStart, WorldSelect, PlayerSelect, NewPlayer, NewWorld }
+        public Screen ScreenState;
+
+        public WorldSaveInfo[] AvailableWorldSaves;
+        public PlayerSaveInfo[] AvailablePlayerSaves;
+
+        public List<ViewButtonPositions> ButtonPositions;
+
+        public MainMenuModel()
+        {
+            ScreenState = Screen.MainMenuStart;
+        }
+
+        private void Init()
+        {
+            SaveManagement.LoadPlayerWorldJSON(out AvailablePlayerSaves, out AvailableWorldSaves);
+        }
+
+        public void LeftClick(string button)
+        {
+            
+        }
+    }
+}
