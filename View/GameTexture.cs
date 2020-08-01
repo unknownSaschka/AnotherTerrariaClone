@@ -29,6 +29,8 @@ namespace ITProject.View
         public uint LightSource1;
         public uint BlockDamage;
 
+        public uint Player;
+
         public GameTextures()
         {
             LoadTextures();
@@ -53,6 +55,8 @@ namespace ITProject.View
             Darkness = LoadTexture("Content/textures/Darkness.png");
             LightSource1 = LoadTexture("Content/textures/LightSource1.png");
             BlockDamage = LoadTexture("Content/textures/Block_Damage.png");
+
+            Player = LoadTexture("Content/textures/Player.png");
         }
 
         private uint LoadTexture(string file)
@@ -95,6 +99,7 @@ namespace ITProject.View
             GL.DeleteTexture(Darkness);
             GL.DeleteTexture(LightSource1);
             GL.DeleteTexture(BlockDamage);
+            GL.DeleteTexture(Player);
         }
     }
 

@@ -105,6 +105,11 @@ namespace ITProject.Logic
         {
             return new OpenTK.Vector2(vector2.X, vector2.Y);
         }
+
+        public static bool AlmostEquals(this float double1, float double2, float precision)
+        {
+            return (Math.Abs(double1 - double2) <= precision);
+        }
     }
 
     public class Box2D

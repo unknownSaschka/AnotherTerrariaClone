@@ -155,6 +155,7 @@
     <Compile Include="View\MainMenuView.cs" />
     <Compile Include="View\MainView.cs" />
     <Compile Include="View\MainViewOld.cs" />
+    <Compile Include="View\PlayerAnimator.cs" />
     <Compile Include="View\Shader.cs" />
     <Compile Include="View\GameTexture.cs" />
     <Compile Include="WorldGeneratorStuff\CellularAutomata.cs" />
@@ -247,6 +248,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\textures\LightSource1.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\textures\Player.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\textures\Tree.png">

@@ -14,6 +14,7 @@ using static ITProject.Logic.GameExtentions;
 using OpenTK.Input;
 using System.Drawing;
 using System.Windows.Forms;
+using NAudio.Wave;
 
 namespace ITProject.View
 {
@@ -46,6 +47,8 @@ namespace ITProject.View
         private QFont _font;
         private QFontDrawing _drawing;
 
+        private PlayerAnimator _playerAnimator;
+
         private uint _blockVAO, _blockVBO;
         private uint _blockWallVAO, _blockWallVBO;
         private uint _mouseVAO, _mouseVBO;
@@ -69,6 +72,7 @@ namespace ITProject.View
         private Shader _shader;
         private Shader _blockShader;
         private float _passedTime;
+        private double _deltaTime;
 
         private Vector2 _textureGridSize = new Vector2(8f, 8f);
         private float[,] _light;
@@ -102,6 +106,7 @@ namespace ITProject.View
             _gameTextures = new GameTextures();
             _oldPlayerPosition = new Vector2(-_mainModel.GetModelManager.Player.Position.X, -_mainModel.GetModelManager.Player.Position.Y);
             _zoom = _mainModel.GetModelManager.Zoom;
+            _playerAnimator = new PlayerAnimator();
         }
 
         public void OnLoad()
@@ -122,6 +127,7 @@ namespace ITProject.View
         public void OnRenderFrame(FrameEventArgs e)
         {
             _passedTime += (float)e.Time;
+            _deltaTime = e.Time;
             Draw();
         }
 
@@ -481,13 +487,35 @@ namespace ITProject.View
             Vector2 min = new Vector2(player.Position.X - (player.Size.X / 2), player.Position.Y - (player.Size.Y / 2));
             Vector2 max = new Vector2(player.Position.X + (player.Size.X / 2), player.Position.Y + (player.Size.Y / 2));
 
-            float[,] playerVertices = GetVerices4x4MinMax(min, max, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f));
+            Vector2 texMin, texMax;
+
+            if (!player.Grounded)
+            {
+                _playerAnimator.PlayJumpAnimation(_deltaTime, 14.0f, player.Velocity.Y, out texMin, out texMax);
+            }
+            else if (player.Velocity.X.AlmostEquals(0f, 0.2f))
+            {
+                _playerAnimator.PlayIdleAnimation(_deltaTime, 4f, out texMin, out texMax);
+            }
+            else
+            {
+                _playerAnimator.PlayWalkAnimation(_deltaTime, Math.Abs(player.Velocity.X) * 3f, out texMin, out texMax);
+            }
+
+            if(player.Velocity.X < 0)
+            {
+                float temp = texMin.X;
+                texMin.X = texMax.X;
+                texMax.X = temp;
+            }
+
+            float[,] playerVertices = GetVerices4x4MinMax(min, max, texMin, texMax);
 
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Debug2);
+            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Player);
 
             GL.BindVertexArray(_playerVAO);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _playerVBO);
@@ -548,7 +576,7 @@ namespace ITProject.View
             //DrawItemSelector
             int selected = _mainModel.GetModelManager.SelectedInventorySlot;
             float[,] verticesSelector = GetInvBarSelectorIndices(selected);
-            DrawElements(_invBarSelectorVAO, _invBarSelectorVBO, sizeof(float) * verticesSelector.Length, verticesSelector, 4, _gameTextures.Itembar_Selector);
+            DrawElements(_invBarSelectorVAO, _invBarSelectorVBO, verticesSelector.Length, verticesSelector, 4, _gameTextures.Itembar_Selector);
 
             DrawNumbers(itemPositions);     //Zeichnet die dazugehörigen Zahlen
         }
