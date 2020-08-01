@@ -33,16 +33,20 @@ namespace ITProject.Logic
             public OpenTK.Vector2 Position;
             public OpenTK.Vector2 Size;
             public string ButtonInput;
+            public ButtonType ButtonType;
+            public int Slot;
 
-            public ViewButtonPositions(Vector2 postition, Vector2 size, string text)
+            public ViewButtonPositions(Vector2 postition, Vector2 size, string text, ButtonType buttonType, int saveSlot)
             {
                 Position = postition;
                 Size = size;
                 ButtonInput = text;
+                ButtonType = buttonType;
+                Slot = saveSlot;
             }
         }
 
-        public enum ButtonType { StartGame, Back, CloseGame }
+        public enum ButtonType { World, Player, CloseGame, Back, ToWorldList, None }
 
         /// <summary>
         /// Gibt true zurück, falls sich der Punkt innerhalb der Welt befindet

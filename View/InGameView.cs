@@ -98,6 +98,7 @@ namespace ITProject.View
 
         public void Init()
         {
+            _mainModel = _logic.MainModel;
             _gameTextures = new GameTextures();
             _oldPlayerPosition = new Vector2(-_mainModel.GetModelManager.Player.Position.X, -_mainModel.GetModelManager.Player.Position.Y);
             _zoom = _mainModel.GetModelManager.Zoom;
@@ -105,6 +106,7 @@ namespace ITProject.View
 
         public void OnLoad()
         {
+            Console.WriteLine("OnLoad");
             InitQFont();
             InitBuffers();
             InitShadows();

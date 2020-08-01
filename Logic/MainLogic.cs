@@ -18,12 +18,16 @@ namespace ITProject.Logic
         public GameState State;
         public GameState LastState;
         public bool GameStateChanged = true;
+        public bool GameClose = false;
 
         private int _width = 800, _height = 800;
         private string _windowTitle = "Game";
         private InputManager inputManager;
-        private MainModel _mainModel;
-        private MainMenuModel _mainMenuModel;
+        public MainModel MainModel;
+        public MainMenuModel MainMenuModel;
+
+        private List<CraftingRecipie> _craftingRecipies;
+        private Dictionary<ushort, ItemInfo> _itemList;
 
         //Accumulator Prinzip zum fixen einer zu hohen deltaTime
         private double fixedDeltaTime = 0.01;
@@ -53,6 +57,12 @@ namespace ITProject.Logic
             }
         }
 
+        private World.WorldLoadType _worldLoadType;
+        private Player.PlayerLoadingType _playerLoadType;
+        private int _playerSaveSlot;
+        private int _worldSaveSlot;
+        private int _worldSeed = 0;
+
         public MainLogic()
         {
             //Console.WriteLine(Convert.ToUInt32("a"[0]));
@@ -63,11 +73,14 @@ namespace ITProject.Logic
             //Player.PlayerLoadingType playerLoadingType = Player.PlayerLoadingType.LoadPlayer;
             //int saveSlot = 0;
 
+            /*
             World.WorldLoadType worldLoadType;
             Player.PlayerLoadingType playerLoadingType;
             int playerSaveSlot;
             int worldSaveSlot;
             int worldSeed;
+            */
+
             //ConsoleStart(out worldLoadType, out playerLoadingType, out playerSaveSlot, out worldSaveSlot, out worldSeed);
 
             inputManager = new InputManager();
@@ -75,14 +88,14 @@ namespace ITProject.Logic
             //LadeDaten
             SaveManagement saveManagement = new SaveManagement();
             saveManagement.SaveItemJson();
-            Dictionary<ushort, ItemInfo> itemList = saveManagement.LoadItemInfo();
+            _itemList = saveManagement.LoadItemInfo();
             SaveManagement.SaveCraftingRecipiesJSON();
-            List <CraftingRecipie> craftingRecipies = SaveManagement.LoadCraftingRecipies();
+            _craftingRecipies = SaveManagement.LoadCraftingRecipies();
 
-            _mainMenuModel = new MainMenuModel();
+            MainMenuModel = new MainMenuModel();
             //_mainModel = new MainModel(worldLoadType, playerLoadingType, playerSaveSlot, worldSaveSlot, worldSeed, craftingRecipies, itemList);
 
-            MainView view = new MainView(_width, _height, OpenTK.Graphics.GraphicsMode.Default, _windowTitle, this, _mainModel, _mainMenuModel);
+            MainView view = new MainView(_width, _height, OpenTK.Graphics.GraphicsMode.Default, _windowTitle, this, MainModel, MainMenuModel);
             view.VSync = OpenTK.VSyncMode.Off;
             view.Run();
         }
@@ -150,6 +163,7 @@ namespace ITProject.Logic
         {
             LastState = State;
             State = gameState;
+            GameStateChanged = true;
         }
 
         public void FixedUpdate(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double fixedDeltaTime)
@@ -160,26 +174,26 @@ namespace ITProject.Logic
             {
                 case GameState.InGame:
                     PerformViewChanges(windowPositions, keyboardState);
-                    _mainModel.GetModelManager.WorldMousePosition = CalculateViewToWorldPosition(new Vector2(windowPositions.WindowMousePosition.X, windowPositions.WindowMousePosition.Y), _mainModel.GetModelManager.Player.Position, windowPositions);
+                    MainModel.GetModelManager.WorldMousePosition = CalculateViewToWorldPosition(new Vector2(windowPositions.WindowMousePosition.X, windowPositions.WindowMousePosition.Y), MainModel.GetModelManager.Player.Position, windowPositions);
 
                     int mouse = inputManager.GetMouseWheelDifference();
                     if (mouse != 0)
                     {
-                        _mainModel.GetModelManager.SelectedInventorySlot -= mouse;
+                        MainModel.GetModelManager.SelectedInventorySlot -= mouse;
 
-                        if (_mainModel.GetModelManager.SelectedInventorySlot < 0) _mainModel.GetModelManager.SelectedInventorySlot = 9;
-                        if (_mainModel.GetModelManager.SelectedInventorySlot > 9) _mainModel.GetModelManager.SelectedInventorySlot = 0;
+                        if (MainModel.GetModelManager.SelectedInventorySlot < 0) MainModel.GetModelManager.SelectedInventorySlot = 9;
+                        if (MainModel.GetModelManager.SelectedInventorySlot > 9) MainModel.GetModelManager.SelectedInventorySlot = 0;
                     }
 
                     PerformPlayerMovement(keyboardState, cursorState, windowPositions, fixedDeltaTime);
                     PerformPlayerActions(keyboardState, cursorState, windowPositions, fixedDeltaTime);
-                    _mainModel.Update(fixedDeltaTime);
+                    MainModel.Update(fixedDeltaTime);
                     break;
                 case GameState.Menu:
                     if (inputManager.GetMouseButtonPressed(MouseButton.Left) && windowPositions.Focused)
                     {
                         Vector2 mouseMiddle = new Vector2(windowPositions.WindowMousePosition.X - (windowPositions.Width / 2), -(windowPositions.WindowMousePosition.Y - (windowPositions.Height / 2)));
-                        MenuButtonPresses(mouseMiddle, _mainMenuModel.ButtonPositions);
+                        MenuButtonPresses(mouseMiddle, MainMenuModel.ButtonPositions);
                     }
 
                     break;
@@ -188,7 +202,7 @@ namespace ITProject.Logic
 
         public void CloseGame()
         {
-            _mainModel.CloseGame();
+            MainModel.CloseGame();
 
             //Console.ReadLine();
         }
@@ -200,42 +214,42 @@ namespace ITProject.Logic
             {
                 if (keyboardState.IsKeyDown(Key.ControlLeft))
                 {
-                    _mainModel.GetModelManager.Zoom -= inputManager.GetMouseWheelDifference() * 0.5f;
+                    MainModel.GetModelManager.Zoom -= inputManager.GetMouseWheelDifference() * 0.5f;
                 }
 
                 if (inputManager.GetKeyPressed(Key.G))
                 {
-                    _mainModel.GetModelManager.ShowGrid = !_mainModel.GetModelManager.ShowGrid;
+                    MainModel.GetModelManager.ShowGrid = !MainModel.GetModelManager.ShowGrid;
                 }
             }
 
-            if (_mainModel.GetModelManager.Zoom > 300f) _mainModel.GetModelManager.Zoom = 300f;
-            else if (_mainModel.GetModelManager.Zoom < 1f) _mainModel.GetModelManager.Zoom = 1f;
+            if (MainModel.GetModelManager.Zoom > 300f) MainModel.GetModelManager.Zoom = 300f;
+            else if (MainModel.GetModelManager.Zoom < 1f) MainModel.GetModelManager.Zoom = 1f;
         }
 
         public void PerformPlayerMovement(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double fixedDeltaTime)
         {
             if (windowPositions.Focused)
             {
-                _mainModel.GetModelManager.Player.WalkSpeed = 0f;
+                MainModel.GetModelManager.Player.WalkSpeed = 0f;
                 if (keyboardState.IsKeyDown(Key.A))
                 {
-                    _mainModel.GetModelManager.Player.Walk(false);
+                    MainModel.GetModelManager.Player.Walk(false);
 
                 }
                 if (keyboardState.IsKeyDown(Key.D))
                 {
-                    _mainModel.GetModelManager.Player.Walk(true);
+                    MainModel.GetModelManager.Player.Walk(true);
                 }
 
                 if (keyboardState.IsKeyDown(Key.Space))
                 {
-                    _mainModel.GetModelManager.Player.Jump(fixedDeltaTime);
+                    MainModel.GetModelManager.Player.Jump(fixedDeltaTime);
                 }
 
                 if (keyboardState.IsKeyUp(Key.Space))
                 {
-                    _mainModel.GetModelManager.Player.NoJump();
+                    MainModel.GetModelManager.Player.NoJump();
                 }
             }
         }
@@ -259,49 +273,49 @@ namespace ITProject.Logic
             if (windowPositions.Focused && inputManager.GetKeyPressed(Key.Q) &&
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
-                _mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, 8, _mainModel.GetModelManager);
+                MainModel.GetModelManager.World.PlaceBlock(MainModel.GetModelManager.WorldMousePosition, 8, MainModel.GetModelManager);
             }
 
             if(windowPositions.Focused && inputManager.GetKeyPressed(Key.E))
             {
-                _mainModel.GetModelManager.InventoryOpen = !_mainModel.GetModelManager.InventoryOpen;
-                _mainModel.GetModelManager.OpenChest = null;
+                MainModel.GetModelManager.InventoryOpen = !MainModel.GetModelManager.InventoryOpen;
+                MainModel.GetModelManager.OpenChest = null;
             }
 
-            if (_mainModel.GetModelManager.InventoryOpen && inputManager.GetKeyPressed(Key.Escape))
+            if (MainModel.GetModelManager.InventoryOpen && inputManager.GetKeyPressed(Key.Escape))
             {
-                _mainModel.GetModelManager.InventoryOpen = !_mainModel.GetModelManager.InventoryOpen;
-                _mainModel.GetModelManager.CraftingWindowOpen = false;
-                _mainModel.GetModelManager.OpenChest = null;
+                MainModel.GetModelManager.InventoryOpen = !MainModel.GetModelManager.InventoryOpen;
+                MainModel.GetModelManager.CraftingWindowOpen = false;
+                MainModel.GetModelManager.OpenChest = null;
             }
 
             if (windowPositions.Focused && inputManager.GetKeyPressed(Key.I) &&
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
-                _mainModel.GetModelManager.World.AddDroppedItem(new WorldItem(_mainModel.GetModelManager.WorldMousePosition, new Vector2(10f, 3f), new Vector2(0.8f, 0.8f), new Item(1, 1)));
+                MainModel.GetModelManager.World.AddDroppedItem(new WorldItem(MainModel.GetModelManager.WorldMousePosition, new Vector2(10f, 3f), new Vector2(0.8f, 0.8f), new Item(1, 1)));
             }
 
             if(windowPositions.Focused && inputManager.GetKeyPressed(Key.C))
             {
 
-                if (_mainModel.GetModelManager.CraftingWindowOpen)
+                if (MainModel.GetModelManager.CraftingWindowOpen)
                 {
-                    _mainModel.GetModelManager.CraftingWindowOpen = false;
+                    MainModel.GetModelManager.CraftingWindowOpen = false;
                 }
                 else
                 {
-                    _mainModel.GetModelManager.OpenChest = null;
-                    _mainModel.GetModelManager.CraftingWindowOpen = true;
+                    MainModel.GetModelManager.OpenChest = null;
+                    MainModel.GetModelManager.CraftingWindowOpen = true;
                 }
 
-                _mainModel.GetModelManager.InventoryOpen = true;
+                MainModel.GetModelManager.InventoryOpen = true;
             }
 
             //Debug
             if (windowPositions.Focused && inputManager.GetKeyPressed(Key.K) &&
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
-                _mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, 12, _mainModel.GetModelManager);
+                MainModel.GetModelManager.World.PlaceBlock(MainModel.GetModelManager.WorldMousePosition, 12, MainModel.GetModelManager);
             }
         }
 
@@ -319,7 +333,7 @@ namespace ITProject.Logic
 
         private void PlayerLeftClick(Vector2 mousePositionMiddle)
         {
-            if (_mainModel.GetModelManager.InventoryOpen)
+            if (MainModel.GetModelManager.InventoryOpen)
             {
                 //Prüfen, welche Itemposition angeklickt wurde
                 if (inputManager.GetMouseButtonPressed(MouseButton.Left))
@@ -327,52 +341,52 @@ namespace ITProject.Logic
                     int itemX, itemY;
 
                     //Player Inventory
-                    if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewItemPositions, out itemX, out itemY))
+                    if (CheckInventoryClickedPosition(mousePositionMiddle, MainModel.GetModelManager.ViewItemPositions, out itemX, out itemY))
                     {
-                        _mainModel.GetModelManager.Player.ItemInventory.LeftClick(itemX, itemY);
+                        MainModel.GetModelManager.Player.ItemInventory.LeftClick(itemX, itemY);
                     }
-                    else if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewChestItemPositions, out itemX, out itemY))
+                    else if (CheckInventoryClickedPosition(mousePositionMiddle, MainModel.GetModelManager.ViewChestItemPositions, out itemX, out itemY))
                     {
-                        _mainModel.GetModelManager.OpenChest.Content.LeftClick(itemX, itemY);
+                        MainModel.GetModelManager.OpenChest.Content.LeftClick(itemX, itemY);
                     }
-                    else if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewCraftingItemPositions, out itemX, out itemY))
+                    else if (CheckInventoryClickedPosition(mousePositionMiddle, MainModel.GetModelManager.ViewCraftingItemPositions, out itemX, out itemY))
                     {
-                        CraftingRecipie clickedRecipie = _mainModel.GetModelManager.Player.CraftableRecipies[itemX];
+                        CraftingRecipie clickedRecipie = MainModel.GetModelManager.Player.CraftableRecipies[itemX];
 
-                        if (_mainModel.GetModelManager.ActiveHoldingItem != null)
+                        if (MainModel.GetModelManager.ActiveHoldingItem != null)
                         {
-                            if (_mainModel.GetModelManager.ActiveHoldingItem.ID == clickedRecipie.ResultItem.ID)
+                            if (MainModel.GetModelManager.ActiveHoldingItem.ID == clickedRecipie.ResultItem.ID)
                             {
-                                if (!MainModel.Item[_mainModel.GetModelManager.ActiveHoldingItem.ID].Stackable || !MainModel.Item[clickedRecipie.ResultItem.ID].Stackable) { return; }
-                                else if ((_mainModel.GetModelManager.ActiveHoldingItem.Amount + clickedRecipie.ResultItem.Amount) > 99) { return; }
-                                else { _mainModel.GetModelManager.ActiveHoldingItem.Amount = (clickedRecipie.ResultItem.Amount + _mainModel.GetModelManager.ActiveHoldingItem.Amount); }
+                                if (!MainModel.Item[MainModel.GetModelManager.ActiveHoldingItem.ID].Stackable || !MainModel.Item[clickedRecipie.ResultItem.ID].Stackable) { return; }
+                                else if ((MainModel.GetModelManager.ActiveHoldingItem.Amount + clickedRecipie.ResultItem.Amount) > 99) { return; }
+                                else { MainModel.GetModelManager.ActiveHoldingItem.Amount = (clickedRecipie.ResultItem.Amount + MainModel.GetModelManager.ActiveHoldingItem.Amount); }
                             }
                             else { return; }
                         }
-                        else { _mainModel.GetModelManager.ActiveHoldingItem = new Item(clickedRecipie.ResultItem.ID, clickedRecipie.ResultItem.Amount); }
+                        else { MainModel.GetModelManager.ActiveHoldingItem = new Item(clickedRecipie.ResultItem.ID, clickedRecipie.ResultItem.Amount); }
 
                         foreach (Item item in clickedRecipie.NeededItems)
                         {
-                            _mainModel.GetModelManager.Player.ItemInventory.RemoveItemAmount(item);
+                            MainModel.GetModelManager.Player.ItemInventory.RemoveItemAmount(item);
                         }
                     }
-                    else if (!CheckIfWithin(ConvertVector(mousePositionMiddle), _mainModel.GetModelManager.InventoryRectangle))
+                    else if (!CheckIfWithin(ConvertVector(mousePositionMiddle), MainModel.GetModelManager.InventoryRectangle))
                     {
-                        Item activeItem = _mainModel.GetModelManager.ActiveHoldingItem;
+                        Item activeItem = MainModel.GetModelManager.ActiveHoldingItem;
 
                         if (activeItem != null)
                         {
-                            _mainModel.GetModelManager.World.AddDroppedItem(new WorldItem(_mainModel.GetModelManager.Player.Position, new Vector2(10f, 3f), new Vector2(0.8f, 0.8f), activeItem));
-                            _mainModel.GetModelManager.ActiveHoldingItem = null;
+                            MainModel.GetModelManager.World.AddDroppedItem(new WorldItem(MainModel.GetModelManager.Player.Position, new Vector2(10f, 3f), new Vector2(0.8f, 0.8f), activeItem));
+                            MainModel.GetModelManager.ActiveHoldingItem = null;
                         }
                     }
                 }
             }
 
-            if (!_mainModel.GetModelManager.InventoryOpen && State == GameState.InGame)
+            if (!MainModel.GetModelManager.InventoryOpen && State == GameState.InGame)
             {
-                Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
-                ItemInfo itemInfo = MainModel.Item[playerInventory.GetItemID(_mainModel.GetModelManager.SelectedInventorySlot, 0)];
+                Inventory playerInventory = MainModel.GetModelManager.Player.ItemInventory;
+                ItemInfo itemInfo = MainModel.Item[playerInventory.GetItemID(MainModel.GetModelManager.SelectedInventorySlot, 0)];
 
                 float miningSpeed = 1;
                 int toolLevel = 0;
@@ -385,7 +399,7 @@ namespace ITProject.Logic
                     toolType = ((ItemInfoTools)itemInfo).ToolType;
                 }
 
-                ushort removedItem = _mainModel.GetModelManager.World.RemoveBlock(_mainModel.GetModelManager.WorldMousePosition, miningSpeed, toolLevel, toolType);
+                ushort removedItem = MainModel.GetModelManager.World.RemoveBlock(MainModel.GetModelManager.WorldMousePosition, miningSpeed, toolLevel, toolType);
 
                 if (removedItem != 0)
                 {
@@ -397,49 +411,49 @@ namespace ITProject.Logic
         private void PlayerRightClick(Vector2 mousePositionMiddle)
         {
             //Rechtsklick, wenn Inventar offen ist
-            if (_mainModel.GetModelManager.InventoryOpen)
+            if (MainModel.GetModelManager.InventoryOpen)
             {
                 //Prüfen, welche Itemposition angeklickt wurde
                 if (inputManager.GetMouseButtonPressed(MouseButton.Right))
                 {
                     int itemX, itemY;
-                    if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewItemPositions, out itemX, out itemY))
+                    if (CheckInventoryClickedPosition(mousePositionMiddle, MainModel.GetModelManager.ViewItemPositions, out itemX, out itemY))
                     {
-                        _mainModel.GetModelManager.Player.ItemInventory.RightClick(itemX, itemY);
+                        MainModel.GetModelManager.Player.ItemInventory.RightClick(itemX, itemY);
                     }
-                    else if (CheckInventoryClickedPosition(mousePositionMiddle, _mainModel.GetModelManager.ViewChestItemPositions, out itemX, out itemY))
+                    else if (CheckInventoryClickedPosition(mousePositionMiddle, MainModel.GetModelManager.ViewChestItemPositions, out itemX, out itemY))
                     {
-                        _mainModel.GetModelManager.OpenChest.Content.RightClick(itemX, itemY);
+                        MainModel.GetModelManager.OpenChest.Content.RightClick(itemX, itemY);
                     }
                 }
             }
             else
             {
-                Vector2 mouseOverBlockPos = new Vector2((int)_mainModel.GetModelManager.WorldMousePosition.X, (int)_mainModel.GetModelManager.WorldMousePosition.Y);
+                Vector2 mouseOverBlockPos = new Vector2((int)MainModel.GetModelManager.WorldMousePosition.X, (int)MainModel.GetModelManager.WorldMousePosition.Y);
 
                 //Zuerst prüfen, ob Chest geöffnet werden möchte
-                if (_mainModel.GetModelManager.World.HasInventory(mouseOverBlockPos))
+                if (MainModel.GetModelManager.World.HasInventory(mouseOverBlockPos))
                 {
-                    _mainModel.GetModelManager.OpenChest = _mainModel.GetModelManager.World.GetChest(mouseOverBlockPos);
-                    _mainModel.GetModelManager.InventoryOpen = true;
+                    MainModel.GetModelManager.OpenChest = MainModel.GetModelManager.World.GetChest(mouseOverBlockPos);
+                    MainModel.GetModelManager.InventoryOpen = true;
                 }
                 //Wenn keine Chest an dem Ort, dann versuchen, Block zu platzieren
                 else
                 {
-                    Player player = _mainModel.GetModelManager.Player;
+                    Player player = MainModel.GetModelManager.Player;
                     Hitbox playerHitbox = new Hitbox(player.Position, player.Size, Hitbox.HitboxType.Player);
                     Hitbox blockHitbox = new Hitbox(mouseOverBlockPos, new Vector2(1f, 1f), Hitbox.HitboxType.Block);
 
-                    if (!_mainModel.GetModelManager.CollisionHandler.Intersects(playerHitbox, blockHitbox))
+                    if (!MainModel.GetModelManager.CollisionHandler.Intersects(playerHitbox, blockHitbox))
                     {
-                        Inventory playerInventory = _mainModel.GetModelManager.Player.ItemInventory;
-                        ushort selectedItem = playerInventory.GetItemID(_mainModel.GetModelManager.SelectedInventorySlot, 0);
+                        Inventory playerInventory = MainModel.GetModelManager.Player.ItemInventory;
+                        ushort selectedItem = playerInventory.GetItemID(MainModel.GetModelManager.SelectedInventorySlot, 0);
 
                         if (MainModel.Item[selectedItem].Placable)
                         {
-                            if (_mainModel.GetModelManager.World.PlaceBlock(_mainModel.GetModelManager.WorldMousePosition, selectedItem, _mainModel.GetModelManager))
+                            if (MainModel.GetModelManager.World.PlaceBlock(MainModel.GetModelManager.WorldMousePosition, selectedItem, MainModel.GetModelManager))
                             {
-                                playerInventory.RemoveItemAmount(new Item(selectedItem, 1), _mainModel.GetModelManager.SelectedInventorySlot, 0);
+                                playerInventory.RemoveItemAmount(new Item(selectedItem, 1), MainModel.GetModelManager.SelectedInventorySlot, 0);
                             }
                         }
                     }
@@ -477,8 +491,75 @@ namespace ITProject.Logic
                 if (CheckIfWithin(new OpenTK.Vector2(mousePositionMiddle.X, mousePositionMiddle.Y), button.Position, button.Size, true))
                 {
                     Console.WriteLine(button.ButtonInput);
-                    _mainMenuModel.LeftClick(button.ButtonInput);
+
+                    switch (button.ButtonType)
+                    {
+                        case ButtonType.ToWorldList:
+                            MainMenuModel.ScreenState = MainMenuModel.Screen.WorldSelect;
+                            break;
+                        case ButtonType.World:
+                            Console.WriteLine(button.ButtonInput);
+                            if (button.ButtonInput.Equals("Empty"))
+                            {
+                                _worldLoadType = World.WorldLoadType.NewWorld;
+
+                                Console.WriteLine("Welt Seed eingeben");
+                                string seed = Console.ReadLine();
+                                if (!int.TryParse(seed, out _worldSeed))
+                                {
+                                    byte[] bytes = System.Text.Encoding.ASCII.GetBytes(seed);
+                                    _worldSeed = BitConverter.ToInt32(bytes, 0);
+                                }
+                            }
+                            else
+                            {
+                                _worldLoadType = World.WorldLoadType.LoadWorld;
+                            }
+
+                            _worldSaveSlot = button.Slot;
+
+                            MainMenuModel.ScreenState = MainMenuModel.Screen.PlayerSelect;
+                            break;
+                        case ButtonType.Player:
+                            if (button.ButtonInput.Equals("Empty"))
+                            {
+                                _playerLoadType = Player.PlayerLoadingType.NewPlayer;
+                            }
+                            else
+                            {
+                                _playerLoadType = Player.PlayerLoadingType.LoadPlayer;
+                            }
+
+                            _playerSaveSlot = button.Slot;
+                            StartGame();
+                            break;
+                        case ButtonType.Back:
+                            MainMenuBackButton();
+                            break;
+                        case ButtonType.CloseGame:
+                            GameClose = true;
+                            break;
+                    }
                 }
+            }
+        }
+
+        private void StartGame()
+        {
+            MainModel = new MainModel(_worldLoadType, _playerLoadType, _playerSaveSlot, _worldSaveSlot, _worldSeed, _craftingRecipies, _itemList);
+            ChangeGameState(GameState.InGame);
+        }
+
+        private void MainMenuBackButton()
+        {
+            switch (MainMenuModel.ScreenState)
+            {
+                case MainMenuModel.Screen.WorldSelect:
+                    MainMenuModel.ScreenState = MainMenuModel.Screen.MainMenuStart;
+                    break;
+                case MainMenuModel.Screen.PlayerSelect:
+                    MainMenuModel.ScreenState = MainMenuModel.Screen.WorldSelect;
+                    break;
             }
         }
 

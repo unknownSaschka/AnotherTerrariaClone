@@ -8,7 +8,7 @@ using static ITProject.Logic.GameExtentions;
 
 namespace ITProject.Model
 {
-    class MainMenuModel
+    public class MainMenuModel
     {
         public enum Screen { MainMenuStart, WorldSelect, PlayerSelect, NewPlayer, NewWorld }
         public Screen ScreenState;
@@ -21,6 +21,7 @@ namespace ITProject.Model
         public MainMenuModel()
         {
             ScreenState = Screen.MainMenuStart;
+            Init();
         }
 
         private void Init()
@@ -28,7 +29,7 @@ namespace ITProject.Model
             SaveManagement.LoadPlayerWorldJSON(out AvailablePlayerSaves, out AvailableWorldSaves);
         }
 
-        public void LeftClick(string button)
+        public void LeftClick(ViewButtonPositions button)
         {
             
         }

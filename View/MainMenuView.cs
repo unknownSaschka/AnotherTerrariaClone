@@ -29,6 +29,7 @@ namespace ITProject.View
         private Shader _shader;
 
         private uint _buttonsVAO, _buttonsVBO;
+        private uint _backgroundVAO, _backgroundVBO;
 
         private Vector2 _buttonTexCoordMin = new Vector2(0f, 0f);
         private Vector2 _buttonTexCoordMax = new Vector2(1f, 1f);
@@ -44,6 +45,18 @@ namespace ITProject.View
         {
             GL.GenVertexArrays(1, out _buttonsVAO);
             GL.GenBuffers(1, out _buttonsVBO);
+
+            //Background
+            GL.GenVertexArrays(1, out _backgroundVAO);
+            GL.GenBuffers(1, out _backgroundVBO);
+
+            GL.BindVertexArray(_backgroundVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _backgroundVBO);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeof(float) * 4 * 4, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
 
             _menuTextures = new MenuTextures();
 
@@ -87,6 +100,9 @@ namespace ITProject.View
             GL.DeleteVertexArray(_buttonsVAO);
             GL.DeleteBuffer(_buttonsVBO);
 
+            GL.DeleteVertexArray(_backgroundVAO);
+            GL.DeleteBuffer(_backgroundVBO);
+
             _drawing.Dispose();
             _font.Dispose();
         }
@@ -108,25 +124,27 @@ namespace ITProject.View
             SetMatrix(_shader, transformation, Vector4.Zero);
             _drawing.ProjectionMatrix = projection;
 
+            DrawBackground();
+
             switch (_menuModel.ScreenState)
             {
                 case MainMenuModel.Screen.MainMenuStart:
                     DrawStartScreen();
                     break;
                 case MainMenuModel.Screen.WorldSelect:
-
+                    DrawWorldSelectorScreen();
                     break;
                 case MainMenuModel.Screen.PlayerSelect:
-
+                    DrawPlayerSelectorScreen();
                     break;
             }
         }
 
         private void DrawStartScreen()
         {
-            Vector2 selectWorldPos = new Vector2(0f, 200f);
+            Vector2 selectWorldPos = new Vector2(0f, 0f);
             Vector2 endGamePos = new Vector2(0f, -200f);
-            Vector2 buttonSize = new Vector2(400, 150);
+            Vector2 buttonSize = new Vector2(500, 100);
             int count = 0;
 
             float[,] vertices = new float[2 * 4, 4];
@@ -156,30 +174,126 @@ namespace ITProject.View
             DrawElements(_buttonsVAO, _buttonsVBO, sizeof(float) * vertices.Length, vertices, 2 * 4, _menuTextures.Button);
 
             List<ViewButtonPositions> buttons = new List<ViewButtonPositions>();
-            buttons.Add(new ViewButtonPositions(selectWorldPos, buttonSize, "Select World"));
-            buttons.Add(new ViewButtonPositions(endGamePos, buttonSize, "Close Game"));
+            buttons.Add(new ViewButtonPositions(selectWorldPos, buttonSize, "Select World", ButtonType.ToWorldList, -1));
+            buttons.Add(new ViewButtonPositions(endGamePos, buttonSize, "Close Game", ButtonType.CloseGame, -1));
             _menuModel.ButtonPositions = buttons;
             DrawText(buttons);
         }
 
         private void DrawWorldSelectorScreen()
         {
+            Vector2 firstWorldButtonPos = new Vector2(0f, (_mainView.Height / 2) - 100f);
+            Vector2 backButtonPos = new Vector2(-(_mainView.Width / 2) + 100f, -(_mainView.Height/2) + 50f);
+            Vector2 buttonSize = new Vector2(400, 50);
+            Vector2 backButtonSize = new Vector2(200, 100);
 
-        }
+            float[,] vertices = new float[11 * 4, 4];
 
-        private void DrawCreateWorldScreen()
-        {
+            WorldSaveInfo[] worldSaves = _menuModel.AvailableWorldSaves;
+            List<ViewButtonPositions> buttons = new List<ViewButtonPositions>();
+            buttons.Add(new ViewButtonPositions(new Vector2(firstWorldButtonPos.X, firstWorldButtonPos.Y + 50f), buttonSize, "Select World", ButtonType.None, -1));
 
+            float steps = 60f;
+            int count = 0;
+            float[,] vert;
+
+            for (int i = 0; i < 10; i++)
+            {
+                vert = GetVertices4x4(firstWorldButtonPos, buttonSize, _buttonTexCoordMin, _buttonTexCoordMax, true);
+                for (int ic = 0; ic < 4; ic++)
+                {
+                    for (int ia = 0; ia < 4; ia++)
+                    {
+                        vertices[count, ia] = vert[ic, ia];
+                    }
+                    count++;
+                }
+
+                if (worldSaves[i] != null)
+                {
+                    buttons.Add(new ViewButtonPositions(new Vector2(firstWorldButtonPos.X, firstWorldButtonPos.Y), buttonSize, $"Slot {worldSaves[i].SaveSlot}", ButtonType.World, worldSaves[i].SaveSlot));
+                }
+                else
+                {
+                    buttons.Add(new ViewButtonPositions(new Vector2(firstWorldButtonPos.X, firstWorldButtonPos.Y), buttonSize, "Empty", ButtonType.World, i));
+                }
+
+                firstWorldButtonPos.Y -= steps;
+            }
+
+            vert = GetVertices4x4(backButtonPos, backButtonSize, _buttonTexCoordMin, _buttonTexCoordMax, true);
+            for (int ic = 0; ic < 4; ic++)
+            {
+                for (int ia = 0; ia < 4; ia++)
+                {
+                    vertices[count, ia] = vert[ic, ia];
+                }
+                count++;
+            }
+
+            buttons.Add(new ViewButtonPositions(backButtonPos, backButtonSize, "Zurück", ButtonType.Back, -1));
+            _menuModel.ButtonPositions = buttons;
+
+            DrawElements(_buttonsVAO, _buttonsVBO, sizeof(float) * vertices.Length, vertices, 11 * 4, _menuTextures.Button);
+            DrawText(buttons);
         }
 
         private void DrawPlayerSelectorScreen()
         {
+            Vector2 firstPlayerButtonPos = new Vector2(0f, (_mainView.Height / 2) - 100f);
+            Vector2 backButtonPos = new Vector2(-(_mainView.Width / 2) + 100f, -(_mainView.Height / 2) + 50f);
+            Vector2 buttonSize = new Vector2(400, 50);
+            Vector2 backButtonSize = new Vector2(200, 100);
 
-        }
+            float[,] vertices = new float[11 * 4, 4];
 
-        private void DrawCreatePlayerScreen()
-        {
+            PlayerSaveInfo[] playerSaves = _menuModel.AvailablePlayerSaves;
+            List<ViewButtonPositions> buttons = new List<ViewButtonPositions>();
+            buttons.Add(new ViewButtonPositions(new Vector2(firstPlayerButtonPos.X, firstPlayerButtonPos.Y + 50f), buttonSize, "Select Player", ButtonType.None, -1));
 
+            float steps = 60f;
+            int count = 0;
+            float[,] vert;
+
+            for (int i = 0; i < 10; i++)
+            {
+                vert = GetVertices4x4(firstPlayerButtonPos, buttonSize, _buttonTexCoordMin, _buttonTexCoordMax, true);
+                for (int ic = 0; ic < 4; ic++)
+                {
+                    for (int ia = 0; ia < 4; ia++)
+                    {
+                        vertices[count, ia] = vert[ic, ia];
+                    }
+                    count++;
+                }
+
+                if (playerSaves[i] != null)
+                {
+                    buttons.Add(new ViewButtonPositions(new Vector2(firstPlayerButtonPos.X, firstPlayerButtonPos.Y), buttonSize, $"Slot {playerSaves[i].SaveSlot}", ButtonType.Player, playerSaves[i].SaveSlot));
+                }
+                else
+                {
+                    buttons.Add(new ViewButtonPositions(new Vector2(firstPlayerButtonPos.X, firstPlayerButtonPos.Y), buttonSize, "Empty", ButtonType.Player, i));
+                }
+
+                firstPlayerButtonPos.Y -= steps;
+            }
+
+            vert = GetVertices4x4(backButtonPos, backButtonSize, _buttonTexCoordMin, _buttonTexCoordMax, true);
+            for (int ic = 0; ic < 4; ic++)
+            {
+                for (int ia = 0; ia < 4; ia++)
+                {
+                    vertices[count, ia] = vert[ic, ia];
+                }
+                count++;
+            }
+
+            buttons.Add(new ViewButtonPositions(backButtonPos, backButtonSize, "Zurück", ButtonType.Back, -1));
+            _menuModel.ButtonPositions = buttons;
+
+            DrawElements(_buttonsVAO, _buttonsVBO, sizeof(float) * vertices.Length, vertices, 11 * 4, _menuTextures.Button);
+            DrawText(buttons);
         }
 
         private void DrawText(List<ViewButtonPositions> buttons)
@@ -252,6 +366,40 @@ namespace ITProject.View
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
             GL.BindTexture(TextureTarget.Texture2D, 0);
+        }
+
+        private void DrawBackground()
+        {
+            float backgroundZoom = 1f;
+            Matrix4 transform = Matrix4.CreateOrthographic(_mainView.Width * backgroundZoom, _mainView.Height * backgroundZoom, -1, 1);
+            _shader.SetMatrix4("transform", transform);
+
+            float ratio = _mainView.Width / (float)_mainView.Height;
+            Vector2 min = new Vector2(-_mainView.Width / 2, -_mainView.Height / 2);
+            Vector2 max = new Vector2(_mainView.Width / 2, _mainView.Height / 2);
+
+            float[,] vertices = GetVerices4x4MinMax(min, max, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f));
+
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _menuTextures.MenuBackground);
+
+            GL.BindVertexArray(_backgroundVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _backgroundVBO);
+
+            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, sizeof(float) * vertices.Length, vertices);
+            GL.DrawArrays(PrimitiveType.Quads, 0, 4);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            GL.Disable(EnableCap.Blend);
+        }
+
+        private float[,] GetVerices4x4MinMax(Vector2 min, Vector2 max, Vector2 texCoordMin, Vector2 texCoordMax)
+        {
+            return GetVertices4x4(min, max - min, texCoordMin, texCoordMax, false);
         }
     }
 }

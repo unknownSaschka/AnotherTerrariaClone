@@ -61,6 +61,11 @@ namespace ITProject.View
 
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
+            if (_logic.GameClose)
+            {
+                Close();
+            }
+
             WindowPositions = UpdateWindowPositions();
 
             if (_logic.GameStateChanged)
@@ -110,6 +115,8 @@ namespace ITProject.View
 
         protected override void OnRenderFrame(FrameEventArgs e)
         {
+            if (_logic.GameStateChanged == true) return;
+
             switch (_logic.State)
             {
                 case GameState.InGame:
