@@ -19,6 +19,7 @@ namespace ITProject.Logic
         public GameState LastState;
         public bool GameStateChanged = true;
         public bool GameClose = false;
+        public bool PlayerMining;
 
         private int _width = 800, _height = 800;
         private string _windowTitle = "Game";
@@ -256,6 +257,8 @@ namespace ITProject.Logic
 
         public void PerformPlayerActions(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double fixedDeltaTime)
         {
+            PlayerMining = false;
+
             if (windowPositions.Focused && cursorState.IsButtonDown(MouseButton.Left) && 
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
@@ -385,6 +388,7 @@ namespace ITProject.Logic
 
             if (!MainModel.GetModelManager.InventoryOpen && State == GameState.InGame)
             {
+                PlayerMining = true;
                 Inventory playerInventory = MainModel.GetModelManager.Player.ItemInventory;
                 ItemInfo itemInfo = MainModel.Item[playerInventory.GetItemID(MainModel.GetModelManager.SelectedInventorySlot, 0)];
 

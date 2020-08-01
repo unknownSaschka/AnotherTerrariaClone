@@ -491,7 +491,14 @@ namespace ITProject.View
 
             if (!player.Grounded)
             {
-                _playerAnimator.PlayJumpAnimation(_deltaTime, 14.0f, player.Velocity.Y, out texMin, out texMax);
+                if (_logic.PlayerMining)
+                {
+                    _playerAnimator.PlayJumpUseAnimation(_deltaTime, 10f, out texMin, out texMax);
+                }
+                else
+                {
+                    _playerAnimator.PlayJumpAnimation(_deltaTime, 14.0f, player.Velocity.Y, out texMin, out texMax);
+                }
             }
             else if (player.Velocity.X.AlmostEquals(0f, 0.2f))
             {

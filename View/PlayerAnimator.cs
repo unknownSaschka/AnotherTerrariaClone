@@ -25,8 +25,6 @@ namespace ITProject.View
         private Vector2 _gridSize = new Vector2(9, 11);
 
         private int _currentIdleAnimation = 0;
-
-        private int _normalAnimation = 0;
         private AnimationInfo _walkAnimation = new AnimationInfo(6, 8);
         private AnimationInfo _jumpAnimation = new AnimationInfo(7, 5);
         private AnimationInfo _useAnimation = new AnimationInfo(8, 4);
@@ -132,19 +130,39 @@ namespace ITProject.View
             GetTextureCoord(_jumpAnimation.Position, currentFrame, _gridSize, out min, out max, 0.0f);
         }
 
-        public void PlayDamageAnimation(double deltaTime)
+        public void PlayDamageAnimation(double deltaTime, float speed, out Vector2 min, out Vector2 max)
         {
-
+            GetTextureCoord(_damageAnimation.Position, 0, _gridSize, out min, out max, 0.0f);
         }
 
-        public void PlayUseAnimation(double deltaTime)
+        public void PlayUseAnimation(double deltaTime, float speed, out Vector2 min, out Vector2 max)
         {
+            if (CurrentAnimation != AnimationType.Jumping)
+            {
+                CurrentFrameTime = 0;
+            }
 
+            CurrentAnimation = AnimationType.Jumping;
+            CurrentFrameTime += deltaTime * speed;
+
+
+            int currentFrame = (int)CurrentFrameTime % _useAnimation.FrameCount;
+            GetTextureCoord(_useAnimation.Position, currentFrame, _gridSize, out min, out max, 0.0f);
         }
 
-        public void PlayJumpUseAnimation(double deltaTime)
+        public void PlayJumpUseAnimation(double deltaTime, float speed, out Vector2 min, out Vector2 max)
         {
+            if (CurrentAnimation != AnimationType.JumpUsing)
+            {
+                CurrentFrameTime = 0;
+            }
 
+            CurrentAnimation = AnimationType.JumpUsing;
+            CurrentFrameTime += deltaTime * speed;
+
+
+            int currentFrame = (int)CurrentFrameTime % _jumpUseAnimation.FrameCount;
+            GetTextureCoord(_jumpUseAnimation.Position, currentFrame, _gridSize, out min, out max, 0.0f);
         }
 
         private void GetTextureCoord(int animation, int position, Vector2 gridSize, out Vector2 minTexCoord, out Vector2 maxTexCoord, float textureOffset)
@@ -160,23 +178,6 @@ namespace ITProject.View
             maxTexCoord.X = ((position + 1) * tileSize.X) - textureOffset;
             minTexCoord.Y = (animation * tileSize.Y) + textureOffset;
             maxTexCoord.Y = ((animation + 1) * tileSize.Y) - textureOffset;
-
-
-            /*
-            minTexCoord = new Vector2();
-            maxTexCoord = new Vector2();
-
-            Vector2 tileSize = new Vector2();
-            tileSize.X = 1 / gridSize.X;
-            tileSize.Y = 1 / gridSize.Y;
-            int x = (int)(position % gridSize.X);
-            int y = (int)(position / gridSize.X);
-
-            minTexCoord.X = (x * tileSize.X) + textureOffset;
-            maxTexCoord.X = ((x + 1) * tileSize.X) - textureOffset;
-            minTexCoord.Y = (y * tileSize.Y) + textureOffset;
-            maxTexCoord.Y = ((y + 1) * tileSize.Y) - textureOffset;
-            */
         }
     }
 }
