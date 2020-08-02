@@ -74,6 +74,8 @@ namespace ITProject.View
         private float _passedTime;
         private double _deltaTime;
 
+        private bool _lastPlayerDirection;  //false = left, true = right
+
         private Vector2 _textureGridSize = new Vector2(8f, 8f);
         private float[,] _light;
 
@@ -502,14 +504,31 @@ namespace ITProject.View
             }
             else if (player.Velocity.X.AlmostEquals(0f, 0.2f))
             {
-                _playerAnimator.PlayIdleAnimation(_deltaTime, 4f, out texMin, out texMax);
+                if (_logic.PlayerMining)
+                {
+                    _playerAnimator.PlayUseAnimation(_deltaTime, 10f, out texMin, out texMax);
+                }
+                else
+                {
+                    _playerAnimator.PlayIdleAnimation(_deltaTime, 8f, out texMin, out texMax);
+                }
             }
             else
             {
                 _playerAnimator.PlayWalkAnimation(_deltaTime, Math.Abs(player.Velocity.X) * 3f, out texMin, out texMax);
             }
 
-            if(player.Velocity.X < 0)
+            if(player.Velocity.X < 0f)
+            {
+                _lastPlayerDirection = false;
+                
+            }
+            else if(player.Velocity.X > 0f)
+            {
+                _lastPlayerDirection = true;
+            }
+
+            if (!_lastPlayerDirection)
             {
                 float temp = texMin.X;
                 texMin.X = texMax.X;

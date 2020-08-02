@@ -24,7 +24,11 @@ namespace ITProject.View
 
         private Vector2 _gridSize = new Vector2(9, 11);
 
+        private bool _baseAnimation = false;
+        private double _baseAnimationDuration = 10d;
+
         private int _currentIdleAnimation = 0;
+        private AnimationInfo _standAnimation = new AnimationInfo(0, 1);
         private AnimationInfo _walkAnimation = new AnimationInfo(6, 8);
         private AnimationInfo _jumpAnimation = new AnimationInfo(7, 5);
         private AnimationInfo _useAnimation = new AnimationInfo(8, 4);
@@ -73,7 +77,7 @@ namespace ITProject.View
                     if(CurrentFrameTime < 5.0d)
                     {
                         if (CurrentFrameTime < 4.0d) CurrentFrameTime = 4.0d;
-                        CurrentFrameTime += deltaTime;
+                        CurrentFrameTime += deltaTime * 5.0d;
                         int currentJumpFrame = (int)CurrentFrameTime % _jumpAnimation.FrameCount;
                         GetTextureCoord(_jumpAnimation.Position, currentJumpFrame, _gridSize, out min, out max, 0.0f);
                         return;
@@ -86,20 +90,35 @@ namespace ITProject.View
             }
 
             CurrentAnimation = AnimationType.Idle;
-            CurrentFrameTime += deltaTime;
+            CurrentFrameTime += deltaTime * speed;
 
-            int currentFrame = (int)CurrentFrameTime % _idleAnimations[_currentIdleAnimation].FrameCount;
-            GetTextureCoord(_idleAnimations[_currentIdleAnimation].Position, currentFrame, _gridSize, out min, out max, 0.0f);
-
-            if(CurrentFrameTime > _idleAnimations[_currentIdleAnimation].FrameCount)
+            if (_baseAnimation)
             {
-                CurrentFrameTime = 0;
-                _currentIdleAnimation++;
-
-                if(_currentIdleAnimation >= _idleAnimations.Length)
+                if (CurrentFrameTime > _baseAnimationDuration)
                 {
-                    _currentIdleAnimation = 0;
+                    CurrentFrameTime = 0;
+                    _baseAnimation = false;
                 }
+
+                int currentFrame = 0;
+                GetTextureCoord(_standAnimation.Position, currentFrame, _gridSize, out min, out max, 0.0f);
+            }
+            else
+            {
+                if (CurrentFrameTime > _idleAnimations[_currentIdleAnimation].FrameCount)
+                {
+                    CurrentFrameTime = 0;
+                    _currentIdleAnimation++;
+                    _baseAnimation = true;
+
+                    if (_currentIdleAnimation >= _idleAnimations.Length)
+                    {
+                        _currentIdleAnimation = 0;
+                    }
+                }
+
+                int currentFrame = (int)CurrentFrameTime % _idleAnimations[_currentIdleAnimation].FrameCount;
+                GetTextureCoord(_idleAnimations[_currentIdleAnimation].Position, currentFrame, _gridSize, out min, out max, 0.0f);
             }
         }
 
@@ -137,12 +156,12 @@ namespace ITProject.View
 
         public void PlayUseAnimation(double deltaTime, float speed, out Vector2 min, out Vector2 max)
         {
-            if (CurrentAnimation != AnimationType.Jumping)
+            if (CurrentAnimation != AnimationType.Using)
             {
                 CurrentFrameTime = 0;
             }
 
-            CurrentAnimation = AnimationType.Jumping;
+            CurrentAnimation = AnimationType.Using;
             CurrentFrameTime += deltaTime * speed;
 
 
