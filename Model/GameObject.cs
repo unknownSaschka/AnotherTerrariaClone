@@ -17,9 +17,13 @@ namespace ITProject.Model
         public float SlidingPower = 6.0f;
         public bool Grounded = false;
 
+        public bool Direction;  //false = left, true = right
+
+
         public virtual void Update(double deltaTime, CollisionHandler collisions)
         {
             UpdatePhysics(deltaTime, collisions);
+            UpdateDirection();
         }
 
         public virtual void SetGrounded(bool grounded)
@@ -50,6 +54,18 @@ namespace ITProject.Model
             newPos = collisions.CheckCollisionY(newPos, Size, ref Velocity.Y, this);
 
             Position = newPos;
+        }
+
+        protected void UpdateDirection()
+        {
+            if (Velocity.X < 0f)
+            {
+                Direction = false;
+            }
+            else if (Velocity.X > 0f)
+            {
+                Direction = true;
+            }
         }
     }
 }

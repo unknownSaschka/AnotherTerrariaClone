@@ -20,6 +20,9 @@ namespace ITProject.Model
         public float WalkSpeed;
         public float MaxWalkSpeed = 10f;
 
+        public int Health;
+        public int MaxHelath;
+
         private float _jumpPower = 18f;
         private float jumpDuration = 0f;
         private float maxJumpDuration = 0.3f;
@@ -81,6 +84,7 @@ namespace ITProject.Model
         public override void Update(double deltaTime, CollisionHandler collisions)
         {
             UpdatePhysics(deltaTime, collisions);
+            UpdateDirection();
         }
 
         private void UpdatePhysics(double deltaTime, CollisionHandler collisions)
@@ -234,6 +238,9 @@ namespace ITProject.Model
             Gravity = -20f;
             Size = new Vector2(1.5f, 2.8f);
             SetGrounded(false);
+
+            MaxHelath = 100;
+            Health = 100;
         }
 
         //Hier werden u.a. die Startitems dem Inventar hinzugefügt
@@ -247,6 +254,20 @@ namespace ITProject.Model
         public Hitbox GetHitbox()
         {
             return new Hitbox(Position, Size, Hitbox.HitboxType.Player);
+        }
+        public void Damage(int damage)
+        {
+            Health -= damage;
+
+            if(Health < 0)
+            {
+                Dead();
+            }
+        }
+
+        private void Dead()
+        {
+            Console.WriteLine("Spieler Dead");
         }
     }
 

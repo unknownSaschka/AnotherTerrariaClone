@@ -5,22 +5,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static ITProject.View.InGameView;
 
 namespace ITProject.View
 {
     class PlayerAnimator
     {
-        private struct AnimationInfo
-        {
-            public int Position;
-            public int FrameCount;
-
-            public AnimationInfo(int position, int frameCount)
-            {
-                Position = position;
-                FrameCount = frameCount;
-            }
-        }
+        
 
         private Vector2 _gridSize = new Vector2(9, 11);
 

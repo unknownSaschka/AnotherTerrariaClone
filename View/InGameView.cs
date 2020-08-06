@@ -15,6 +15,8 @@ using OpenTK.Input;
 using System.Drawing;
 using System.Windows.Forms;
 using NAudio.Wave;
+using ITProject.Model.Enemies;
+using ITProject.View.Animators;
 
 namespace ITProject.View
 {
@@ -36,6 +38,18 @@ namespace ITProject.View
             }
         }
 
+        public struct AnimationInfo
+        {
+            public int Position;
+            public int FrameCount;
+
+            public AnimationInfo(int position, int frameCount)
+            {
+                Position = position;
+                FrameCount = frameCount;
+            }
+        }
+
         private MainView _mainView;
         private GameTextures _gameTextures;
         private MainLogic _logic;
@@ -48,6 +62,7 @@ namespace ITProject.View
         private QFontDrawing _drawing;
 
         private PlayerAnimator _playerAnimator;
+        private SlimeAnimator _slimeAnimator;
 
         private uint _blockVAO, _blockVBO;
         private uint _blockWallVAO, _blockWallVBO;
@@ -66,6 +81,7 @@ namespace ITProject.View
         private uint _droppedItemsVAO, _droppedItemsVBO;
         private uint _treesVAO, _treesVBO;
         private uint _damagedBlocksVAO, _damagedBlocksVBO;
+        private uint _slimeVAO, _slimeVBO;
 
         private uint _craftingVAO, _craftingVBO;
 
@@ -73,8 +89,6 @@ namespace ITProject.View
         private Shader _blockShader;
         private float _passedTime;
         private double _deltaTime;
-
-        private bool _lastPlayerDirection;  //false = left, true = right
 
         private Vector2 _textureGridSize = new Vector2(8f, 8f);
         private float[,] _light;
@@ -109,6 +123,7 @@ namespace ITProject.View
             _oldPlayerPosition = new Vector2(-_mainModel.GetModelManager.Player.Position.X, -_mainModel.GetModelManager.Player.Position.Y);
             _zoom = _mainModel.GetModelManager.Zoom;
             _playerAnimator = new PlayerAnimator();
+            _slimeAnimator = new SlimeAnimator();
         }
 
         public void OnLoad()
@@ -171,6 +186,7 @@ namespace ITProject.View
             GL.DeleteBuffer(_treesVBO);
             GL.DeleteBuffer(_damagedBlocksVBO);
             GL.DeleteBuffer(_craftingVBO);
+            GL.DeleteBuffer(_slimeVBO);
 
             //Vertex Arrays clearen
             GL.DeleteVertexArray(_blockVBO);
@@ -190,6 +206,7 @@ namespace ITProject.View
             GL.DeleteVertexArray(_treesVBO);
             GL.DeleteVertexArray(_damagedBlocksVBO);
             GL.DeleteVertexArray(_craftingVBO);
+            GL.DeleteVertexArray(_slimeVAO);
 
             //Shader löschen
             GL.DeleteProgram(_shader.Handle);
@@ -403,7 +420,7 @@ namespace ITProject.View
             _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
 
             DrawPlayer(player);
-
+            DrawEnemies();
 
             //Wasserblöcke zeichnen
             SetMatrix(_blockShader, transformation, translation);
@@ -518,17 +535,7 @@ namespace ITProject.View
                 _playerAnimator.PlayWalkAnimation(_deltaTime, Math.Abs(player.Velocity.X) * 3f, out texMin, out texMax);
             }
 
-            if(player.Velocity.X < 0f)
-            {
-                _lastPlayerDirection = false;
-                
-            }
-            else if(player.Velocity.X > 0f)
-            {
-                _lastPlayerDirection = true;
-            }
-
-            if (!_lastPlayerDirection)
+            if (!player.Direction)
             {
                 float temp = texMin.X;
                 texMin.X = texMax.X;
@@ -537,24 +544,7 @@ namespace ITProject.View
 
             float[,] playerVertices = GetVerices4x4MinMax(min, max, texMin, texMax);
 
-            GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Player);
-
-            GL.BindVertexArray(_playerVAO);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _playerVBO);
-
-            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, sizeof(float) * playerVertices.Length, playerVertices);
-
-            GL.DrawArrays(PrimitiveType.Quads, 0, 4);
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            GL.Disable(EnableCap.Blend);
+            DrawElements(_playerVAO, _playerVBO, playerVertices.Length, playerVertices, 4, _gameTextures.Player);
         }
 
         private void DrawGUI()
@@ -609,6 +599,9 @@ namespace ITProject.View
 
         private void DrawElements(uint vao, uint vbo, int bufferSize, float[,] vertices, int verticesToDraw, uint gameTexture)
         {
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
             GL.BindVertexArray(vao);
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
 
@@ -624,6 +617,8 @@ namespace ITProject.View
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
             GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            GL.Disable(EnableCap.Blend);
         }
 
         private void DrawElements(uint vao, uint vbo, int verticesToDraw, uint gameTexture)
@@ -639,6 +634,46 @@ namespace ITProject.View
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
             GL.BindTexture(TextureTarget.Texture2D, 0);
+        }
+
+        private void DrawEnemies()
+        {
+            List<Enemie> enemies = _mainModel.GetModelManager.EnemyManager.Enemies;
+
+            float[,] vertices = new float[4 * enemies.Count, 4];
+            int count = 0;
+
+            foreach(Enemie enemie in enemies)
+            {
+                Vector2 texMin = Vector2.Zero, texMax = Vector2.Zero;
+                Type enemyType = enemie.GetType();
+                if (enemyType.Equals(typeof(Slime)))
+                {
+                    Slime slime = (Slime)enemie;
+
+                    if (enemie.Grounded)
+                    {
+                        _slimeAnimator.PlayIdleAnimation(_deltaTime, ref slime.CurrentFrameTime, 10f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
+                    }
+                    else
+                    {
+                        _slimeAnimator.PlayJumpAnimation(_deltaTime, ref slime.CurrentFrameTime, 10f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
+                    }
+                }
+
+                float[,] verts = GetVertices4x4(ConvertVector(enemie.Position), ConvertVector(enemie.Size), texMin, texMax, true);
+
+                for (int ic = 0; ic < 4; ic++)
+                {
+                    for (int ia = 0; ia < 5; ia++)
+                    {
+                        vertices[count, ia] = verts[ic, ia];
+                    }
+                    count++;
+                }
+            }
+
+            DrawElements(_slimeVAO, _slimeVBO, vertices.Length, vertices, count * 4, _gameTextures.Slime);
         }
 
         private void DrawNumbers(List<ItemPositionAmount> itemPositions)
@@ -1242,6 +1277,10 @@ namespace ITProject.View
             //DamagedBlocks
             GL.GenVertexArrays(1, out _damagedBlocksVAO);
             GL.GenBuffers(1, out _damagedBlocksVBO);
+
+            //SlimeSprite
+            GL.GenVertexArrays(1, out _slimeVAO);
+            GL.GenBuffers(1, out _slimeVBO);
         }
 
         private float[,] GetInventoryItemsPos(Vector2 invSize, Inventory inventory, Vector2 startPos, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)

@@ -1,4 +1,5 @@
 ﻿using ITProject.Logic;
+using ITProject.Model.Enemies;
 using OpenTK;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ namespace ITProject.Model
         public Player Player { get; internal set; }
         public World World { get; internal set; }
         public CollisionHandler CollisionHandler{ get; internal set; }
+        public EnemyManager EnemyManager { get; internal set; }
         public SaveManagement SaveManagement { get; }
         public System.Numerics.Vector2 WorldMousePosition;
         public Crafting Crafting;
@@ -67,6 +69,7 @@ namespace ITProject.Model
             Player = new Player(playerLoadingType, playerSaveSlot, new System.Numerics.Vector2(2000, World.SearchGround(2000)), this);
             Crafting = new Crafting();
             CollisionHandler = new CollisionHandler(this);
+            EnemyManager = new EnemyManager();
             PlayerIntersection = false;
             TestedCollisions = new List<System.Numerics.Vector2>();
             RenderDistance = new System.Numerics.Vector2(42, 22);

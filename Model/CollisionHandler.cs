@@ -1,4 +1,5 @@
 ﻿using ITProject.Logic;
+using ITProject.Model.Enemies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -146,6 +147,20 @@ namespace ITProject.Model
                 if (item.LayingTime < 3.0f) continue;
                 player.ItemInventory.AddItemUnsorted(item.Item);
                 _modelManager.World.RemoveDroppedItem(item);
+            }
+        }
+        public void CheckPlayerWithEnemies(Player player, IEnumerable<Enemie> enemieList)
+        {
+            Hitbox playerHitbox = player.GetHitbox();
+
+            foreach(Enemie enemie in enemieList)
+            {
+                Hitbox enemieHitbox = new Hitbox(enemie.Position, enemie.Size, Hitbox.HitboxType.Player);
+
+                if(Intersects(playerHitbox, enemieHitbox))
+                {
+                    player.Damage(enemie.Damage);
+                }
             }
         }
 

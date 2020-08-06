@@ -18,6 +18,8 @@ namespace ITProject.Model
 
         public static int InventoryHeight = 4;
         public static int InventoryWidth = 10;
+
+        private float _playerEnemieDistanceCheck = 2f;
         
         public ModelManager GetModelManager
         {
@@ -39,7 +41,10 @@ namespace ITProject.Model
         {
             _manager.World.Update(deltaTime, _manager.Player, _manager.CollisionHandler);
             _manager.Player.Update(deltaTime, _manager.CollisionHandler);
+            _manager.EnemyManager.Update(deltaTime, _manager.CollisionHandler);
+
             _manager.CollisionHandler.CheckPlayerWithDroppedItems(_manager.Player);
+            _manager.CollisionHandler.CheckPlayerWithEnemies(_manager.Player, _manager.EnemyManager.GetNearbyEnemies(_manager.Player.Position, _playerEnemieDistanceCheck));
             
             _manager.Player.UpdateInventory(_manager.Crafting);
         }

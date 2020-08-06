@@ -139,6 +139,7 @@
     <Compile Include="Logic\WorldLoader.cs" />
     <Compile Include="Model\CollisionHandler.cs" />
     <Compile Include="Model\Crafting.cs" />
+    <Compile Include="Model\Enemies\EnemyManager.cs" />
     <Compile Include="Model\GameObject.cs" />
     <Compile Include="Model\Inventory.cs" />
     <Compile Include="Model\Item.cs" />
@@ -146,16 +147,18 @@
     <Compile Include="Model\MainModel.cs" />
     <Compile Include="Model\ModelManager.cs" />
     <Compile Include="Model\Player.cs" />
+    <Compile Include="Model\Enemies\Slime.cs" />
     <Compile Include="Model\World.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="View\Animators\SlimeAnimator.cs" />
     <Compile Include="View\Camera.cs" />
     <Compile Include="View\Fonts.cs" />
     <Compile Include="View\InGameView.cs" />
     <Compile Include="View\MainMenuView.cs" />
     <Compile Include="View\MainView.cs" />
     <Compile Include="View\MainViewOld.cs" />
-    <Compile Include="View\PlayerAnimator.cs" />
+    <Compile Include="View\Animators\PlayerAnimator.cs" />
     <Compile Include="View\Shader.cs" />
     <Compile Include="View\GameTexture.cs" />
     <Compile Include="WorldGeneratorStuff\CellularAutomata.cs" />
@@ -251,6 +254,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\textures\Player.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\textures\Slime_blue.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\textures\Tree.png">
