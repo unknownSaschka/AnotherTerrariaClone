@@ -23,6 +23,12 @@ namespace ITProject.Model
         public int Health;
         public int MaxHelath;
 
+        public bool AttackReady;
+        public bool GotHitted;
+
+        private double _attackTimer = 0f;
+        private double _attackMaxTime = 2f;
+
         private float _jumpPower = 18f;
         private float jumpDuration = 0f;
         private float maxJumpDuration = 0.3f;
@@ -31,6 +37,12 @@ namespace ITProject.Model
         private bool _jumpHold = false;
         private float _maxVelocityY = 25f;
         private float _maxVelocityX = 7f;
+
+        private bool _gotHitted;
+        private double _lastHit;
+        private double _invincibilityTime = 2f;
+
+        
 
         //Ideen: Walljumps, 
         
@@ -83,8 +95,31 @@ namespace ITProject.Model
 
         public override void Update(double deltaTime, CollisionHandler collisions)
         {
+            GotHitted = false;
             UpdatePhysics(deltaTime, collisions);
             UpdateDirection();
+
+            if(_gotHitted)
+            {
+                _lastHit += deltaTime;
+
+                if(_lastHit > _invincibilityTime)
+                {
+                    _gotHitted = false;
+                    _lastHit = 0f;
+                }
+            }
+
+            if (!AttackReady)
+            {
+                _attackTimer += deltaTime;
+
+                if(_attackTimer > _attackMaxTime)
+                {
+                    AttackReady = true;
+                    _attackTimer = 0f;
+                }
+            }
         }
 
         private void UpdatePhysics(double deltaTime, CollisionHandler collisions)
@@ -238,6 +273,9 @@ namespace ITProject.Model
             Gravity = -20f;
             Size = new Vector2(1.5f, 2.8f);
             SetGrounded(false);
+            _gotHitted = false;
+            _lastHit = 0;
+            AttackReady = true;
 
             MaxHelath = 100;
             Health = 100;
@@ -249,17 +287,26 @@ namespace ITProject.Model
             ItemInventory.SetItem(0, 0, new Item(48, 1));   //Pickaxe
             ItemInventory.SetItem(1, 0, new Item(54, 1));   //Axe
             ItemInventory.SetItem(2, 0, new Item(51, 1));   //Hammer
+            ItemInventory.SetItem(3, 0, new Item(57, 1));   //Sword
         }
 
         public Hitbox GetHitbox()
         {
-            return new Hitbox(Position, Size, Hitbox.HitboxType.Player);
+            return new Hitbox(Position, new Vector2(Size.X - 0.5f, Size.Y - 0.1f), Hitbox.HitboxType.Player);
         }
         public void Damage(int damage)
         {
+            if (_gotHitted)
+            {
+                return;
+            }
+            
             Health -= damage;
+            _gotHitted = true;
+            GotHitted = true;
+            Console.WriteLine("Damage");
 
-            if(Health < 0)
+            if(Health <= 0)
             {
                 Dead();
             }

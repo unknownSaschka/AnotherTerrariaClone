@@ -15,6 +15,7 @@ namespace ITProject.Model
         public static Dictionary<ushort, ItemInfo> Item;
         public static System.Numerics.Vector2 DropItemSize = new System.Numerics.Vector2(0.8f, 0.8f);
         public static List<CraftingRecipie> CraftingRecipies;
+        public static Random Random;
 
         public static int InventoryHeight = 4;
         public static int InventoryWidth = 10;
@@ -34,6 +35,7 @@ namespace ITProject.Model
         {
             Item = itemList;
             CraftingRecipies = craftingRecipies;
+            Random = new Random();
             _manager = new ModelManager(worldLoadType, playerLoadingType, playerSaveSlot, worldSaveSlot, worldSeed);
         }
 
@@ -47,6 +49,11 @@ namespace ITProject.Model
             _manager.CollisionHandler.CheckPlayerWithEnemies(_manager.Player, _manager.EnemyManager.GetNearbyEnemies(_manager.Player.Position, _playerEnemieDistanceCheck));
             
             _manager.Player.UpdateInventory(_manager.Crafting);
+
+            foreach(DamageNumber number in _manager.DamageNumbers.ToList())
+            {
+                if (number.Remove) _manager.DamageNumbers.Remove(number);
+            }
         }
 
         public void CloseGame()

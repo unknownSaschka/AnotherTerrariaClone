@@ -21,6 +21,10 @@ namespace ITProject.Model.Enemies
         private double _lastJump;
         private double _jumpPeriodTime;
 
+        private Vector2 _lastPosition;
+        private int _tries;
+        private bool _inJump;
+
         public Slime(Vector2 position, SlimeSize size)
         {
             Position = position;
@@ -29,15 +33,15 @@ namespace ITProject.Model.Enemies
             switch (size)
             {
                 case SlimeSize.Small:
-                    Size = new Vector2(1f, 1f);
+                    Size = new Vector2(0.9f, 0.9f);
                     SizeSlime = SlimeSize.Small;
                     break;
                 case SlimeSize.Medium:
-                    Size = new Vector2(2f, 2f);
+                    Size = new Vector2(1.9f, 1.9f);
                     SizeSlime = SlimeSize.Medium;
                     break;
                 case SlimeSize.Large:
-                    Size = new Vector2(4f, 4f);
+                    Size = new Vector2(3.9f, 3.9f);
                     SizeSlime = SlimeSize.Large;
                     break;
             }
@@ -46,13 +50,57 @@ namespace ITProject.Model.Enemies
             Health = MaxHealth;
             Damage = 20;
 
-            _jumpPowerX = 4f;
-            _jumpPowerY = 10f;
+            _jumpPowerX = 2f;
+            _jumpPowerY = 14f;
             _lastJump = 0f;
             _jumpPeriodTime = 4f;
 
             LastAnimation = SlimeAnimation.Idle;
             CurrentFrameTime = 0;
+
+            _tries = 0;
+            _inJump = false;
+
+            if(MainModel.Random.Next(2) == 0)
+            {
+                Direction = false;
+            }
+
+            else
+            {
+                Direction = true;
+            }
+        }
+
+        public override void Update(double deltaTime, CollisionHandler collisions)
+        {
+            base.Update(deltaTime, collisions);
+
+            if (!Grounded && Direction)
+            {
+                Velocity.X = _jumpPowerX;
+            }
+            else if(!Grounded && !Direction)
+            {
+                Velocity.X = -_jumpPowerX;
+            }
+
+            if(Grounded && _inJump)     //Falls er zuvor in einem Sprung war und jetzt wieder Grounded ist
+            {
+                _inJump = false;
+
+                if(_lastPosition == new Vector2((int)Position.X, (int)Position.Y))
+                {
+                    _tries++;
+                }
+
+                if(_tries >= 3)
+                {
+                    Direction = !Direction;
+                    _tries = 0;
+                }
+            }
+
         }
 
         protected override void UpdateMovement(double deltaTime)
@@ -71,6 +119,10 @@ namespace ITProject.Model.Enemies
 
         private void Jump()
         {
+            _inJump = true;
+            _lastPosition = new Vector2((int)Position.X, (int)Position.Y);
+
+
             Velocity.Y = _jumpPowerY;
 
             if (Direction)

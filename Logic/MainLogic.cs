@@ -1,4 +1,5 @@
 ﻿using ITProject.Model;
+using ITProject.Model.Enemies;
 using ITProject.View;
 using OpenTK.Input;
 using SharpFont;
@@ -320,6 +321,11 @@ namespace ITProject.Logic
             {
                 MainModel.GetModelManager.World.PlaceBlock(MainModel.GetModelManager.WorldMousePosition, 12, MainModel.GetModelManager);
             }
+
+            if(windowPositions.Focused && inputManager.GetKeyPressed(Key.G))
+            {
+                MainModel.GetModelManager.EnemyManager.SpawnEnemie(Model.Enemies.EnemyManager.EnemyType.Slime, MainModel.GetModelManager.Player.Position, 10f);
+            }
         }
 
         public Vector2 CalculateViewToWorldPosition(Vector2 viewPosition, Vector2 playerPosition, WindowPositions windowPositions)
@@ -398,6 +404,12 @@ namespace ITProject.Logic
 
                 if (itemInfo.GetType().Name == "ItemInfoTools")
                 {
+                    if(((ItemInfoTools)itemInfo).ToolType == ItemInfoTools.ItemToolType.Sword)
+                    {
+                        PlayerAttack((ItemInfoTools)itemInfo, mousePositionMiddle);
+                        return;
+                    }
+
                     miningSpeed = ((ItemInfoTools)itemInfo).MiningDuration;
                     toolLevel = ((ItemInfoTools)itemInfo).ToolLevel;
                     toolType = ((ItemInfoTools)itemInfo).ToolType;
@@ -461,6 +473,65 @@ namespace ITProject.Logic
                             }
                         }
                     }
+                }
+            }
+        }
+
+        private void PlayerAttack(ItemInfoTools weapon, Vector2 mousePositionMiddle)
+        {
+            Player player = MainModel.GetModelManager.Player;
+
+            if (!player.AttackReady)
+            {
+                return;
+            }
+
+            if(mousePositionMiddle.X >= 0)
+            {
+                player.Direction = true;
+            }
+            else
+            {
+                player.Direction = false;
+            }
+
+            player.AttackReady = false;
+
+            Hitbox playerSwordHitbox;
+            Vector2 hitboxSize = new Vector2(1.8f, 2.5f);
+            int weaponDamage = 0;
+
+            switch (weapon.ToolLevel)
+            {
+                case 1:
+                    weaponDamage = 10;
+                    break;
+                case 2:
+                    weaponDamage = 20;
+                    break;
+                case 3:
+                    weaponDamage = 50;
+                    break;
+            }
+
+            if (player.Direction)
+            {
+                playerSwordHitbox = new Hitbox(new Vector2(player.Position.X + 1.2f, player.Position.Y), hitboxSize, Hitbox.HitboxType.Player);
+            }
+            else
+            {
+                playerSwordHitbox = new Hitbox(new Vector2(player.Position.X - 1.2f, player.Position.Y), hitboxSize, Hitbox.HitboxType.Player);
+            }
+
+            MainModel.GetModelManager.TestSwordHitbox = playerSwordHitbox;
+            IEnumerable<Enemie> potencialEnemies = MainModel.GetModelManager.EnemyManager.GetNearbyEnemies(playerSwordHitbox.Position, hitboxSize.Length());
+
+            foreach(Enemie enemie in potencialEnemies)
+            {
+                if(MainModel.GetModelManager.CollisionHandler.Intersects(playerSwordHitbox, enemie.GetHitbox()))
+                {
+                    enemie.GetDamage(weaponDamage);
+                    MainModel.GetModelManager.DamageNumbers.Add(new DamageNumber(enemie.Position, weaponDamage));
                 }
             }
         }

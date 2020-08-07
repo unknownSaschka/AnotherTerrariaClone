@@ -155,10 +155,11 @@ namespace ITProject.Model
 
             foreach(Enemie enemie in enemieList)
             {
-                Hitbox enemieHitbox = new Hitbox(enemie.Position, enemie.Size, Hitbox.HitboxType.Player);
+                Hitbox enemieHitbox = enemie.GetHitbox();
 
                 if(Intersects(playerHitbox, enemieHitbox))
                 {
+
                     player.Damage(enemie.Damage);
                 }
             }

@@ -58,7 +58,7 @@ namespace ITProject.Model
 
     public class ItemInfoTools : ItemInfo
     {
-        public enum ItemToolType { Pickaxe, Axe, Hammer, Hand, None }
+        public enum ItemToolType { Pickaxe, Axe, Hammer, Sword, Hand, None }
 
         public ItemToolType ToolType;
         public int ToolLevel;

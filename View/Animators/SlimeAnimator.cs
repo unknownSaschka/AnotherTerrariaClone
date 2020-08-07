@@ -30,6 +30,7 @@ namespace ITProject.View.Animators
             {
                 currentframeTime = 0;
                 GetTextureCoord(_jumpAnimationMedium.Position, 4, new Vector2(6, 6), out texMin, out texMax, 0f);
+                lastSlimeAnimation = SlimeAnimation.Idle;
                 return;
             }
 
@@ -43,7 +44,7 @@ namespace ITProject.View.Animators
             }
             else
             {
-                GetTextureCoord(_jumpAnimationMedium.Position, 0, new Vector2(6, 6), out texMin, out texMax, 0f);
+                GetTextureCoord(_jumpAnimationMedium.Position, 1, new Vector2(6, 6), out texMin, out texMax, 0f);
             }
 
             if(currentframeTime > 2f)

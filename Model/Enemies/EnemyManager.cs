@@ -13,6 +13,7 @@ namespace ITProject.Model.Enemies
         public List<Enemie> Enemies;
         public enum EnemyType { Slime, Boss }
 
+
         public EnemyManager()
         {
             Enemies = new List<Enemie>();
@@ -53,8 +54,13 @@ namespace ITProject.Model.Enemies
 
         public void Update(double deltaTime, CollisionHandler collisionHandler)
         {
-            foreach(Enemie enemie in Enemies)
+            foreach(Enemie enemie in Enemies.ToList())
             {
+                if (enemie.Dead)
+                {
+                    Enemies.Remove(enemie);
+                }
+
                 enemie.Update(deltaTime, collisionHandler);
             }
         }
@@ -77,6 +83,7 @@ namespace ITProject.Model.Enemies
 
         public void GetDamage(int Damage)
         {
+            Console.WriteLine("Enemy Damage");
             Health -= Damage;
 
             if(Health < 0)
@@ -84,6 +91,11 @@ namespace ITProject.Model.Enemies
                 Health = 0;
                 Dead = true;
             }
+        }
+
+        public Hitbox GetHitbox()
+        {
+            return new Hitbox(Position, new Vector2(Size.X - 1f, Size.Y - 0.3f), Hitbox.HitboxType.Player);
         }
 
         protected abstract void UpdateMovement(double deltaTime);

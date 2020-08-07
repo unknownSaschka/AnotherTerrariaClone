@@ -28,6 +28,7 @@ namespace ITProject.View
         public uint Darkness;
         public uint LightSource1;
         public uint BlockDamage;
+        public uint Heart;
 
         public uint Player;
         public uint Slime;
@@ -56,6 +57,7 @@ namespace ITProject.View
             Darkness = LoadTexture("Content/textures/Darkness.png");
             LightSource1 = LoadTexture("Content/textures/LightSource1.png");
             BlockDamage = LoadTexture("Content/textures/Block_Damage.png");
+            Heart = LoadTexture("Content/textures/Heart_Icon.png");
 
             Player = LoadTexture("Content/textures/Player.png");
             Slime = LoadTexture("Content/textures/Slime_blue.png");
@@ -103,6 +105,7 @@ namespace ITProject.View
             GL.DeleteTexture(BlockDamage);
             GL.DeleteTexture(Player);
             GL.DeleteTexture(Slime);
+            GL.DeleteTexture(Heart);
         }
     }
 

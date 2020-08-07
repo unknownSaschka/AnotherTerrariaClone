@@ -59,6 +59,7 @@ namespace ITProject.View
         private float _zoom;
 
         private QFont _font;
+        private QFont _fontWorld;
         private QFontDrawing _drawing;
 
         private PlayerAnimator _playerAnimator;
@@ -82,6 +83,7 @@ namespace ITProject.View
         private uint _treesVAO, _treesVBO;
         private uint _damagedBlocksVAO, _damagedBlocksVBO;
         private uint _slimeVAO, _slimeVBO;
+        private uint _heartVAO, _heartVBO;
 
         private uint _craftingVAO, _craftingVBO;
 
@@ -217,6 +219,7 @@ namespace ITProject.View
 
             _drawing.Dispose();
             _font.Dispose();
+            _fontWorld.Dispose();
         }
 
         private void SetIdentityMatrix(Shader shader)
@@ -469,6 +472,9 @@ namespace ITProject.View
             DrawTrees(treePositions);
 
             DrawDroppedItems(world, minBoundary, maxBoundary);
+
+            //Damage Numbers zeichnen
+            //DrawDamageNumbers(projection, translation);
         }
 
         private void DrawBackground()
@@ -535,6 +541,11 @@ namespace ITProject.View
                 _playerAnimator.PlayWalkAnimation(_deltaTime, Math.Abs(player.Velocity.X) * 3f, out texMin, out texMax);
             }
 
+            if (player.GotHitted)
+            {
+                _playerAnimator.PlayDamageAnimation(_deltaTime, 2f, out texMin, out texMax);
+            }
+
             if (!player.Direction)
             {
                 float temp = texMin.X;
@@ -545,6 +556,14 @@ namespace ITProject.View
             float[,] playerVertices = GetVerices4x4MinMax(min, max, texMin, texMax);
 
             DrawElements(_playerVAO, _playerVBO, playerVertices.Length, playerVertices, 4, _gameTextures.Player);
+
+            //Test Sword Hitbox
+            Hitbox swordHB = _mainModel.GetModelManager.TestSwordHitbox;
+            if (swordHB == null) return;
+
+            Vector2 texMinTest = new Vector2(0f, 0f), texMaxTest = new Vector2(1f, 1f);
+            float[,] testVerts = GetVertices4x4(ConvertVector(swordHB.Position), ConvertVector(swordHB.Size), texMinTest, texMaxTest, true);
+            DrawElements(_mouseVAO, _mouseVBO, testVerts.Length, testVerts, 4, _gameTextures.Debug);
         }
 
         private void DrawGUI()
@@ -552,6 +571,9 @@ namespace ITProject.View
             SetIdentityMatrix(_shader);
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            
+
             DrawItemBar();
 
             if (_mainModel.GetModelManager.InventoryOpen)
@@ -559,6 +581,9 @@ namespace ITProject.View
                 SetIdentityMatrix(_shader);
                 DrawInventory();
             }
+
+            DrawLifeCounter();
+
             GL.Disable(EnableCap.Blend);
         }
 
@@ -653,11 +678,11 @@ namespace ITProject.View
 
                     if (enemie.Grounded)
                     {
-                        _slimeAnimator.PlayIdleAnimation(_deltaTime, ref slime.CurrentFrameTime, 10f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
+                        _slimeAnimator.PlayIdleAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
                     }
                     else
                     {
-                        _slimeAnimator.PlayJumpAnimation(_deltaTime, ref slime.CurrentFrameTime, 10f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
+                        _slimeAnimator.PlayJumpAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
                     }
                 }
 
@@ -665,7 +690,7 @@ namespace ITProject.View
 
                 for (int ic = 0; ic < 4; ic++)
                 {
-                    for (int ia = 0; ia < 5; ia++)
+                    for (int ia = 0; ia < 4; ia++)
                     {
                         vertices[count, ia] = verts[ic, ia];
                     }
@@ -674,6 +699,68 @@ namespace ITProject.View
             }
 
             DrawElements(_slimeVAO, _slimeVBO, vertices.Length, vertices, count * 4, _gameTextures.Slime);
+        }
+
+        private void DrawDamageNumbers(Matrix4 projection, Vector4 translation)
+        {
+            Console.WriteLine(_mainModel.GetModelManager.DamageNumbers.Count);
+            if (_mainModel.GetModelManager.DamageNumbers.Count == 0) return;
+
+            //Matrix4 projectionMatrix = Matrix4.CreateOrthographic(_mainView.ClientRectangle.Width, _mainView.ClientRectangle.Height, -1.0f, 1.0f);
+            _drawing.ProjectionMatrix = projection * Matrix4.CreateScale(0.01f);
+            _drawing.DrawingPimitiveses.Clear();
+
+            var textOpts = new QFontRenderOptions()
+            {
+                Colour = Color.FromArgb(new Color4(1.0f, 1.0f, 1.0f, 1.0f).ToArgb()),
+                DropShadowActive = true
+            };
+
+            foreach(DamageNumber number in _mainModel.GetModelManager.DamageNumbers)
+            {
+                _drawing.Print(_font, number.Value.ToString(), new Vector3(number.Position.X + translation.X, number.Position.Y + translation.Y, 1.0f), QFontAlignment.Right, textOpts);
+            }
+
+            _drawing.RefreshBuffers();
+            _drawing.Draw();
+        }
+
+        private void DrawLifeCounter()
+        {
+            SetIdentityMatrix(_shader);
+
+            Vector2 heartIconPos = new Vector2((_mainView.Width / 2) - 50, (_mainView.Height / 2) - 100);
+            Vector2 heartIconSize = new Vector2(80f, 80f);
+
+            float[,] heartVertices = GetVertices4x4(heartIconPos, heartIconSize, new Vector2(0, 0), new Vector2(1, 1), true);
+            DrawElements(_heartVAO, _heartVBO, heartVertices.Length, heartVertices, 4, _gameTextures.Heart);
+
+
+            Player player = _mainModel.GetModelManager.Player;
+            string lifeText = $"{player.Health}/{player.MaxHelath}";
+            Color color = Color.FromArgb(new Color4(1.0f, 1.0f, 1.0f, 1.0f).ToArgb());
+
+            Matrix4 projectionMatrix = Matrix4.CreateOrthographic(_mainView.ClientRectangle.Width, _mainView.ClientRectangle.Height, -1.0f, 1.0f);
+            _drawing.ProjectionMatrix = projectionMatrix;
+            _drawing.DrawingPimitiveses.Clear();
+
+            if(player.Health <= 20)
+            {
+                color = Color.FromArgb(new Color4(1.0f, 0f, 0f, 1.0f).ToArgb());
+            }
+
+            var textOpts = new QFontRenderOptions()
+            {
+                Colour = color,
+                DropShadowActive = true
+            };
+
+            
+            _drawing.Print(_font, lifeText, new Vector3((_mainView.Width / 2) - 10, (_mainView.Height / 2) - 150, 0.0f), QFontAlignment.Right, textOpts);
+            
+
+            _drawing.RefreshBuffers();
+            _drawing.Draw();
         }
 
         private void DrawNumbers(List<ItemPositionAmount> itemPositions)
@@ -968,6 +1055,7 @@ namespace ITProject.View
                 try
                 {
                     _font = new QFont("fonts/Depredationpixie.ttf", 15, new QuickFont.Configuration.QFontBuilderConfiguration(true));
+                    _fontWorld = new QFont("fonts/Depredationpixie.ttf", 5, new QuickFont.Configuration.QFontBuilderConfiguration(true));
                 }
                 catch (Exception e)
                 {
@@ -1281,6 +1369,10 @@ namespace ITProject.View
             //SlimeSprite
             GL.GenVertexArrays(1, out _slimeVAO);
             GL.GenBuffers(1, out _slimeVBO);
+
+            //Heart icon
+            GL.GenVertexArrays(1, out _heartVAO);
+            GL.GenBuffers(1, out _heartVBO);
         }
 
         private float[,] GetInventoryItemsPos(Vector2 invSize, Inventory inventory, Vector2 startPos, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)

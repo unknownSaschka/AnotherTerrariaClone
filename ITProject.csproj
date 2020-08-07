@@ -139,6 +139,7 @@
     <Compile Include="Logic\WorldLoader.cs" />
     <Compile Include="Model\CollisionHandler.cs" />
     <Compile Include="Model\Crafting.cs" />
+    <Compile Include="Model\DamageNumbers.cs" />
     <Compile Include="Model\Enemies\EnemyManager.cs" />
     <Compile Include="Model\GameObject.cs" />
     <Compile Include="Model\Inventory.cs" />
@@ -230,6 +231,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\textures\dumbdoerte.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\textures\Heart_Icon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\textures\Inventory.png">

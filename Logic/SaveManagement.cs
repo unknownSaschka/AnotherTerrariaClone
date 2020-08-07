@@ -63,6 +63,9 @@ namespace ITProject.Logic
             toolItems.Add(52, new ItemInfoTools(52, "Iron Hammer", ItemInfoTools.ItemToolType.Hammer, 2, 1.5f, false, false));
             toolItems.Add(54, new ItemInfoTools(54, "Axe", ItemInfoTools.ItemToolType.Axe, 1, 3.0f, false, false));
             toolItems.Add(55, new ItemInfoTools(55, "Iron Axe", ItemInfoTools.ItemToolType.Axe, 2, 1.5f, false, false));
+            toolItems.Add(57, new ItemInfoTools(57, "Sword", ItemInfoTools.ItemToolType.Sword, 1, 0f, false, false));
+            toolItems.Add(58, new ItemInfoTools(58, "Iron Sword", ItemInfoTools.ItemToolType.Sword, 2, 0f, false, false));
+            toolItems.Add(59, new ItemInfoTools(59, "Diamond Sowrd", ItemInfoTools.ItemToolType.Sword, 3, 0f, false, false));
 
             ItemJSON json = new ItemJSON(worldItems, toolItems);
 
@@ -254,6 +257,9 @@ namespace ITProject.Logic
             craftingRecipies.Add(new CraftingRecipie(new Item(41, 1), new Item[] { new Item(21, 1), new Item(40, 2) }));    //Eisen
             craftingRecipies.Add(new CraftingRecipie(new Item(43, 1), new Item[] { new Item(23, 2), new Item(40, 4) }));    //Cobalt
             craftingRecipies.Add(new CraftingRecipie(new Item(3, 1), new Item[] { new Item(2, 2) }));   //Grass
+            craftingRecipies.Add(new CraftingRecipie(new Item(57, 1), new Item[] { new Item(1, 10), new Item(4, 5) }));     //Sword
+            craftingRecipies.Add(new CraftingRecipie(new Item(58, 1), new Item[] { new Item(41, 15), new Item(40, 5) }));   //Iron Sword
+            craftingRecipies.Add(new CraftingRecipie(new Item(59, 1), new Item[] { new Item(42, 15), new Item(40, 5) }));   //Diamond Sword
 
 
             //Abspeichern

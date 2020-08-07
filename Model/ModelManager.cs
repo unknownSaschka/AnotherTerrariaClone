@@ -42,7 +42,11 @@ namespace ITProject.Model
         public List<ViewItemPositions> ViewItemPositions;
         public List<ViewItemPositions> ViewChestItemPositions;
         public List<ViewItemPositions> ViewCraftingItemPositions;
+
+        public List<DamageNumber> DamageNumbers;
         public Box2D InventoryRectangle;
+
+        public Hitbox TestSwordHitbox;
 
         public ModelManager(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSaveSlot, int worldSeed)
         {
@@ -80,6 +84,7 @@ namespace ITProject.Model
             InventoryOpen = false;
             OpenChest = null;
             ActiveHoldingItem = null;
+            DamageNumbers = new List<DamageNumber>();
         }
     }
 }

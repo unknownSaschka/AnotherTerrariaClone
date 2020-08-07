@@ -18,6 +18,8 @@ namespace ITProject.View
         private bool _baseAnimation = false;
         private double _baseAnimationDuration = 10d;
 
+        private float _damageTimeSpeed = 5f;
+
         private int _currentIdleAnimation = 0;
         private AnimationInfo _standAnimation = new AnimationInfo(0, 1);
         private AnimationInfo _walkAnimation = new AnimationInfo(6, 8);
@@ -46,6 +48,11 @@ namespace ITProject.View
         {
             if(CurrentAnimation != AnimationType.Walking)
             {
+                if (CurrentAnimation == AnimationType.Damage)
+                {
+                    PlayDamageAnimation(deltaTime, _damageTimeSpeed, out min, out max);
+                    return;
+                }
                 CurrentFrameTime = 0;
             }
 
@@ -63,7 +70,13 @@ namespace ITProject.View
 
             if (CurrentAnimation != AnimationType.Idle)
             {
-                if(CurrentAnimation == AnimationType.Jumping)
+                if (CurrentAnimation == AnimationType.Damage)
+                {
+                    PlayDamageAnimation(deltaTime, _damageTimeSpeed, out min, out max);
+                    return;
+                }
+
+                if (CurrentAnimation == AnimationType.Jumping)
                 {
                     if(CurrentFrameTime < 5.0d)
                     {
@@ -115,6 +128,12 @@ namespace ITProject.View
 
         public void PlayJumpAnimation(double deltaTime, float speed, float velocityY, out Vector2 min, out Vector2 max)
         {
+            if (CurrentAnimation == AnimationType.Damage)
+            {
+                PlayDamageAnimation(deltaTime, _damageTimeSpeed, out min, out max);
+                return;
+            }
+
             if (CurrentAnimation != AnimationType.Jumping)
             {
                 CurrentFrameTime = 0;
@@ -142,11 +161,31 @@ namespace ITProject.View
 
         public void PlayDamageAnimation(double deltaTime, float speed, out Vector2 min, out Vector2 max)
         {
-            GetTextureCoord(_damageAnimation.Position, 0, _gridSize, out min, out max, 0.0f);
+            if(CurrentAnimation != AnimationType.Damage)
+            {
+                CurrentFrameTime = 0d;
+            }
+
+            CurrentAnimation = AnimationType.Damage;
+            CurrentFrameTime += deltaTime * speed;
+
+            if(CurrentFrameTime > 1.8f)
+            {
+                CurrentAnimation = AnimationType.Idle;
+                CurrentFrameTime = 0f;
+            }
+
+            GetTextureCoord(_damageAnimation.Position, (int)CurrentFrameTime, _gridSize, out min, out max, 0.0f);
         }
 
         public void PlayUseAnimation(double deltaTime, float speed, out Vector2 min, out Vector2 max)
         {
+            if (CurrentAnimation == AnimationType.Damage)
+            {
+                PlayDamageAnimation(deltaTime, _damageTimeSpeed, out min, out max);
+                return;
+            }
+
             if (CurrentAnimation != AnimationType.Using)
             {
                 CurrentFrameTime = 0;
@@ -162,6 +201,12 @@ namespace ITProject.View
 
         public void PlayJumpUseAnimation(double deltaTime, float speed, out Vector2 min, out Vector2 max)
         {
+            if (CurrentAnimation == AnimationType.Damage)
+            {
+                PlayDamageAnimation(deltaTime, _damageTimeSpeed, out min, out max);
+                return;
+            }
+
             if (CurrentAnimation != AnimationType.JumpUsing)
             {
                 CurrentFrameTime = 0;
