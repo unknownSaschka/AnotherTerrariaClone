@@ -1,4 +1,5 @@
 ﻿using OpenTK;
+using SharpFont;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,13 +12,18 @@ namespace ITProject.View.Animators
 {
     class SlimeAnimator
     {
+        private double _damageAnimationTime = 5f;
+        private Vector2 _textureSize = new Vector2(5, 9);
+
         private AnimationInfo _idleAnimationSmall = new AnimationInfo(0, 1);
-        private AnimationInfo _idleAnimationMedium = new AnimationInfo(2, 1);
-        private AnimationInfo _idleAnimationLarge = new AnimationInfo(4, 1);
+        private AnimationInfo _idleAnimationMedium = new AnimationInfo(3, 1);
+        private AnimationInfo _idleAnimationLarge = new AnimationInfo(6, 1);
 
         private AnimationInfo _jumpAnimationSmall = new AnimationInfo(1, 5);
-        private AnimationInfo _jumpAnimationMedium = new AnimationInfo(3, 5);
-        private AnimationInfo _jumpAnimationLarge = new AnimationInfo(5, 5);
+        private AnimationInfo _jumpAnimationMedium = new AnimationInfo(4, 5);
+        private AnimationInfo _jumpAnimationLarge = new AnimationInfo(7, 5);
+
+        private AnimationInfo _damageAnimationMedium = new AnimationInfo(2, 1);
 
         public SlimeAnimator()
         {
@@ -26,10 +32,16 @@ namespace ITProject.View.Animators
 
         public void PlayIdleAnimation(double deltaTime, ref double currentframeTime, float speed, SlimeSize size, ref SlimeAnimation lastSlimeAnimation, out Vector2 texMin, out Vector2 texMax)
         {
-            if(lastSlimeAnimation == SlimeAnimation.Jump)
+            if (lastSlimeAnimation == SlimeAnimation.Damage)
+            {
+                PlayDamageAnimation(deltaTime, ref currentframeTime, speed, size, ref lastSlimeAnimation, out texMin, out texMax);
+                return;
+            }
+
+            if (lastSlimeAnimation == SlimeAnimation.Jump)
             {
                 currentframeTime = 0;
-                GetTextureCoord(_jumpAnimationMedium.Position, 4, new Vector2(6, 6), out texMin, out texMax, 0f);
+                GetTextureCoord(_jumpAnimationMedium.Position, 4, _textureSize, out texMin, out texMax, 0f);
                 lastSlimeAnimation = SlimeAnimation.Idle;
                 return;
             }
@@ -39,12 +51,12 @@ namespace ITProject.View.Animators
 
             if(currentframeTime >= 0 && currentframeTime < 1f)
             {
-                GetTextureCoord(_idleAnimationMedium.Position, 0, new Vector2(6, 6), out texMin, out texMax, 0f);
+                GetTextureCoord(_idleAnimationMedium.Position, 0, _textureSize, out texMin, out texMax, 0f);
                 return;
             }
             else
             {
-                GetTextureCoord(_jumpAnimationMedium.Position, 1, new Vector2(6, 6), out texMin, out texMax, 0f);
+                GetTextureCoord(_jumpAnimationMedium.Position, 1, _textureSize, out texMin, out texMax, 0f);
             }
 
             if(currentframeTime > 2f)
@@ -55,6 +67,12 @@ namespace ITProject.View.Animators
 
         public void PlayJumpAnimation(double deltaTime, ref double currentframeTime, float speed, SlimeSize size, ref SlimeAnimation lastSlimeAnimation, out Vector2 texMin, out Vector2 texMax)
         {
+            if(lastSlimeAnimation == SlimeAnimation.Damage)
+            {
+                PlayDamageAnimation(deltaTime, ref currentframeTime, speed, size, ref lastSlimeAnimation, out texMin, out texMax);
+                return;
+            }
+
             if(lastSlimeAnimation == SlimeAnimation.Idle)
             {
                 currentframeTime = 0f;
@@ -68,7 +86,26 @@ namespace ITProject.View.Animators
                 currentframeTime = 0;
             }
 
-            GetTextureCoord(_jumpAnimationMedium.Position, (int)currentframeTime, new Vector2(6, 6), out texMin, out texMax, 0f);
+            GetTextureCoord(_jumpAnimationMedium.Position, (int)currentframeTime, _textureSize, out texMin, out texMax, 0f);
+        }
+
+        public void PlayDamageAnimation(double deltaTime, ref double currentframeTime, float speed, SlimeSize size, ref SlimeAnimation lastSlimeAnimation, out Vector2 texMin, out Vector2 texMax)
+        {
+            if(lastSlimeAnimation != SlimeAnimation.Damage)
+            {
+                currentframeTime = 0;
+            }
+
+            lastSlimeAnimation = SlimeAnimation.Damage;
+            currentframeTime += deltaTime * _damageAnimationTime;
+
+            if(currentframeTime > 1f)
+            {
+                currentframeTime = 0;
+                lastSlimeAnimation = SlimeAnimation.Idle;
+            }
+
+            GetTextureCoord(_damageAnimationMedium.Position, 0, _textureSize, out texMin, out texMax, 0f);
         }
 
         private void GetTextureCoord(int animation, int position, Vector2 gridSize, out Vector2 minTexCoord, out Vector2 maxTexCoord, float textureOffset)

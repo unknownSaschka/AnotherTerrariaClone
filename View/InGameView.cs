@@ -676,7 +676,11 @@ namespace ITProject.View
                 {
                     Slime slime = (Slime)enemie;
 
-                    if (enemie.Grounded)
+                    if (enemie.GotHitted)
+                    {
+                        _slimeAnimator.PlayDamageAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
+                    }
+                    else if (enemie.Grounded)
                     {
                         _slimeAnimator.PlayIdleAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
                     }
@@ -684,6 +688,8 @@ namespace ITProject.View
                     {
                         _slimeAnimator.PlayJumpAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
                     }
+
+                    
                 }
 
                 float[,] verts = GetVertices4x4(ConvertVector(enemie.Position), ConvertVector(enemie.Size), texMin, texMax, true);

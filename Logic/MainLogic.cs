@@ -259,6 +259,7 @@ namespace ITProject.Logic
         public void PerformPlayerActions(KeyboardState keyboardState, MouseState cursorState, WindowPositions windowPositions, double fixedDeltaTime)
         {
             PlayerMining = false;
+            MainModel.GetModelManager.CollisionHandler.SetPlayerAttack(null, Vector2.Zero);
 
             if (windowPositions.Focused && cursorState.IsButtonDown(MouseButton.Left) && 
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
@@ -406,7 +407,7 @@ namespace ITProject.Logic
                 {
                     if(((ItemInfoTools)itemInfo).ToolType == ItemInfoTools.ItemToolType.Sword)
                     {
-                        PlayerAttack((ItemInfoTools)itemInfo, mousePositionMiddle);
+                        MainModel.GetModelManager.CollisionHandler.SetPlayerAttack((ItemInfoTools)itemInfo, mousePositionMiddle);
                         return;
                     }
 
@@ -473,65 +474,6 @@ namespace ITProject.Logic
                             }
                         }
                     }
-                }
-            }
-        }
-
-        private void PlayerAttack(ItemInfoTools weapon, Vector2 mousePositionMiddle)
-        {
-            Player player = MainModel.GetModelManager.Player;
-
-            if (!player.AttackReady)
-            {
-                return;
-            }
-
-            if(mousePositionMiddle.X >= 0)
-            {
-                player.Direction = true;
-            }
-            else
-            {
-                player.Direction = false;
-            }
-
-            player.AttackReady = false;
-
-            Hitbox playerSwordHitbox;
-            Vector2 hitboxSize = new Vector2(1.8f, 2.5f);
-            int weaponDamage = 0;
-
-            switch (weapon.ToolLevel)
-            {
-                case 1:
-                    weaponDamage = 10;
-                    break;
-                case 2:
-                    weaponDamage = 20;
-                    break;
-                case 3:
-                    weaponDamage = 50;
-                    break;
-            }
-
-            if (player.Direction)
-            {
-                playerSwordHitbox = new Hitbox(new Vector2(player.Position.X + 1.2f, player.Position.Y), hitboxSize, Hitbox.HitboxType.Player);
-            }
-            else
-            {
-                playerSwordHitbox = new Hitbox(new Vector2(player.Position.X - 1.2f, player.Position.Y), hitboxSize, Hitbox.HitboxType.Player);
-            }
-
-            MainModel.GetModelManager.TestSwordHitbox = playerSwordHitbox;
-            IEnumerable<Enemie> potencialEnemies = MainModel.GetModelManager.EnemyManager.GetNearbyEnemies(playerSwordHitbox.Position, hitboxSize.Length());
-
-            foreach(Enemie enemie in potencialEnemies)
-            {
-                if(MainModel.GetModelManager.CollisionHandler.Intersects(playerSwordHitbox, enemie.GetHitbox()))
-                {
-                    enemie.GetDamage(weaponDamage);
-                    MainModel.GetModelManager.DamageNumbers.Add(new DamageNumber(enemie.Position, weaponDamage));
                 }
             }
         }

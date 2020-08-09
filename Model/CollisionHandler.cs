@@ -12,10 +12,19 @@ namespace ITProject.Model
 {
     public class CollisionHandler
     {
+        private ItemInfoTools _lastWeapon = null;     //Für Player Attack
+        private Vector2 _mousePositionMiddle;
+
         private ModelManager _modelManager;
         public CollisionHandler(ModelManager modelManager)
         {
             _modelManager = modelManager;
+        }
+
+        public void SetPlayerAttack(ItemInfoTools weapon, Vector2 mousePositionMiddle)
+        {
+            _lastWeapon = weapon;
+            _mousePositionMiddle = mousePositionMiddle;
         }
 
         public Vector2 CheckCollisionX(Vector2 position, Vector2 size, ref float velocity, GameObject gameObject)
@@ -161,6 +170,67 @@ namespace ITProject.Model
                 {
 
                     player.Damage(enemie.Damage);
+                }
+            }
+        }
+
+        public void CheckPlayerAttack(MainModel mainModel)
+        {
+            if (_lastWeapon == null) return;
+
+            Player player = mainModel.GetModelManager.Player;
+
+            if (!player.AttackReady)
+            {
+                return;
+            }
+
+            if (_mousePositionMiddle.X >= 0)
+            {
+                player.Direction = true;
+            }
+            else
+            {
+                player.Direction = false;
+            }
+
+            player.AttackReady = false;
+
+            Hitbox playerSwordHitbox;
+            Vector2 hitboxSize = new Vector2(1.8f, 2.5f);
+            int weaponDamage = 0;
+
+            switch (_lastWeapon.ToolLevel)
+            {
+                case 1:
+                    weaponDamage = 10;
+                    break;
+                case 2:
+                    weaponDamage = 20;
+                    break;
+                case 3:
+                    weaponDamage = 50;
+                    break;
+            }
+
+            if (player.Direction)
+            {
+                playerSwordHitbox = new Hitbox(new Vector2(player.Position.X + 1.2f, player.Position.Y), hitboxSize, Hitbox.HitboxType.Player);
+            }
+            else
+            {
+                playerSwordHitbox = new Hitbox(new Vector2(player.Position.X - 1.2f, player.Position.Y), hitboxSize, Hitbox.HitboxType.Player);
+            }
+
+            mainModel.GetModelManager.TestSwordHitbox = playerSwordHitbox;
+            IEnumerable<Enemie> potencialEnemies = mainModel.GetModelManager.EnemyManager.GetNearbyEnemies(playerSwordHitbox.Position, hitboxSize.Length());
+
+            foreach (Enemie enemie in potencialEnemies)
+            {
+                if (mainModel.GetModelManager.CollisionHandler.Intersects(playerSwordHitbox, enemie.GetHitbox()))
+                {
+                    enemie.GetDamage(weaponDamage);
+                    mainModel.GetModelManager.DamageNumbers.Add(new DamageNumber(enemie.Position, weaponDamage));
                 }
             }
         }

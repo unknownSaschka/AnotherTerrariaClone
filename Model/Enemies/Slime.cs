@@ -10,7 +10,7 @@ namespace ITProject.Model.Enemies
     class Slime : Enemie
     {
         public enum SlimeSize { Small, Medium, Large }
-        public enum SlimeAnimation { Idle, Jump}
+        public enum SlimeAnimation { Idle, Jump, Damage }
 
         public SlimeSize SizeSlime;
         public SlimeAnimation LastAnimation;

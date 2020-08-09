@@ -73,17 +73,19 @@ namespace ITProject.Model.Enemies
         public int Health;
         public int Damage;
         public bool Dead = false;
+        public bool GotHitted = false;
 
         public override void Update(double deltaTime, CollisionHandler collisions)
         {
             UpdateMovement(deltaTime);
-
+            GotHitted = false;
             base.Update(deltaTime, collisions);
         }
 
         public void GetDamage(int Damage)
         {
             Console.WriteLine("Enemy Damage");
+            GotHitted = true;
             Health -= Damage;
 
             if(Health < 0)

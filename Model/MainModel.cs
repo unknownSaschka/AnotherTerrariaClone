@@ -47,6 +47,7 @@ namespace ITProject.Model
 
             _manager.CollisionHandler.CheckPlayerWithDroppedItems(_manager.Player);
             _manager.CollisionHandler.CheckPlayerWithEnemies(_manager.Player, _manager.EnemyManager.GetNearbyEnemies(_manager.Player.Position, _playerEnemieDistanceCheck));
+            _manager.CollisionHandler.CheckPlayerAttack(this);
             
             _manager.Player.UpdateInventory(_manager.Crafting);
 
