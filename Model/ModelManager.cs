@@ -25,6 +25,8 @@ namespace ITProject.Model
         public System.Numerics.Vector2 WorldMousePosition;
         public Crafting Crafting;
 
+        public AudioManager AudioManager { get; internal set; }
+
         public int SelectedInventorySlot;
         public bool InventoryOpen;
         public bool CraftingWindowOpen;
@@ -70,6 +72,7 @@ namespace ITProject.Model
 
             //int playerPosY = World.SearchGround(2000);
             //Player = new Player(2000, playerPosY + 2, new System.Numerics.Vector2(1.5f, 2.8f));
+            AudioManager = new AudioManager();
             Player = new Player(playerLoadingType, playerSaveSlot, new System.Numerics.Vector2(2000, World.SearchGround(2000)), this);
             Crafting = new Crafting();
             CollisionHandler = new CollisionHandler(this);

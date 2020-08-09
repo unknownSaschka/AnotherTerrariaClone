@@ -169,7 +169,7 @@ namespace ITProject.Model
                 if(Intersects(playerHitbox, enemieHitbox))
                 {
 
-                    player.Damage(enemie.Damage);
+                    player.Damage(enemie.Damage, _modelManager.AudioManager);
                 }
             }
         }

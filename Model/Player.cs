@@ -294,13 +294,14 @@ namespace ITProject.Model
         {
             return new Hitbox(Position, new Vector2(Size.X - 0.5f, Size.Y - 0.1f), Hitbox.HitboxType.Player);
         }
-        public void Damage(int damage)
+        public void Damage(int damage, AudioManager audioManager)
         {
             if (_gotHitted)
             {
                 return;
             }
-            
+
+            audioManager.PlaySound(AudioManager.SoundType.Hurt);
             Health -= damage;
             _gotHitted = true;
             GotHitted = true;
