@@ -96,6 +96,25 @@ namespace ITProject.Model
                     break;
             }
         }
+
+        public void PlaySound(ushort blockType)
+        {
+            switch (blockType)
+            {
+                case 2:
+                    PlaySound(SoundType.Walking_Dirt);
+                    break;
+                case 3:
+                    PlaySound(SoundType.Walking_Grass);
+                    break;
+                case 4:
+                    PlaySound(SoundType.Walking_Wood);
+                    break;
+                default:
+                    PlaySound(SoundType.Walking_Stone);
+                    break;
+            }
+        }
     }
 
 

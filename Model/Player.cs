@@ -16,7 +16,6 @@ namespace ITProject.Model
         public Inventory ItemInventory;
         public List<CraftingRecipie> CraftableRecipies;
 
-        //public Vector2 OldPosition; //Um den Bewegungsablauf für das CDS nachzuvollziehen
         public float WalkSpeed;
         public float MaxWalkSpeed = 10f;
 
@@ -42,7 +41,8 @@ namespace ITProject.Model
         private double _lastHit;
         private double _invincibilityTime = 2f;
 
-        
+        private double _lastAudioUpdate;
+        private double _audioUpdateTime = 0.3f;
 
         //Ideen: Walljumps, 
         
@@ -119,6 +119,26 @@ namespace ITProject.Model
                     AttackReady = true;
                     _attackTimer = 0f;
                 }
+            }
+        }
+
+        public void AudioUpdate(double deltaTime, AudioManager audioManager, World world)
+        {
+            if(Grounded && !GameExtentions.AlmostEquals(Velocity.X, 0f, 0.02f))
+            {
+                _lastAudioUpdate += deltaTime;
+
+                if (_lastAudioUpdate > _audioUpdateTime)
+                {
+                    _lastAudioUpdate = 0d;
+
+                    ushort itemBlock = world.GetBlockType(new Vector2(Position.X, Position.Y - Size.Y - 0.5f));
+                    audioManager.PlaySound(itemBlock);
+                }
+            }
+            else
+            {
+                _lastAudioUpdate = _audioUpdateTime;
             }
         }
 
@@ -279,6 +299,7 @@ namespace ITProject.Model
 
             MaxHelath = 100;
             Health = 100;
+            _lastAudioUpdate = 0f;
         }
 
         //Hier werden u.a. die Startitems dem Inventar hinzugefügt

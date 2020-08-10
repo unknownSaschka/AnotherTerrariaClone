@@ -37,6 +37,9 @@ namespace ITProject.Logic
 
         private float? _zoom;
 
+        private double _lastBreakingBlockSoundUpdate = 0d;
+        private double _lastBreakingBlockMaxTime = 0.4d;
+
         public struct WindowPositions
         {
             public int Width;
@@ -265,7 +268,11 @@ namespace ITProject.Logic
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
                 Vector2 mouseMiddle = new Vector2(windowPositions.WindowMousePosition.X - (windowPositions.Width / 2), -(windowPositions.WindowMousePosition.Y - (windowPositions.Height / 2)));
-                PlayerLeftClick(mouseMiddle);
+                PlayerLeftClick(fixedDeltaTime, mouseMiddle);
+            }
+            else
+            {
+                _lastBreakingBlockSoundUpdate = _lastBreakingBlockMaxTime;
             }
 
             if (windowPositions.Focused && cursorState.IsButtonDown(MouseButton.Right) &&
@@ -341,7 +348,7 @@ namespace ITProject.Logic
             return worldPosition;
         }
 
-        private void PlayerLeftClick(Vector2 mousePositionMiddle)
+        private void PlayerLeftClick(double deltaTime, Vector2 mousePositionMiddle)
         {
             if (MainModel.GetModelManager.InventoryOpen)
             {
@@ -414,6 +421,18 @@ namespace ITProject.Logic
                     miningSpeed = ((ItemInfoTools)itemInfo).MiningDuration;
                     toolLevel = ((ItemInfoTools)itemInfo).ToolLevel;
                     toolType = ((ItemInfoTools)itemInfo).ToolType;
+                }
+
+                //Block Breaking Sound Update
+                ushort block = MainModel.GetModelManager.World.GetBlockType(MainModel.GetModelManager.WorldMousePosition);
+                if (block != 0)
+                {
+                    _lastBreakingBlockSoundUpdate += deltaTime;
+                    if(_lastBreakingBlockSoundUpdate > _lastBreakingBlockMaxTime)
+                    {
+                        _lastBreakingBlockSoundUpdate = 0d;
+                        MainModel.GetModelManager.AudioManager.PlaySound(block);
+                    }
                 }
 
                 ushort removedItem = MainModel.GetModelManager.World.RemoveBlock(MainModel.GetModelManager.WorldMousePosition, miningSpeed, toolLevel, toolType);

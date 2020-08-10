@@ -44,6 +44,7 @@ namespace ITProject.Model
             _manager.World.Update(deltaTime, _manager.Player, _manager.CollisionHandler);
             _manager.Player.Update(deltaTime, _manager.CollisionHandler);
             _manager.EnemyManager.Update(deltaTime, _manager.CollisionHandler);
+            _manager.Player.AudioUpdate(deltaTime, _manager.AudioManager, _manager.World);
 
             _manager.CollisionHandler.CheckPlayerWithDroppedItems(_manager.Player);
             _manager.CollisionHandler.CheckPlayerWithEnemies(_manager.Player, _manager.EnemyManager.GetNearbyEnemies(_manager.Player.Position, _playerEnemieDistanceCheck));
