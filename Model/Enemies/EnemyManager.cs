@@ -11,12 +11,14 @@ namespace ITProject.Model.Enemies
     public class EnemyManager
     {
         public List<Enemie> Enemies;
+        public List<LaserProjectile> LaserProjectiles;
         public enum EnemyType { Slime, Boss }
 
 
         public EnemyManager()
         {
             Enemies = new List<Enemie>();
+            LaserProjectiles = new List<LaserProjectile>();
         }
 
         /// <summary>
@@ -61,7 +63,21 @@ namespace ITProject.Model.Enemies
                     Enemies.Remove(enemie);
                 }
 
+                if(enemie.GetType().Name == "BossEnemy")
+                {
+                    //Zusätzliche Updates für Bossgegner hinzufügen
+                }
+
                 enemie.Update(deltaTime, collisionHandler);
+            }
+
+            foreach(LaserProjectile projectile in LaserProjectiles.ToList())
+            {
+                projectile.Update(deltaTime, collisionHandler);
+                if (projectile.CheckDistance())
+                {
+                    LaserProjectiles.Remove(projectile);
+                }
             }
         }
 

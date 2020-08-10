@@ -56,7 +56,7 @@ namespace ITProject.Model
             Position = newPos;
         }
 
-        protected void UpdateDirection()
+        protected virtual void UpdateDirection()
         {
             if (Velocity.X < 0f)
             {

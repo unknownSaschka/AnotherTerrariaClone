@@ -141,6 +141,7 @@
     <Compile Include="Model\CollisionHandler.cs" />
     <Compile Include="Model\Crafting.cs" />
     <Compile Include="Model\DamageNumbers.cs" />
+    <Compile Include="Model\Enemies\BossEnemy.cs" />
     <Compile Include="Model\Enemies\EnemyManager.cs" />
     <Compile Include="Model\GameObject.cs" />
     <Compile Include="Model\Inventory.cs" />
