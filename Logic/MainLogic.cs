@@ -10,6 +10,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using static ITProject.Logic.GameExtentions;
+using static ITProject.Logic.ViewButtonPositions;
 using static ITProject.Model.World;
 
 namespace ITProject.Logic
@@ -199,7 +200,7 @@ namespace ITProject.Logic
                     if (inputManager.GetMouseButtonPressed(MouseButton.Left) && windowPositions.Focused)
                     {
                         Vector2 mouseMiddle = new Vector2(windowPositions.WindowMousePosition.X - (windowPositions.Width / 2), -(windowPositions.WindowMousePosition.Y - (windowPositions.Height / 2)));
-                        MenuButtonPresses(mouseMiddle, MainMenuModel.ButtonPositions);
+                        MenuButtonPresses(mouseMiddle, MainMenuModel.ButtonPositions, keyboardState);
                     }
 
                     break;
@@ -519,7 +520,7 @@ namespace ITProject.Logic
         }
 
         //Menu Functions
-        private void MenuButtonPresses(Vector2 mousePositionMiddle, List<ViewButtonPositions> buttonPositions)
+        private void MenuButtonPresses(Vector2 mousePositionMiddle, List<ViewButtonPositions> buttonPositions, KeyboardState keyboardState)
         {
             
             Console.WriteLine(mousePositionMiddle);
@@ -531,10 +532,10 @@ namespace ITProject.Logic
 
                     switch (button.ButtonType)
                     {
-                        case ButtonType.ToWorldList:
+                        case ButtonTypes.ToWorldList:
                             MainMenuModel.ScreenState = MainMenuModel.Screen.WorldSelect;
                             break;
-                        case ButtonType.World:
+                        case ButtonTypes.World:
                             Console.WriteLine(button.ButtonInput);
                             if (button.ButtonInput.Equals("Empty"))
                             {
@@ -550,30 +551,49 @@ namespace ITProject.Logic
                             }
                             else
                             {
-                                _worldLoadType = World.WorldLoadType.LoadWorld;
+                                if (keyboardState.IsKeyDown(Key.Delete))
+                                {
+                                    WorldLoader.DeleteWorld(button.Slot);
+                                    SaveManagement.DeleteWorldJSON(button.Slot);
+                                    MainMenuModel.AvailableWorldSaves[button.Slot] = null;
+                                    break;
+                                }
+                                else
+                                {
+                                    _worldLoadType = World.WorldLoadType.LoadWorld;
+                                    
+                                }
                             }
-
                             _worldSaveSlot = button.Slot;
-
                             MainMenuModel.ScreenState = MainMenuModel.Screen.PlayerSelect;
                             break;
-                        case ButtonType.Player:
+                        case ButtonTypes.Player:
                             if (button.ButtonInput.Equals("Empty"))
                             {
                                 _playerLoadType = Player.PlayerLoadingType.NewPlayer;
                             }
                             else
                             {
-                                _playerLoadType = Player.PlayerLoadingType.LoadPlayer;
+                                if (keyboardState.IsKeyDown(Key.Delete))
+                                {
+                                    SaveManagement.DeletePlayer(button.Slot);
+                                    SaveManagement.DeletePlayerJSON(button.Slot);
+                                    MainMenuModel.AvailablePlayerSaves[button.Slot] = null;
+                                    break;
+                                }
+                                else
+                                {
+                                    _playerLoadType = Player.PlayerLoadingType.LoadPlayer;
+                                }
+                                
                             }
-
                             _playerSaveSlot = button.Slot;
                             StartGame();
                             break;
-                        case ButtonType.Back:
+                        case ButtonTypes.Back:
                             MainMenuBackButton();
                             break;
-                        case ButtonType.CloseGame:
+                        case ButtonTypes.CloseGame:
                             GameClose = true;
                             break;
                     }

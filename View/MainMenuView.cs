@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static ITProject.Logic.GameExtentions;
+using static ITProject.Logic.ViewButtonPositions;
 using static ITProject.Model.World;
 
 namespace ITProject.View
@@ -175,8 +176,8 @@ namespace ITProject.View
             DrawElements(_buttonsVAO, _buttonsVBO, sizeof(float) * vertices.Length, vertices, 2 * 4, _menuTextures.Button);
 
             List<ViewButtonPositions> buttons = new List<ViewButtonPositions>();
-            buttons.Add(new ViewButtonPositions(selectWorldPos, buttonSize, "Select World", ButtonType.ToWorldList, -1));
-            buttons.Add(new ViewButtonPositions(endGamePos, buttonSize, "Close Game", ButtonType.CloseGame, -1));
+            buttons.Add(new ViewButtonPositions(selectWorldPos, buttonSize, "Select World", ButtonTypes.ToWorldList, -1));
+            buttons.Add(new ViewButtonPositions(endGamePos, buttonSize, "Close Game", ButtonTypes.CloseGame, -1));
             _menuModel.ButtonPositions = buttons;
             DrawText(buttons);
         }
@@ -192,7 +193,7 @@ namespace ITProject.View
 
             WorldSaveInfo[] worldSaves = _menuModel.AvailableWorldSaves;
             List<ViewButtonPositions> buttons = new List<ViewButtonPositions>();
-            buttons.Add(new ViewButtonPositions(new Vector2(firstWorldButtonPos.X, firstWorldButtonPos.Y + 50f), buttonSize, "Select World", ButtonType.None, -1));
+            buttons.Add(new ViewButtonPositions(new Vector2(firstWorldButtonPos.X, firstWorldButtonPos.Y + 50f), buttonSize, "Select World", ButtonTypes.None, -1));
 
             float steps = 60f;
             int count = 0;
@@ -212,11 +213,11 @@ namespace ITProject.View
 
                 if (worldSaves[i] != null)
                 {
-                    buttons.Add(new ViewButtonPositions(new Vector2(firstWorldButtonPos.X, firstWorldButtonPos.Y), buttonSize, $"Slot {worldSaves[i].SaveSlot}", ButtonType.World, worldSaves[i].SaveSlot));
+                    buttons.Add(new ViewButtonPositions(new Vector2(firstWorldButtonPos.X, firstWorldButtonPos.Y), buttonSize, $"Slot {worldSaves[i].SaveSlot}", ButtonTypes.World, worldSaves[i].SaveSlot));
                 }
                 else
                 {
-                    buttons.Add(new ViewButtonPositions(new Vector2(firstWorldButtonPos.X, firstWorldButtonPos.Y), buttonSize, "Empty", ButtonType.World, i));
+                    buttons.Add(new ViewButtonPositions(new Vector2(firstWorldButtonPos.X, firstWorldButtonPos.Y), buttonSize, "Empty", ButtonTypes.World, i));
                 }
 
                 firstWorldButtonPos.Y -= steps;
@@ -232,7 +233,7 @@ namespace ITProject.View
                 count++;
             }
 
-            buttons.Add(new ViewButtonPositions(backButtonPos, backButtonSize, "Zurück", ButtonType.Back, -1));
+            buttons.Add(new ViewButtonPositions(backButtonPos, backButtonSize, "Zurück", ButtonTypes.Back, -1));
             _menuModel.ButtonPositions = buttons;
 
             DrawElements(_buttonsVAO, _buttonsVBO, sizeof(float) * vertices.Length, vertices, 11 * 4, _menuTextures.Button);
@@ -250,7 +251,7 @@ namespace ITProject.View
 
             PlayerSaveInfo[] playerSaves = _menuModel.AvailablePlayerSaves;
             List<ViewButtonPositions> buttons = new List<ViewButtonPositions>();
-            buttons.Add(new ViewButtonPositions(new Vector2(firstPlayerButtonPos.X, firstPlayerButtonPos.Y + 50f), buttonSize, "Select Player", ButtonType.None, -1));
+            buttons.Add(new ViewButtonPositions(new Vector2(firstPlayerButtonPos.X, firstPlayerButtonPos.Y + 50f), buttonSize, "Select Player", ButtonTypes.None, -1));
 
             float steps = 60f;
             int count = 0;
@@ -270,11 +271,11 @@ namespace ITProject.View
 
                 if (playerSaves[i] != null)
                 {
-                    buttons.Add(new ViewButtonPositions(new Vector2(firstPlayerButtonPos.X, firstPlayerButtonPos.Y), buttonSize, $"Slot {playerSaves[i].SaveSlot}", ButtonType.Player, playerSaves[i].SaveSlot));
+                    buttons.Add(new ViewButtonPositions(new Vector2(firstPlayerButtonPos.X, firstPlayerButtonPos.Y), buttonSize, $"Slot {playerSaves[i].SaveSlot}", ButtonTypes.Player, playerSaves[i].SaveSlot));
                 }
                 else
                 {
-                    buttons.Add(new ViewButtonPositions(new Vector2(firstPlayerButtonPos.X, firstPlayerButtonPos.Y), buttonSize, "Empty", ButtonType.Player, i));
+                    buttons.Add(new ViewButtonPositions(new Vector2(firstPlayerButtonPos.X, firstPlayerButtonPos.Y), buttonSize, "Empty", ButtonTypes.Player, i));
                 }
 
                 firstPlayerButtonPos.Y -= steps;
@@ -290,7 +291,7 @@ namespace ITProject.View
                 count++;
             }
 
-            buttons.Add(new ViewButtonPositions(backButtonPos, backButtonSize, "Zurück", ButtonType.Back, -1));
+            buttons.Add(new ViewButtonPositions(backButtonPos, backButtonSize, "Zurück", ButtonTypes.Back, -1));
             _menuModel.ButtonPositions = buttons;
 
             DrawElements(_buttonsVAO, _buttonsVBO, sizeof(float) * vertices.Length, vertices, 11 * 4, _menuTextures.Button);

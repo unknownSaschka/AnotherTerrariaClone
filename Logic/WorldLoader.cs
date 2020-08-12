@@ -89,7 +89,7 @@ namespace ITProject.Logic
                 Stream stream = new FileStream("world.dat", FileMode.Create, FileAccess.Write, FileShare.None);
 
                 formatter.Serialize(stream, worldSaves);
-
+                stream.Close();
             }
             catch(Exception e)
             {
@@ -98,6 +98,27 @@ namespace ITProject.Logic
             }
 
             return true;
+        }
+
+        public static void DeleteWorld(int saveSlot)
+        {
+            try
+            {
+                IFormatter formatter = new BinaryFormatter();
+                Stream stream = new FileStream("world.dat", FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
+                WorldSaves worldSaves = (WorldSaves)formatter.Deserialize(stream);
+                stream.Close();
+
+                worldSaves.SavedWorlds[saveSlot] = null;
+
+                stream = new FileStream("world.dat", FileMode.Create, FileAccess.Write, FileShare.None);
+                formatter.Serialize(stream, worldSaves);
+                stream.Close();
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
     }
 

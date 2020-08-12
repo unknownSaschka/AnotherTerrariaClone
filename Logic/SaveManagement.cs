@@ -304,6 +304,36 @@ namespace ITProject.Logic
                 worldSaves = saves.WorldSaves;
             }
         }
+
+        public static void DeletePlayerJSON(int saveSlot)
+        {
+            if (!File.Exists(@"saves.json"))
+            {
+                return;
+            }
+
+            PlayerSaveInfo[] playerSaves;
+            WorldSaveInfo[] worldSaves;
+
+            LoadPlayerWorldJSON(out playerSaves, out worldSaves);
+            playerSaves[saveSlot] = null;
+            SavePlayerWorldJSON(playerSaves, worldSaves);
+        }
+
+        public static void DeleteWorldJSON(int saveSlot)
+        {
+            if (!File.Exists(@"saves.json"))
+            {
+                return;
+            }
+
+            PlayerSaveInfo[] playerSaves;
+            WorldSaveInfo[] worldSaves;
+
+            LoadPlayerWorldJSON(out playerSaves, out worldSaves);
+            worldSaves[saveSlot] = null;
+            SavePlayerWorldJSON(playerSaves, worldSaves);
+        }
     }
 
     public class PlayerWorldSaves

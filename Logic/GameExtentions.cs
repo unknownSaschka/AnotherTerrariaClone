@@ -28,25 +28,9 @@ namespace ITProject.Logic
             }
         }
 
-        public struct ViewButtonPositions
-        {
-            public OpenTK.Vector2 Position;
-            public OpenTK.Vector2 Size;
-            public string ButtonInput;
-            public ButtonType ButtonType;
-            public int Slot;
+        
 
-            public ViewButtonPositions(Vector2 postition, Vector2 size, string text, ButtonType buttonType, int saveSlot)
-            {
-                Position = postition;
-                Size = size;
-                ButtonInput = text;
-                ButtonType = buttonType;
-                Slot = saveSlot;
-            }
-        }
-
-        public enum ButtonType { World, Player, CloseGame, Back, ToWorldList, None }
+        
 
         /// <summary>
         /// Gibt true zurück, falls sich der Punkt innerhalb der Welt befindet
@@ -144,6 +128,25 @@ namespace ITProject.Logic
                 CentrePosition = new OpenTK.Vector2(position.X + size.X / 2, position.Y + size.Y / 2);
                 Size = size;
             }
+        }
+    }
+
+    public class ViewButtonPositions
+    {
+        public enum ButtonTypes { World, Player, CloseGame, Back, ToWorldList, None }
+        public OpenTK.Vector2 Position;
+        public OpenTK.Vector2 Size;
+        public string ButtonInput;
+        public ButtonTypes ButtonType;
+        public int Slot;
+
+        public ViewButtonPositions(Vector2 postition, Vector2 size, string text, ButtonTypes buttonType, int saveSlot)
+        {
+            Position = postition;
+            Size = size;
+            ButtonInput = text;
+            ButtonType = buttonType;
+            Slot = saveSlot;
         }
     }
 }
