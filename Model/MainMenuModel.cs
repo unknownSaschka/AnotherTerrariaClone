@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static ITProject.Logic.GameExtentions;
+using static ITProject.Model.World;
 
 namespace ITProject.Model
 {

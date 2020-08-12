@@ -11,8 +11,8 @@ namespace ITProject.Model
 {
     public class AudioManager
     {
-        public enum SoundType { Hurt, Select, Walking_Dirt, Walking_Grass, Walking_Stone, Walking_Wood }
-        public enum Sound { dog_hurt_1, dog_hurt_2, select_1, select_2, walking_dirt_1, walking_dirt_2, walking_grass_1, walking_grass_2, walking_grass_3, walking_stone_1, walking_stone_2, walking_wood_1 }
+        public enum SoundType { Hurt, Select, Walking_Dirt, Walking_Grass, Walking_Stone, Walking_Wood, Shoot }
+        public enum Sound { dog_hurt_1, dog_hurt_2, select_1, select_2, walking_dirt_1, walking_dirt_2, walking_grass_1, walking_grass_2, walking_grass_3, walking_stone_1, walking_stone_2, walking_wood_1, shoot_1 }
 
         private AudioPlaybackEngine _audioEngine;
 

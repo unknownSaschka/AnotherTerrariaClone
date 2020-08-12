@@ -10,6 +10,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using static ITProject.Logic.GameExtentions;
+using static ITProject.Model.World;
 
 namespace ITProject.Logic
 {

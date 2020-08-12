@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using static ITProject.Model.World;
 
 namespace ITProject.Model
 {
@@ -184,6 +185,8 @@ namespace ITProject.Model
             {
                 return;
             }
+
+            mainModel.GetModelManager.Player.SetAttackDirection(_mousePositionMiddle.X > 0 ? true : false);
 
             if (_mousePositionMiddle.X >= 0)
             {

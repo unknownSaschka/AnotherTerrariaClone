@@ -14,11 +14,18 @@ namespace ITProject.Model.Enemies
         public List<LaserProjectile> LaserProjectiles;
         public enum EnemyType { Slime, Boss }
 
+        private AudioManager _audioManager;
+        private Player _player;
 
-        public EnemyManager()
+        private float _enemyRemoveDistance = 80f;
+        private float _enemySpawningDistance = 10f;
+
+        public EnemyManager(AudioManager audioManager, Player player)
         {
             Enemies = new List<Enemie>();
             LaserProjectiles = new List<LaserProjectile>();
+            _audioManager = audioManager;
+            _player = player;
         }
 
         /// <summary>
@@ -30,6 +37,17 @@ namespace ITProject.Model.Enemies
         public void SpawnEnemie(EnemyType enemyType, Vector2 position, float distance)
         {
             //Gegner innerhalb der Distanz spawnen lassen
+            if(enemyType != EnemyType.Boss)
+            {
+                var enemies = from enemie in Enemies
+                              where Vector2.Distance(enemie.Position, position) < _enemySpawningDistance
+                              select enemie;
+
+                if(enemies.Count() != 0)
+                {
+                    return;
+                }
+            }
 
             switch (enemyType)
             {
@@ -61,11 +79,15 @@ namespace ITProject.Model.Enemies
                 if (enemie.Dead)
                 {
                     Enemies.Remove(enemie);
+                    continue;
                 }
-
-                if(enemie.GetType().Name == "BossEnemy")
+                else if(enemie.RemoveAtDistance)
                 {
-                    //Zusätzliche Updates für Bossgegner hinzufügen
+                    if(Vector2.Distance(enemie.Position, _player.Position) > _enemyRemoveDistance)
+                    {
+                        Enemies.Remove(enemie);
+                        continue;
+                    }
                 }
 
                 enemie.Update(deltaTime, collisionHandler);
@@ -81,6 +103,12 @@ namespace ITProject.Model.Enemies
             }
         }
 
+        public void NewProjectile(Vector2 position, Vector2 direction, float speed)
+        {
+            LaserProjectiles.Add(new LaserProjectile(position, direction, speed));
+            _audioManager.PlaySound(AudioManager.SoundType.Shoot);
+        }
+
     }
 
     public abstract class Enemie : GameObject
@@ -90,6 +118,7 @@ namespace ITProject.Model.Enemies
         public int Damage;
         public bool Dead = false;
         public bool GotHitted = false;
+        public bool RemoveAtDistance = true;
 
         public override void Update(double deltaTime, CollisionHandler collisions)
         {

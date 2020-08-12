@@ -25,8 +25,12 @@ namespace ITProject.Model
         public bool AttackReady;
         public bool GotHitted;
 
+        private bool? _playerAttackDirection;
+        private double _playerAttackDirectionTimer = 1d;
+        private double _playerAttackDirectionMax = 1d;
+
         private double _attackTimer = 0f;
-        private double _attackMaxTime = 2f;
+        private double _attackMaxTime = 1f;
 
         private float _jumpPower = 18f;
         private float jumpDuration = 0f;
@@ -42,9 +46,8 @@ namespace ITProject.Model
         private double _invincibilityTime = 2f;
 
         private double _lastAudioUpdate;
-        private double _audioUpdateTime = 0.3f;
+        private double _audioUpdateTime = 0.4f;
 
-        //Ideen: Walljumps, 
         
         public Player()
         {
@@ -97,9 +100,26 @@ namespace ITProject.Model
         {
             GotHitted = false;
             UpdatePhysics(deltaTime, collisions);
-            UpdateDirection();
 
-            if(_gotHitted)
+            if(_playerAttackDirectionTimer < _playerAttackDirectionMax)
+            {
+                _playerAttackDirectionTimer += deltaTime;
+
+                if (_playerAttackDirection == true)
+                {
+                    Direction = true;
+                }
+                else
+                {
+                    Direction = false;
+                }
+            }
+            else
+            {
+                UpdateDirection();
+            }
+
+            if (_gotHitted)
             {
                 _lastHit += deltaTime;
 
@@ -124,7 +144,9 @@ namespace ITProject.Model
 
         public void AudioUpdate(double deltaTime, AudioManager audioManager, World world)
         {
-            if(Grounded && !GameExtentions.AlmostEquals(Velocity.X, 0f, 0.02f))
+            _audioUpdateTime = 0.8f - Math.Abs(Velocity.X) / 13;
+
+            if(Grounded && !GameExtentions.AlmostEquals(Velocity.X, 0f, 0.2f))
             {
                 _lastAudioUpdate += deltaTime;
 
@@ -236,6 +258,12 @@ namespace ITProject.Model
                 _jumpState = 0;
             }
             Grounded = grounded;
+        }
+
+        public void SetAttackDirection(bool direction)
+        {
+            _playerAttackDirection = direction;
+            _playerAttackDirectionTimer = 0d;
         }
 
         public void Walk(bool direction)

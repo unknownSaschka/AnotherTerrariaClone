@@ -17,6 +17,7 @@ using System.Windows.Forms;
 using NAudio.Wave;
 using ITProject.Model.Enemies;
 using ITProject.View.Animators;
+using static ITProject.Model.World;
 
 namespace ITProject.View
 {

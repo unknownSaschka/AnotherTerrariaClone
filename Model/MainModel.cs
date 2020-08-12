@@ -56,6 +56,25 @@ namespace ITProject.Model
             {
                 if (number.Remove) _manager.DamageNumbers.Remove(number);
             }
+
+            EnemySpawn(deltaTime, _manager.Player);
+        }
+
+        private void EnemySpawn(double deltaTime, Player player)
+        {
+            int range = 40;
+            int x = Random.Next((int)player.Position.X - range, (int)player.Position.X + range);
+            int y = Random.Next((int)player.Position.Y - range, (int)player.Position.Y + range);
+
+            if (System.Numerics.Vector2.Distance(player.Position, new System.Numerics.Vector2(x, y)) > 30)
+            {
+                if (!((ItemInfoWorld)(Item[_manager.World.GetWorld[x - 1, y - 1]])).Walkable && !((ItemInfoWorld)(Item[_manager.World.GetWorld[x, y - 1]])).Walkable && !((ItemInfoWorld)(Item[_manager.World.GetWorld[x + 1, y - 1]])).Walkable &&
+                     ((ItemInfoWorld)(Item[_manager.World.GetWorld[x - 1, y]])).Walkable && ((ItemInfoWorld)(Item[_manager.World.GetWorld[x, y]])).Walkable && ((ItemInfoWorld)(Item[_manager.World.GetWorld[x + 1, y]])).Walkable &&
+                     ((ItemInfoWorld)(Item[_manager.World.GetWorld[x - 1, y + 1]])).Walkable && ((ItemInfoWorld)(Item[_manager.World.GetWorld[x, y + 1]])).Walkable && ((ItemInfoWorld)(Item[_manager.World.GetWorld[x + 1, y + 1]])).Walkable)
+                {
+                    _manager.EnemyManager.SpawnEnemie(Enemies.EnemyManager.EnemyType.Slime, new System.Numerics.Vector2(x, y), 0f);
+                }
+            }
         }
 
         public void CloseGame()

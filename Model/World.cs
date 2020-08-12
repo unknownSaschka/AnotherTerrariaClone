@@ -7,6 +7,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace ITProject.Model
 {
@@ -53,18 +54,18 @@ namespace ITProject.Model
                 _worldChests = new Dictionary<Vector2, Chest>();
                 NewWorld(seed);
             }
-            else if(loadType == WorldLoadType.LoadWorld)
+            else if (loadType == WorldLoadType.LoadWorld)
             {
                 _width = width;
                 _height = height;
                 WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack, out _worldChests, manager, saveSlot);
 
-                if(_world.Length == 0)
+                if (_world.Length == 0)
                 {
                     NewWorld(seed);
                 }
             }
-            else if(loadType == WorldLoadType.TestLoad)
+            else if (loadType == WorldLoadType.TestLoad)
             {
                 _world = new UInt16[width, height];
                 _width = width;
@@ -78,12 +79,12 @@ namespace ITProject.Model
 
         public void Update(double deltaTime, Player player, CollisionHandler collisionHandler)
         {
-            foreach(WorldItem worldItem in _droppedItems)
+            foreach (WorldItem worldItem in _droppedItems)
             {
                 //Items ziehen sich an den Spieler herran, wenn dieser nahe genug ist
-                if(worldItem.LayingTime >= 3f)
+                if (worldItem.LayingTime >= 3f)
                 {
-                    if(Vector2.Distance(player.Position, worldItem.Position) <= 5f)
+                    if (Vector2.Distance(player.Position, worldItem.Position) <= 5f)
                     {
                         Vector2 playerDirection = player.Position - worldItem.Position;
                         worldItem.SetVelocity(playerDirection);
@@ -96,16 +97,35 @@ namespace ITProject.Model
                 worldItem.Update(deltaTime, collisionHandler);
             }
 
-            foreach(var item in _blockDamage.ToList())
+            foreach (var item in _blockDamage.ToList())
             {
                 _blockDamage[item.Key] += 0.5f;
 
-                if(_blockDamage[item.Key] >= ((ItemInfoWorld)MainModel.Item[_world[(int)item.Key.X, (int)item.Key.Y]]).MiningDuration)
+                if (_blockDamage[item.Key] >= ((ItemInfoWorld)MainModel.Item[_world[(int)item.Key.X, (int)item.Key.Y]]).MiningDuration)
                 {
                     _blockDamage.Remove(item.Key);
                 }
             }
         }
+
+        /*
+        private void EnemySpawn(double deltaTime, Player player)
+        {
+            int range = 40;
+            int x = MainModel.Random.Next((int)player.Position.X - range, (int)player.Position.X + range);
+            int y = MainModel.Random.Next((int)player.Position.Y - range, (int)player.Position.Y + range);
+
+            if (Vector2.Distance(player.Position, new Vector2(x, y)) > 30)
+            {
+                if (!((ItemInfoWorld)(MainModel.Item[_world[x - 1, y - 1]])).Walkable && !((ItemInfoWorld)(MainModel.Item[_world[x, y - 1]])).Walkable && !((ItemInfoWorld)(MainModel.Item[_world[x + 1, y - 1]])).Walkable &&
+                     ((ItemInfoWorld)(MainModel.Item[_world[x - 1, y]])).Walkable && ((ItemInfoWorld)(MainModel.Item[_world[x, y]])).Walkable && ((ItemInfoWorld)(MainModel.Item[_world[x + 1, y]])).Walkable &&
+                     ((ItemInfoWorld)(MainModel.Item[_world[x - 1, y + 1]])).Walkable && ((ItemInfoWorld)(MainModel.Item[_world[x, y + 1]])).Walkable && ((ItemInfoWorld)(MainModel.Item[_world[x + 1, y + 1]])).Walkable)
+                {
+
+                }
+            }
+        }
+        */
 
         public void SaveWorld(int saveSlot)
         {
@@ -116,7 +136,7 @@ namespace ITProject.Model
         {
             int worldGenSeed = 1337;
 
-            if(seed != null)
+            if (seed != null)
             {
                 worldGenSeed = (int)seed;
             }
@@ -129,15 +149,15 @@ namespace ITProject.Model
         public void NewWorldOld()
         {
             int i = 0;
-            for(int iy = 0; iy < _height; iy++)
+            for (int iy = 0; iy < _height; iy++)
             {
-                for(int ix = 0; ix < _width; ix++)
+                for (int ix = 0; ix < _width; ix++)
                 {
                     if (iy < 1500)
                     {
                         _world[ix, iy] = 1;     //Stein
                     }
-                    else if(iy > 1510)
+                    else if (iy > 1510)
                     {
                         _world[ix, iy] = 1;     //Stein
                     }
@@ -206,9 +226,9 @@ namespace ITProject.Model
 
         public int SearchGround(int posX)
         {
-            for(int iy = _height - 1; iy >= 0; iy--)
+            for (int iy = _height - 1; iy >= 0; iy--)
             {
-                if(_world[posX, iy] != 0)
+                if (_world[posX, iy] != 0)
                 {
                     return iy + 1;
                 }
@@ -231,17 +251,17 @@ namespace ITProject.Model
                 ushort removedItem = _world[(int)blockPosition.X, (int)blockPosition.Y];
                 if (removedItem == 0) return 0;
 
-                if(!DecreaseBlockDurability(new Vector2((int)blockPosition.X, (int)blockPosition.Y), miningSpeed, toolLevel, toolType))
+                if (!DecreaseBlockDurability(new Vector2((int)blockPosition.X, (int)blockPosition.Y), miningSpeed, toolLevel, toolType))
                 {
                     return 0;
                 }
 
-                if(removedItem == 12)   //Chest
+                if (removedItem == 12)   //Chest
                 {
                     Chest chest;
                     _worldChests.TryGetValue(new Vector2((int)blockPosition.X, (int)blockPosition.Y), out chest);
 
-                    if(chest != null)
+                    if (chest != null)
                     {
                         if (!chest.IsEmpty())
                         {
@@ -271,7 +291,7 @@ namespace ITProject.Model
 
         private bool DecreaseBlockDurability(Vector2 position, float miningSpeed, int toolLevel, ItemInfoTools.ItemToolType toolType)
         {
-            ItemInfoWorld item = (ItemInfoWorld) MainModel.Item[_world[(int)position.X, (int)position.Y]];
+            ItemInfoWorld item = (ItemInfoWorld)MainModel.Item[_world[(int)position.X, (int)position.Y]];
 
             if (!(item.NeededToolType == toolType || item.NeededToolType == ItemInfoTools.ItemToolType.Hand)) return false;
             if (item.NeededToolLevel > toolLevel) return false;
@@ -283,7 +303,7 @@ namespace ITProject.Model
 
             _blockDamage[position] -= miningSpeed;
 
-            if(_blockDamage[position] < 0f)
+            if (_blockDamage[position] < 0f)
             {
                 _blockDamage.Remove(position);
                 return true;
@@ -299,11 +319,11 @@ namespace ITProject.Model
         {
             if (GameExtentions.CheckIfInBound((int)blockPosition.X, (int)blockPosition.Y, WorldSize))
             {
-                if(_world[(int)blockPosition.X, (int)blockPosition.Y] == 0 || _world[(int)blockPosition.X, (int)blockPosition.Y] == 8)  //Luft und Wasser
+                if (_world[(int)blockPosition.X, (int)blockPosition.Y] == 0 || _world[(int)blockPosition.X, (int)blockPosition.Y] == 8)  //Luft und Wasser
                 {
                     _world[(int)blockPosition.X, (int)blockPosition.Y] = blockType;
 
-                    if(blockType == 12)     //Chest
+                    if (blockType == 12)     //Chest
                     {
                         _worldChests.Add(new Vector2((int)blockPosition.X, (int)blockPosition.Y), new Chest(manager));
                     }
@@ -315,7 +335,7 @@ namespace ITProject.Model
                 {
                     return false;
                 }
-                
+
             }
             else
             {
@@ -325,15 +345,15 @@ namespace ITProject.Model
 
         public bool AddDroppedItem(WorldItem item)
         {
-            if(!((ItemInfoWorld)MainModel.Item[_world[(int)item.Position.X, (int)item.Position.Y]]).Walkable)
+            if (!((ItemInfoWorld)MainModel.Item[_world[(int)item.Position.X, (int)item.Position.Y]]).Walkable)
             {
                 Console.WriteLine("Item in Block");
                 Vector2? newPos = SearchForItemPlace((int)item.Position.X, (int)item.Position.Y, 0);
-                if(newPos != null)
+                if (newPos != null)
                 {
                     item.Position = new Vector2(newPos.Value.X, newPos.Value.Y);
                 }
-                
+
             }
 
             _droppedItems.Add(item);
@@ -355,7 +375,7 @@ namespace ITProject.Model
 
         private bool CheckWithin(Vector2 position, Vector2 min, Vector2 max)
         {
-            if(position.X > min.X && position.X < max.X && position.Y > min.Y && position.Y < max.Y)
+            if (position.X > min.X && position.X < max.X && position.Y > min.Y && position.Y < max.Y)
             {
                 return true;
             }
@@ -408,13 +428,13 @@ namespace ITProject.Model
                 return null;
             }
 
-            if(((ItemInfoWorld)MainModel.Item[_world[x, y]]).Walkable)
+            if (((ItemInfoWorld)MainModel.Item[_world[x, y]]).Walkable)
             {
                 return new Vector2(x, y);
             }
 
             Vector2? newPos = SearchForItemPlace(x, y + 1, step + 1);
-            if(newPos != null)
+            if (newPos != null)
             {
                 return newPos;
             }
@@ -444,51 +464,51 @@ namespace ITProject.Model
         {
             return _blockDamage;
         }
-    }
 
-    public class WorldItem : GameObject
-    {
-        public Item Item;
-        public float LayingTime;
-
-        public WorldItem(Vector2 position, Vector2 velocity, Vector2 size, Item item)
+        public class WorldItem : GameObject
         {
-            Position = position;
-            Size = size;
-            Velocity = velocity;
-            Item = item;
-            LayingTime = 0f;
+            public Item Item;
+            public float LayingTime;
+
+            public WorldItem(Vector2 position, Vector2 velocity, Vector2 size, Item item)
+            {
+                Position = position;
+                Size = size;
+                Velocity = velocity;
+                Item = item;
+                LayingTime = 0f;
+            }
+
+            public WorldItem(Vector2 position, Vector2 velocity, Vector2 size, Item item, float layingTime)
+            {
+                Position = position;
+                Size = size;
+                Velocity = velocity;
+                Item = item;
+                LayingTime = layingTime;
+            }
+
+            public void SetVelocity(Vector2 velocity)
+            {
+                Velocity = velocity;
+            }
+
+            public Hitbox GetHitbox()
+            {
+                return new Hitbox(Position, Size, Hitbox.HitboxType.Player);
+            }
         }
 
-        public WorldItem(Vector2 position, Vector2 velocity, Vector2 size, Item item, float layingTime)
+        public class WorldSaveInfo
         {
-            Position = position;
-            Size = size;
-            Velocity = velocity;
-            Item = item;
-            LayingTime = layingTime;
-        }
+            public int SaveSlot;
+            public string Name;
 
-        public void SetVelocity(Vector2 velocity)
-        {
-            Velocity = velocity;
-        }
-
-        public Hitbox GetHitbox()
-        {
-            return new Hitbox(Position, Size, Hitbox.HitboxType.Player);
-        }
-    }
-
-    public class WorldSaveInfo
-    {
-        public int SaveSlot;
-        public string Name;
-
-        public WorldSaveInfo(int saveSlot, string name)
-        {
-            SaveSlot = saveSlot;
-            Name = name;
+            public WorldSaveInfo(int saveSlot, string name)
+            {
+                SaveSlot = saveSlot;
+                Name = name;
+            }
         }
     }
 }
