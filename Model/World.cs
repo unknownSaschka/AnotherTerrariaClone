@@ -278,6 +278,15 @@ namespace ITProject.Model
                     removedItem = 0;
                 }
 
+                //Prüfen, ob Block, der Abgebaut wird, einen Baum über sich hat
+                if(GameExtentions.CheckIfInBound((int)blockPosition.X, (int)blockPosition.Y + 1, WorldSize))
+                {
+                    if(_world[(int)blockPosition.X, (int)blockPosition.Y + 1] == 70)
+                    {
+                        RemoveTreeUpwards((int)blockPosition.X, (int)blockPosition.Y + 1);
+                    }
+                }
+
                 _world[(int)blockPosition.X, (int)blockPosition.Y] = 0;
                 WorldChanged = true;
 
@@ -463,6 +472,26 @@ namespace ITProject.Model
         public Dictionary<Vector2, float> GetAllDamagedBlocks()
         {
             return _blockDamage;
+        }
+
+        public ItemInfo GetSaveItemInfo(Vector2 position)
+        {
+            if(!GameExtentions.CheckIfInBound((int)position.X, (int)position.Y, new Vector2(_width, _height)))
+            {
+                return null;
+            }
+
+            return MainModel.Item[_world[(int)position.X, (int)position.Y]];
+        }
+
+        public ItemInfo GetSaveItemInfo(int x, int y)
+        {
+            if (!GameExtentions.CheckIfInBound(x, y, new Vector2(_width, _height)))
+            {
+                return null;
+            }
+
+            return MainModel.Item[_world[x, y]];
         }
 
         public class WorldItem : GameObject

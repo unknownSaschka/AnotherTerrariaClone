@@ -68,11 +68,16 @@ namespace ITProject.Model
 
             if (System.Numerics.Vector2.Distance(player.Position, new System.Numerics.Vector2(x, y)) > 30)
             {
-                if (!((ItemInfoWorld)(Item[_manager.World.GetWorld[x - 1, y - 1]])).Walkable && !((ItemInfoWorld)(Item[_manager.World.GetWorld[x, y - 1]])).Walkable && !((ItemInfoWorld)(Item[_manager.World.GetWorld[x + 1, y - 1]])).Walkable &&
-                     ((ItemInfoWorld)(Item[_manager.World.GetWorld[x - 1, y]])).Walkable && ((ItemInfoWorld)(Item[_manager.World.GetWorld[x, y]])).Walkable && ((ItemInfoWorld)(Item[_manager.World.GetWorld[x + 1, y]])).Walkable &&
-                     ((ItemInfoWorld)(Item[_manager.World.GetWorld[x - 1, y + 1]])).Walkable && ((ItemInfoWorld)(Item[_manager.World.GetWorld[x, y + 1]])).Walkable && ((ItemInfoWorld)(Item[_manager.World.GetWorld[x + 1, y + 1]])).Walkable)
+                if(_manager.World.GetSaveItemInfo(x - 1, y - 1) != null && _manager.World.GetSaveItemInfo(x, y - 1) != null && _manager.World.GetSaveItemInfo(x + 1, y - 1) != null &&
+                   _manager.World.GetSaveItemInfo(x - 1, y) != null && _manager.World.GetSaveItemInfo(x, y) != null && _manager.World.GetSaveItemInfo(x + 1, y) != null &&
+                   _manager.World.GetSaveItemInfo(x - 1, y + 1) != null && _manager.World.GetSaveItemInfo(x, y + 1) != null && _manager.World.GetSaveItemInfo(x + 1, y + 1) != null)
                 {
-                    _manager.EnemyManager.SpawnEnemie(Enemies.EnemyManager.EnemyType.Slime, new System.Numerics.Vector2(x, y), 0f);
+                    if (!((ItemInfoWorld)(_manager.World.GetSaveItemInfo(x - 1, y - 1))).Walkable && !((ItemInfoWorld)(_manager.World.GetSaveItemInfo(x, y - 1))).Walkable && !((ItemInfoWorld)(_manager.World.GetSaveItemInfo(x + 1, y - 1))).Walkable &&
+                     ((ItemInfoWorld)(_manager.World.GetSaveItemInfo(x - 1, y))).Walkable && ((ItemInfoWorld)(_manager.World.GetSaveItemInfo(x, y))).Walkable && ((ItemInfoWorld)(_manager.World.GetSaveItemInfo(x + 1, y))).Walkable &&
+                     ((ItemInfoWorld)(_manager.World.GetSaveItemInfo(x - 1, y + 1))).Walkable && ((ItemInfoWorld)(_manager.World.GetSaveItemInfo(x, y + 1))).Walkable && ((ItemInfoWorld)(_manager.World.GetSaveItemInfo(x + 1, y + 1))).Walkable)
+                    {
+                        _manager.EnemyManager.SpawnEnemie(Enemies.EnemyManager.EnemyType.Slime, new System.Numerics.Vector2(x, y), 0f);
+                    }
                 }
             }
         }

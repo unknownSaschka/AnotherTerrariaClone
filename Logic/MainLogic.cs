@@ -191,6 +191,7 @@ namespace ITProject.Logic
                         if (MainModel.GetModelManager.SelectedInventorySlot < 0) MainModel.GetModelManager.SelectedInventorySlot = 9;
                         if (MainModel.GetModelManager.SelectedInventorySlot > 9) MainModel.GetModelManager.SelectedInventorySlot = 0;
                     }
+                    InventoryBarNumberKeys(keyboardState);
 
                     PerformPlayerMovement(keyboardState, cursorState, windowPositions, fixedDeltaTime);
                     PerformPlayerActions(keyboardState, cursorState, windowPositions, fixedDeltaTime);
@@ -315,14 +316,16 @@ namespace ITProject.Logic
                 if (MainModel.GetModelManager.CraftingWindowOpen)
                 {
                     MainModel.GetModelManager.CraftingWindowOpen = false;
+                    MainModel.GetModelManager.InventoryOpen = false;
                 }
                 else
                 {
                     MainModel.GetModelManager.OpenChest = null;
                     MainModel.GetModelManager.CraftingWindowOpen = true;
+                    MainModel.GetModelManager.InventoryOpen = true;
                 }
 
-                MainModel.GetModelManager.InventoryOpen = true;
+                
             }
 
             //Debug
@@ -419,10 +422,18 @@ namespace ITProject.Logic
                         MainModel.GetModelManager.CollisionHandler.SetPlayerAttack((ItemInfoTools)itemInfo, mousePositionMiddle);
                         return;
                     }
+                    else
+                    {
+                        MainModel.GetModelManager.CollisionHandler.SetPlayerAttack((ItemInfoTools)itemInfo, mousePositionMiddle);
+                    }
 
                     miningSpeed = ((ItemInfoTools)itemInfo).MiningDuration;
                     toolLevel = ((ItemInfoTools)itemInfo).ToolLevel;
                     toolType = ((ItemInfoTools)itemInfo).ToolType;
+                }
+                else
+                {
+                    MainModel.GetModelManager.CollisionHandler.SetPlayerAttack(new ItemInfoTools(0, "Hand", ItemInfoTools.ItemToolType.Hand, 0, 1, false, false), mousePositionMiddle);
                 }
 
                 //Block Breaking Sound Update
@@ -484,14 +495,34 @@ namespace ITProject.Logic
 
                     if (!MainModel.GetModelManager.CollisionHandler.Intersects(playerHitbox, blockHitbox))
                     {
-                        Inventory playerInventory = MainModel.GetModelManager.Player.ItemInventory;
-                        ushort selectedItem = playerInventory.GetItemID(MainModel.GetModelManager.SelectedInventorySlot, 0);
+                        var enemyHitboxes = from enemie in MainModel.GetModelManager.EnemyManager.Enemies
+                                            where Vector2.Distance(blockHitbox.Position, enemie.Position) < 5
+                                            select enemie.GetCollisionHitbox();
 
-                        if (MainModel.Item[selectedItem].Placable)
+                        bool canPlace = true;
+                        foreach (Hitbox enemyHitbox in enemyHitboxes)
                         {
-                            if (MainModel.GetModelManager.World.PlaceBlock(MainModel.GetModelManager.WorldMousePosition, selectedItem, MainModel.GetModelManager))
+                            if (MainModel.GetModelManager.CollisionHandler.Intersects(blockHitbox, enemyHitbox))
                             {
-                                playerInventory.RemoveItemAmount(new Item(selectedItem, 1), MainModel.GetModelManager.SelectedInventorySlot, 0);
+                                Console.WriteLine($"CanPlace False");
+                                canPlace = false;
+                                break;
+                            }
+
+                            //Console.WriteLine($"{enemyHitbox.Position}, {blockHitbox.Position}");
+                        }
+
+                        if (canPlace)
+                        {
+                            Inventory playerInventory = MainModel.GetModelManager.Player.ItemInventory;
+                            ushort selectedItem = playerInventory.GetItemID(MainModel.GetModelManager.SelectedInventorySlot, 0);
+
+                            if (MainModel.Item[selectedItem].Placable)
+                            {
+                                if (MainModel.GetModelManager.World.PlaceBlock(MainModel.GetModelManager.WorldMousePosition, selectedItem, MainModel.GetModelManager))
+                                {
+                                    playerInventory.RemoveItemAmount(new Item(selectedItem, 1), MainModel.GetModelManager.SelectedInventorySlot, 0);
+                                }
                             }
                         }
                     }
@@ -517,6 +548,20 @@ namespace ITProject.Logic
             }
 
             return false;
+        }
+
+        private void InventoryBarNumberKeys(KeyboardState keyboardState)
+        {
+            if (keyboardState.IsKeyDown(Key.Number1)) MainModel.GetModelManager.SelectedInventorySlot = 0;
+            else if (keyboardState.IsKeyDown(Key.Number2)) MainModel.GetModelManager.SelectedInventorySlot = 1;
+            else if (keyboardState.IsKeyDown(Key.Number3)) MainModel.GetModelManager.SelectedInventorySlot = 2;
+            else if (keyboardState.IsKeyDown(Key.Number4)) MainModel.GetModelManager.SelectedInventorySlot = 3;
+            else if (keyboardState.IsKeyDown(Key.Number5)) MainModel.GetModelManager.SelectedInventorySlot = 4;
+            else if (keyboardState.IsKeyDown(Key.Number6)) MainModel.GetModelManager.SelectedInventorySlot = 5;
+            else if (keyboardState.IsKeyDown(Key.Number7)) MainModel.GetModelManager.SelectedInventorySlot = 6;
+            else if (keyboardState.IsKeyDown(Key.Number8)) MainModel.GetModelManager.SelectedInventorySlot = 7;
+            else if (keyboardState.IsKeyDown(Key.Number9)) MainModel.GetModelManager.SelectedInventorySlot = 8;
+            else if (keyboardState.IsKeyDown(Key.Number0)) MainModel.GetModelManager.SelectedInventorySlot = 9;
         }
 
         //Menu Functions
@@ -561,7 +606,6 @@ namespace ITProject.Logic
                                 else
                                 {
                                     _worldLoadType = World.WorldLoadType.LoadWorld;
-                                    
                                 }
                             }
                             _worldSaveSlot = button.Slot;
@@ -585,7 +629,6 @@ namespace ITProject.Logic
                                 {
                                     _playerLoadType = Player.PlayerLoadingType.LoadPlayer;
                                 }
-                                
                             }
                             _playerSaveSlot = button.Slot;
                             StartGame();

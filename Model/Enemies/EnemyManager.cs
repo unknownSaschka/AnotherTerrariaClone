@@ -145,6 +145,11 @@ namespace ITProject.Model.Enemies
             return new Hitbox(Position, new Vector2(Size.X - 1f, Size.Y - 0.3f), Hitbox.HitboxType.Player);
         }
 
+        public Hitbox GetCollisionHitbox()
+        {
+            return new Hitbox(Position, new Vector2(Size.X, Size.Y), Hitbox.HitboxType.Player);
+        }
+
         protected abstract void UpdateMovement(double deltaTime);
     }
 }

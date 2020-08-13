@@ -25,9 +25,12 @@ namespace ITProject.Model
         public bool AttackReady;
         public bool GotHitted;
 
+        private Vector2 _playerSpawn;
+
         private bool? _playerAttackDirection;
         private double _playerAttackDirectionTimer = 1d;
         private double _playerAttackDirectionMax = 1d;
+        private Vector2 _playerThrowback = new Vector2(4f, 4f);
 
         private double _attackTimer = 0f;
         private double _attackMaxTime = 1f;
@@ -160,7 +163,7 @@ namespace ITProject.Model
             }
             else
             {
-                _lastAudioUpdate = _audioUpdateTime;
+                _lastAudioUpdate = _audioUpdateTime / 2;
             }
         }
 
@@ -314,6 +317,7 @@ namespace ITProject.Model
         private void InitPlayer(float posX, float posY)
         {
             Position = new Vector2(posX, posY);
+            _playerSpawn = new Vector2(posX, posY);
             //OldPosition = new Vector2(posX, posY);
             SlidingPower = 6.0f;
             WalkSpeed = 5f;
@@ -343,12 +347,15 @@ namespace ITProject.Model
         {
             return new Hitbox(Position, new Vector2(Size.X - 0.5f, Size.Y - 0.1f), Hitbox.HitboxType.Player);
         }
-        public void Damage(int damage, AudioManager audioManager)
+        public void Damage(int damage, bool direction, AudioManager audioManager)
         {
             if (_gotHitted)
             {
                 return;
             }
+
+            if (direction) Velocity = new Vector2(_playerThrowback.X, _playerThrowback.Y);
+            else Velocity = new Vector2(-_playerThrowback.X, _playerThrowback.Y);
 
             audioManager.PlaySound(AudioManager.SoundType.Hurt);
             Health -= damage;
@@ -365,6 +372,9 @@ namespace ITProject.Model
         private void Dead()
         {
             Console.WriteLine("Spieler Dead");
+
+            Position = _playerSpawn;
+            Health = MaxHelath;
         }
     }
 

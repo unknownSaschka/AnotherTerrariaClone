@@ -904,16 +904,35 @@ namespace ITProject.View
         private void DrawMousePointer()
         {
             _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
-            float mouseSize = 0.2f;
-            Vector2 min = new Vector2(_mainModel.GetModelManager.WorldMousePosition.X - mouseSize, _mainModel.GetModelManager.WorldMousePosition.Y - mouseSize);
-            Vector2 max = new Vector2(_mainModel.GetModelManager.WorldMousePosition.X + mouseSize, _mainModel.GetModelManager.WorldMousePosition.Y + mouseSize);
 
-            float[,] mouseVertices = GetVerices4x4MinMax(min, max, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f));
+            float[,] mouseVertices;
+            uint activeTexture;
+            Vector2 mousePosition = ConvertVector(_mainModel.GetModelManager.WorldMousePosition);
+
+            Item selectedItem = _mainModel.GetModelManager.Player.ItemInventory.GetItem(_mainModel.GetModelManager.SelectedInventorySlot, 0);
+            if (MainModel.Item[selectedItem.ID].GetType().Name == "ItemInfoTools")
+            {
+                Vector2 mouseSize = new Vector2(1.2f, 1.2f);
+                Vector2 min, max;
+                GetTextureCoord(selectedItem.ID, _textureGridSize, out min, out max, _textureOffset);
+                mouseVertices = GetVertices4x4(mousePosition, mouseSize, min, max, true);
+                activeTexture = _gameTextures.Items;
+            }
+            else
+            {
+                float mouseSize = 0.2f;
+                Vector2 min = new Vector2(_mainModel.GetModelManager.WorldMousePosition.X - mouseSize, _mainModel.GetModelManager.WorldMousePosition.Y - mouseSize);
+                Vector2 max = new Vector2(_mainModel.GetModelManager.WorldMousePosition.X + mouseSize, _mainModel.GetModelManager.WorldMousePosition.Y + mouseSize);
+                mouseVertices = GetVerices4x4MinMax(min, max, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f));
+                activeTexture = _gameTextures.Debug2;
+            }
+
+            
 
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, _gameTextures.Debug2);
+            GL.BindTexture(TextureTarget.Texture2D, activeTexture);
 
             GL.BindVertexArray(_mouseVAO);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _mouseVBO);

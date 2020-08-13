@@ -12,6 +12,8 @@ namespace ITProject
         static void Main(string[] args)
         {
             MainLogic logic = new MainLogic();
+            //Console.WriteLine("Enter Taste zum Beenden drücken");
+            //Console.ReadLine();
         }
     }
 }

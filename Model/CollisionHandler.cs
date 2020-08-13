@@ -16,6 +16,8 @@ namespace ITProject.Model
         private ItemInfoTools _lastWeapon = null;     //Für Player Attack
         private Vector2 _mousePositionMiddle;
 
+        private Vector2 _swordHitboxSize = new Vector2(1.5f, 2.8f);
+
         private ModelManager _modelManager;
         public CollisionHandler(ModelManager modelManager)
         {
@@ -49,14 +51,19 @@ namespace ITProject.Model
                     if (!Intersects(playerHitbox, blockHitbox)) continue;
 
                     //Prüfen, ob geeignet für Stairs
-                    if (((ItemInfoWorld)MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 1]]).Walkable &&
+                    if((_modelManager.World.GetSaveItemInfo((int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 1) != null) &&
+                        (_modelManager.World.GetSaveItemInfo((int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 2) != null) &&
+                        (_modelManager.World.GetSaveItemInfo((int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 3) != null))
+                    {
+                        if (((ItemInfoWorld)MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 1]]).Walkable &&
                         ((ItemInfoWorld)MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 2]]).Walkable &&
                         ((ItemInfoWorld)MainModel.Item[_modelManager.World.GetWorld[(int)blockHitbox.Position.X, (int)blockHitbox.Position.Y + 3]]).Walkable &&
                         position.Y > blockHitbox.MaxY && gameObject.Grounded)
-                    {
-                        newPlayerPositionSlope.Y = blockHitbox.MaxY + size.Y / 2;
-                        slope = true;
-                        //return newPlayerPositionSlope;
+                        {
+                            newPlayerPositionSlope.Y = blockHitbox.MaxY + size.Y / 2;
+                            slope = true;
+                            //return newPlayerPositionSlope;
+                        }
                     }
 
                     if (velocity > 0)
@@ -169,8 +176,8 @@ namespace ITProject.Model
 
                 if(Intersects(playerHitbox, enemieHitbox))
                 {
-
-                    player.Damage(enemie.Damage, _modelManager.AudioManager);
+                    bool throwbackDirection = enemie.Position.X < playerHitbox.Position.X ? true : false;
+                    player.Damage(enemie.Damage, throwbackDirection, _modelManager.AudioManager);
                 }
             }
         }
@@ -200,7 +207,7 @@ namespace ITProject.Model
             player.AttackReady = false;
 
             Hitbox playerSwordHitbox;
-            Vector2 hitboxSize = new Vector2(1.8f, 2.5f);
+            
             int weaponDamage = 0;
 
             switch (_lastWeapon.ToolLevel)
@@ -216,17 +223,26 @@ namespace ITProject.Model
                     break;
             }
 
+            if(_lastWeapon.ToolType == ItemInfoTools.ItemToolType.Hand)
+            {
+                weaponDamage = 1;
+            }
+            else if(_lastWeapon.ToolType != ItemInfoTools.ItemToolType.Sword)
+            {
+                weaponDamage = (int)(weaponDamage * 0.5f);
+            }
+
             if (player.Direction)
             {
-                playerSwordHitbox = new Hitbox(new Vector2(player.Position.X + 1.2f, player.Position.Y), hitboxSize, Hitbox.HitboxType.Player);
+                playerSwordHitbox = new Hitbox(new Vector2(player.Position.X + 1.2f, player.Position.Y), _swordHitboxSize, Hitbox.HitboxType.Player);
             }
             else
             {
-                playerSwordHitbox = new Hitbox(new Vector2(player.Position.X - 1.2f, player.Position.Y), hitboxSize, Hitbox.HitboxType.Player);
+                playerSwordHitbox = new Hitbox(new Vector2(player.Position.X - 1.2f, player.Position.Y), _swordHitboxSize, Hitbox.HitboxType.Player);
             }
 
             mainModel.GetModelManager.TestSwordHitbox = playerSwordHitbox;
-            IEnumerable<Enemie> potencialEnemies = mainModel.GetModelManager.EnemyManager.GetNearbyEnemies(playerSwordHitbox.Position, hitboxSize.Length());
+            IEnumerable<Enemie> potencialEnemies = mainModel.GetModelManager.EnemyManager.GetNearbyEnemies(playerSwordHitbox.Position, _swordHitboxSize.Length());
 
             foreach (Enemie enemie in potencialEnemies)
             {

@@ -154,6 +154,7 @@
     <Compile Include="Model\World.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="View\Animators\BossAnimator.cs" />
     <Compile Include="View\Animators\SlimeAnimator.cs" />
     <Compile Include="View\Camera.cs" />
     <Compile Include="View\Fonts.cs" />
