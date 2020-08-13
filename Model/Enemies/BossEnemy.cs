@@ -16,9 +16,12 @@ namespace ITProject.Model.Enemies
 
         //Idee Bossgegner: Normale Hits und zyklisch laser/Kugeln schießen lassen aus Augen?
 
-        private enum BossPhase { Idle, Attacking , Shooting }
-        private BossPhase _currentBossPhase;
-        private double _currentPhaseTime;
+        public enum BossPhase { Idle, Attacking, Shooting, Damage }
+        public BossPhase CurrentBossPhase;
+        public BossPhase LastAnimation = BossPhase.Idle;
+        public double CurrentPhaseTime;
+        //Für Animationen
+        public double CurrentFrameTime = 0f;
 
         private double _idlePhaseTime = 2d;
         private double _attackingPhaseTime = 1d;
@@ -56,16 +59,15 @@ namespace ITProject.Model.Enemies
 
         public override void Update(double deltaTime, CollisionHandler collisions)
         {
-
             base.Update(deltaTime, collisions);
         }
 
         protected override void UpdateMovement(double deltaTime)
         {
             Jump(deltaTime);
-            _currentPhaseTime += deltaTime;
+            CurrentPhaseTime += deltaTime;
 
-            switch (_currentBossPhase)
+            switch (CurrentBossPhase)
             {
                 case BossPhase.Idle:
                     IdlePhase(deltaTime);
@@ -81,26 +83,29 @@ namespace ITProject.Model.Enemies
 
         private void IdlePhase(double deltaTime)
         {
-            if(_currentPhaseTime > _idlePhaseTime)
+            if(CurrentPhaseTime > _idlePhaseTime)
             {
-                _currentBossPhase = BossPhase.Shooting;
+                CurrentBossPhase = BossPhase.Shooting;
+                CurrentFrameTime = 0d;
             }
         }
 
         private void AttackingPhase(double deltaTime)
         {
-            if(_currentPhaseTime > _attackingPhaseTime)
+            if(CurrentPhaseTime > _attackingPhaseTime)
             {
-                _currentBossPhase = BossPhase.Idle;
+                CurrentBossPhase = BossPhase.Idle;
             }
         }
 
         private void ShootingPhase(double deltaTime)
         {
-            if(_currentPhaseTime > _shootingPhaseTime)
+            if(CurrentPhaseTime > _shootingPhaseTime)
             {
-                _currentBossPhase = BossPhase.Idle;
+                CurrentBossPhase = BossPhase.Idle;
+                CurrentPhaseTime = 0d;
             }
+            Console.WriteLine(CurrentPhaseTime);
 
             _shootingTimer += deltaTime;
             if(_shootingTimer > _shootingPeriod)

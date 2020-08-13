@@ -55,7 +55,7 @@ namespace ITProject.Model.Enemies
                     Enemies.Add(new Slime(position, Slime.SlimeSize.Medium));
                     break;
                 case EnemyType.Boss:
-
+                    Enemies.Add(new BossEnemy(position, this));
                     break;
             }
         }

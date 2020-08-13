@@ -337,7 +337,7 @@ namespace ITProject.Logic
 
             if(windowPositions.Focused && inputManager.GetKeyPressed(Key.G))
             {
-                MainModel.GetModelManager.EnemyManager.SpawnEnemie(Model.Enemies.EnemyManager.EnemyType.Slime, MainModel.GetModelManager.Player.Position, 10f);
+                MainModel.GetModelManager.EnemyManager.SpawnEnemie(Model.Enemies.EnemyManager.EnemyType.Boss, MainModel.GetModelManager.Player.Position, 10f);
             }
         }
 

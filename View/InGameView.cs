@@ -65,6 +65,7 @@ namespace ITProject.View
 
         private PlayerAnimator _playerAnimator;
         private SlimeAnimator _slimeAnimator;
+        private BossAnimator _bossAnimator;
 
         private uint _blockVAO, _blockVBO;
         private uint _blockWallVAO, _blockWallVBO;
@@ -85,6 +86,9 @@ namespace ITProject.View
         private uint _damagedBlocksVAO, _damagedBlocksVBO;
         private uint _slimeVAO, _slimeVBO;
         private uint _heartVAO, _heartVBO;
+
+        private uint _bossVAO, _bossVBO;
+        private uint _laserVAO, _laserVBO;
 
         private uint _craftingVAO, _craftingVBO;
 
@@ -127,6 +131,7 @@ namespace ITProject.View
             _zoom = _mainModel.GetModelManager.Zoom;
             _playerAnimator = new PlayerAnimator();
             _slimeAnimator = new SlimeAnimator();
+            _bossAnimator = new BossAnimator();
         }
 
         public void OnLoad()
@@ -190,6 +195,8 @@ namespace ITProject.View
             GL.DeleteBuffer(_damagedBlocksVBO);
             GL.DeleteBuffer(_craftingVBO);
             GL.DeleteBuffer(_slimeVBO);
+            GL.DeleteBuffer(_bossVAO);
+            GL.DeleteBuffer(_laserVBO);
 
             //Vertex Arrays clearen
             GL.DeleteVertexArray(_blockVBO);
@@ -210,6 +217,8 @@ namespace ITProject.View
             GL.DeleteVertexArray(_damagedBlocksVBO);
             GL.DeleteVertexArray(_craftingVBO);
             GL.DeleteVertexArray(_slimeVAO);
+            GL.DeleteVertexArray(_bossVAO);
+            GL.DeleteVertexArray(_laserVBO);
 
             //Shader löschen
             GL.DeleteProgram(_shader.Handle);
@@ -666,46 +675,82 @@ namespace ITProject.View
         {
             List<Enemie> enemies = _mainModel.GetModelManager.EnemyManager.Enemies;
 
-            float[,] vertices = new float[4 * enemies.Count, 4];
-            int count = 0;
+            IEnumerable<Enemie> slimeList = enemies.Where(enemie => enemie.GetType().Equals(typeof(Slime)));
+            IEnumerable<Enemie> bossList = enemies.Where(enemie => enemie.GetType().Equals(typeof(BossEnemy)));
 
-            foreach(Enemie enemie in enemies)
+            float[,] verticesSlimes = new float[4 * slimeList.Count(), 4];
+            float[,] verticesBoss = new float[4 * bossList.Count(), 4];
+            int countSlimes = 0;
+            int countBosses = 0;
+
+            Vector2 texMin = Vector2.Zero, texMax = Vector2.Zero;
+
+            foreach (Enemie enemie in slimeList)
             {
-                Vector2 texMin = Vector2.Zero, texMax = Vector2.Zero;
-                Type enemyType = enemie.GetType();
-                if (enemyType.Equals(typeof(Slime)))
+                Slime slime = (Slime)enemie;
+
+                if (enemie.GotHitted)
                 {
-                    Slime slime = (Slime)enemie;
-
-                    if (enemie.GotHitted)
-                    {
-                        _slimeAnimator.PlayDamageAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
-                    }
-                    else if (enemie.Grounded)
-                    {
-                        _slimeAnimator.PlayIdleAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
-                    }
-                    else
-                    {
-                        _slimeAnimator.PlayJumpAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
-                    }
-
-                    
+                    _slimeAnimator.PlayDamageAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
+                }
+                else if (enemie.Grounded)
+                {
+                    _slimeAnimator.PlayIdleAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
+                }
+                else
+                {
+                    _slimeAnimator.PlayJumpAnimation(_deltaTime, ref slime.CurrentFrameTime, 5f, Slime.SlimeSize.Medium, ref slime.LastAnimation, out texMin, out texMax);
                 }
 
-                float[,] verts = GetVertices4x4(ConvertVector(enemie.Position), ConvertVector(enemie.Size), texMin, texMax, true);
+                float[,] vertsSlime = GetVertices4x4(ConvertVector(enemie.Position), ConvertVector(enemie.Size), texMin, texMax, true);
 
                 for (int ic = 0; ic < 4; ic++)
                 {
                     for (int ia = 0; ia < 4; ia++)
                     {
-                        vertices[count, ia] = verts[ic, ia];
+                        verticesSlimes[countSlimes, ia] = vertsSlime[ic, ia];
                     }
-                    count++;
+                    countSlimes++;
                 }
             }
+            //Slime
+            DrawElements(_slimeVAO, _slimeVBO, verticesSlimes.Length, verticesSlimes, countSlimes * 4, _gameTextures.Slime);
 
-            DrawElements(_slimeVAO, _slimeVBO, vertices.Length, vertices, count * 4, _gameTextures.Slime);
+            foreach(Enemie enemie in bossList)
+            {
+                BossEnemy boss = (BossEnemy)enemie;
+
+                switch (boss.CurrentBossPhase)
+                {
+                    case BossEnemy.BossPhase.Shooting:
+                        _bossAnimator.PlayShootAnimation(_deltaTime, boss.CurrentPhaseTime, ref boss.CurrentFrameTime, ref boss.LastAnimation, 1f, out texMin, out texMax);
+                        break;
+                    case BossEnemy.BossPhase.Attacking:
+                        _bossAnimator.PlayAttackAnimation(_deltaTime, ref boss.CurrentFrameTime, ref boss.LastAnimation, 1f, out texMin, out texMax);
+                        break;
+                    case BossEnemy.BossPhase.Idle:
+                        _bossAnimator.PlayIdleAnimation(_deltaTime, ref boss.CurrentFrameTime, ref boss.LastAnimation, 1f, out texMin, out texMax);
+                        break;
+                }
+
+                if (boss.GotHitted)
+                {
+                    _bossAnimator.PlayDamageAnimation(_deltaTime, ref boss.CurrentFrameTime, ref boss.LastAnimation, 1f, out texMin, out texMax);
+                }
+
+                float[,] vertsBoss = GetVertices4x4(ConvertVector(enemie.Position), ConvertVector(enemie.Size), texMin, texMax, true);
+
+                for (int ic = 0; ic < 4; ic++)
+                {
+                    for (int ia = 0; ia < 4; ia++)
+                    {
+                        verticesBoss[countBosses, ia] = vertsBoss[ic, ia];
+                    }
+                    countBosses++;
+                }
+            }
+            //Boss
+            DrawElements(_bossVAO, _bossVBO, verticesBoss.Length, verticesBoss, countBosses * 4, _gameTextures.Boss);
         }
 
         private void DrawDamageNumbers(Matrix4 projection, Vector4 translation)
@@ -789,6 +834,26 @@ namespace ITProject.View
                 _drawing.Print(_font, item.Amount.ToString(), new Vector3(item.Position.X + offset.X, item.Position.Y + offset.Y, 0.0f), QFontAlignment.Right, textOpts);
             }
 
+            _drawing.RefreshBuffers();
+            _drawing.Draw();
+        }
+
+        private void DrawText(string text, Vector2 position)
+        {
+            Vector2 offset = new Vector2(15f, -10f);
+
+            Matrix4 projectionMatrix = Matrix4.CreateOrthographic(_mainView.ClientRectangle.Width, _mainView.ClientRectangle.Height, -1.0f, 1.0f);
+            _drawing.ProjectionMatrix = projectionMatrix;
+            _drawing.DrawingPimitiveses.Clear();
+
+            var textOpts = new QFontRenderOptions()
+            {
+                Colour = Color.FromArgb(new Color4(0.9f, 0.9f, 0.9f, 1.0f).ToArgb()),
+                DropShadowActive = true
+            };
+
+            _drawing.Print(_font, text, new Vector3(position.X + offset.X, position.Y + offset.Y, 0.0f), QFontAlignment.Left, textOpts);
+            
             _drawing.RefreshBuffers();
             _drawing.Draw();
         }
@@ -899,6 +964,57 @@ namespace ITProject.View
 
                 DrawNumber(holdItem, mouseMiddle);
             }
+
+            Vector2 mousePos = new Vector2(_mainView.PointToClient(Control.MousePosition).X, _mainView.PointToClient(Control.MousePosition).Y);
+            DrawItemNames(new Vector2(mousePos.X - (_mainView.Width / 2), -(mousePos.Y - (_mainView.Height / 2))));
+        }
+
+        private void DrawItemNames(Vector2 mouseMiddle)
+        {
+            List<ViewItemPositions> inventoryItemPositions = _mainModel.GetModelManager.ViewItemPositions;
+            List<ViewItemPositions> craftingItemPositions = _mainModel.GetModelManager.ViewCraftingItemPositions;
+            List<ViewItemPositions> chestItemPositions = _mainModel.GetModelManager.ViewChestItemPositions;
+
+            ushort foundItemID = 0;
+
+            if(inventoryItemPositions != null)
+            {
+                foreach(ViewItemPositions item in inventoryItemPositions)
+                {
+                    if (CheckIfWithin(mouseMiddle, item.Position, item.Size, true))
+                    {
+                        foundItemID = _mainModel.GetModelManager.Player.ItemInventory.GetItemID(item.InventoryX, item.InventoryY);
+                    }
+                }
+            }
+
+            if(craftingItemPositions != null)
+            {
+                foreach (ViewItemPositions item in craftingItemPositions)
+                {
+                    if (CheckIfWithin(mouseMiddle, item.Position, item.Size, true))
+                    {
+                        foundItemID = _mainModel.GetModelManager.Player.CraftableRecipies[item.InventoryX].ResultItem.ID;
+                    }
+                }
+            }
+
+            if(chestItemPositions != null)
+            {
+                foreach (ViewItemPositions item in chestItemPositions)
+                {
+                    if (CheckIfWithin(mouseMiddle, item.Position, item.Size, true))
+                    {
+                        foundItemID = _mainModel.GetModelManager.OpenChest.Content.GetItemID(item.InventoryX, item.InventoryY);
+                    }
+                }
+            }
+            
+            if(foundItemID != 0)
+            {
+                string itemName = MainModel.Item[foundItemID].Name;
+                DrawText(itemName, mouseMiddle);
+            }
         }
 
         private void DrawMousePointer()
@@ -910,7 +1026,16 @@ namespace ITProject.View
             Vector2 mousePosition = ConvertVector(_mainModel.GetModelManager.WorldMousePosition);
 
             Item selectedItem = _mainModel.GetModelManager.Player.ItemInventory.GetItem(_mainModel.GetModelManager.SelectedInventorySlot, 0);
-            if (MainModel.Item[selectedItem.ID].GetType().Name == "ItemInfoTools")
+
+            if(selectedItem == null)
+            {
+                float mouseSize = 0.2f;
+                Vector2 min = new Vector2(_mainModel.GetModelManager.WorldMousePosition.X - mouseSize, _mainModel.GetModelManager.WorldMousePosition.Y - mouseSize);
+                Vector2 max = new Vector2(_mainModel.GetModelManager.WorldMousePosition.X + mouseSize, _mainModel.GetModelManager.WorldMousePosition.Y + mouseSize);
+                mouseVertices = GetVerices4x4MinMax(min, max, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f));
+                activeTexture = _gameTextures.Debug2;
+            }
+            else if (MainModel.Item[selectedItem.ID].GetType().Name == "ItemInfoTools")
             {
                 Vector2 mouseSize = new Vector2(1.2f, 1.2f);
                 Vector2 min, max;
@@ -1399,6 +1524,14 @@ namespace ITProject.View
             //Heart icon
             GL.GenVertexArrays(1, out _heartVAO);
             GL.GenBuffers(1, out _heartVBO);
+
+            //Boss
+            GL.GenVertexArrays(1, out _bossVAO);
+            GL.GenBuffers(1, out _bossVBO);
+
+            //BossProjectiles
+            GL.GenVertexArrays(1, out _laserVAO);
+            GL.GenBuffers(1, out _laserVBO);
         }
 
         private float[,] GetInventoryItemsPos(Vector2 invSize, Inventory inventory, Vector2 startPos, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)
