@@ -20,7 +20,7 @@ namespace ITProject.Model
         public float MaxWalkSpeed = 10f;
 
         public int Health;
-        public int MaxHelath;
+        public int MaxHealth;
 
         public bool AttackReady;
         public bool GotHitted;
@@ -46,7 +46,11 @@ namespace ITProject.Model
 
         private bool _gotHitted;
         private double _lastHit;
-        private double _invincibilityTime = 2f;
+        private double _invincibilityTime = 2d;
+        private double _lastHitHealthRegen = 0d;
+        private double _healthRegenTime = 10d;
+        private double _regenerationTimer = 0d;
+        private double _regenrationPeriod = 0.8d;
 
         private double _lastAudioUpdate;
         private double _audioUpdateTime = 0.4f;
@@ -133,6 +137,12 @@ namespace ITProject.Model
                 }
             }
 
+            _lastHitHealthRegen += deltaTime;
+            if(_lastHitHealthRegen > _healthRegenTime && Health < MaxHealth)
+            {
+                RegenerateHealth(deltaTime);
+            }
+
             if (!AttackReady)
             {
                 _attackTimer += deltaTime;
@@ -142,6 +152,17 @@ namespace ITProject.Model
                     AttackReady = true;
                     _attackTimer = 0f;
                 }
+            }
+        }
+
+        private void RegenerateHealth(double deltaTime)
+        {
+            _regenerationTimer += deltaTime;
+
+            if(_regenerationTimer > _regenrationPeriod)
+            {
+                Health += 1;
+                _regenerationTimer = 0d;
             }
         }
 
@@ -157,7 +178,7 @@ namespace ITProject.Model
                 {
                     _lastAudioUpdate = 0d;
 
-                    ushort itemBlock = world.GetBlockType(new Vector2(Position.X, Position.Y - Size.Y - 0.5f));
+                    ushort itemBlock = world.GetBlockType(new Vector2(Position.X, Position.Y - Size.Y - 0.5f), World.WorldLayer.Foreground);
                     audioManager.PlaySound(itemBlock);
                 }
             }
@@ -329,7 +350,7 @@ namespace ITProject.Model
             _lastHit = 0;
             AttackReady = true;
 
-            MaxHelath = 100;
+            MaxHealth = 100;
             Health = 100;
             _lastAudioUpdate = 0f;
         }
@@ -360,6 +381,8 @@ namespace ITProject.Model
             audioManager.PlaySound(AudioManager.SoundType.Hurt);
             Health -= damage;
             _gotHitted = true;
+            _lastHitHealthRegen = 0f;
+            _regenerationTimer = 0d;
             GotHitted = true;
             Console.WriteLine("Damage");
 
@@ -374,7 +397,7 @@ namespace ITProject.Model
             Console.WriteLine("Spieler Dead");
 
             Position = _playerSpawn;
-            Health = MaxHelath;
+            Health = MaxHealth;
         }
     }
 

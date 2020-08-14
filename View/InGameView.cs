@@ -483,6 +483,9 @@ namespace ITProject.View
 
             DrawDroppedItems(world, minBoundary, maxBoundary);
 
+            SetMatrix(_shader, transformation, translation);
+            DrawProjectiles();
+
             //Damage Numbers zeichnen
             //DrawDamageNumbers(projection, translation);
         }
@@ -738,6 +741,13 @@ namespace ITProject.View
                     _bossAnimator.PlayDamageAnimation(_deltaTime, ref boss.CurrentFrameTime, ref boss.LastAnimation, 1f, out texMin, out texMax);
                 }
 
+                if (!enemie.Direction)
+                {
+                    float temp = texMin.X;
+                    texMin.X = texMax.X;
+                    texMax.X = temp;
+                }
+
                 float[,] vertsBoss = GetVertices4x4(ConvertVector(enemie.Position), ConvertVector(enemie.Size), texMin, texMax, true);
 
                 for (int ic = 0; ic < 4; ic++)
@@ -751,6 +761,32 @@ namespace ITProject.View
             }
             //Boss
             DrawElements(_bossVAO, _bossVBO, verticesBoss.Length, verticesBoss, countBosses * 4, _gameTextures.Boss);
+        }
+
+        private void DrawProjectiles()
+        {
+            var projectiles = _mainModel.GetModelManager.EnemyManager.LaserProjectiles;
+
+            if (projectiles.Count() == 0) return;
+
+            float[,] verticesProjectiles = new float[projectiles.Count() * 4, 4];
+            int count = 0;
+
+            foreach(LaserProjectile projectile in projectiles)
+            {
+                float[,] verts = GetVertices4x4(ConvertVector(projectile.Position), ConvertVector(projectile.Size), new Vector2(0f, 0f), new Vector2(1f, 1f), true);
+
+                for (int ic = 0; ic < 4; ic++)
+                {
+                    for (int ia = 0; ia < 4; ia++)
+                    {
+                        verticesProjectiles[count, ia] = verts[ic, ia];
+                    }
+                    count++;
+                }
+            }
+
+            DrawElements(_laserVAO, _laserVBO, verticesProjectiles.Length, verticesProjectiles, count * 4, _gameTextures.Laser);
         }
 
         private void DrawDamageNumbers(Matrix4 projection, Vector4 translation)
@@ -789,7 +825,7 @@ namespace ITProject.View
 
 
             Player player = _mainModel.GetModelManager.Player;
-            string lifeText = $"{player.Health}/{player.MaxHelath}";
+            string lifeText = $"{player.Health}/{player.MaxHealth}";
             Color color = Color.FromArgb(new Color4(1.0f, 1.0f, 1.0f, 1.0f).ToArgb());
 
             Matrix4 projectionMatrix = Matrix4.CreateOrthographic(_mainView.ClientRectangle.Width, _mainView.ClientRectangle.Height, -1.0f, 1.0f);
@@ -1149,8 +1185,6 @@ namespace ITProject.View
                 float[,] vert = GetVertices4x5(ConvertVector(worldItem.Position), ConvertVector(worldItem.Size), texCoordMin, texCoordMax, _light[(int)worldItem.Position.X, (int)worldItem.Position.Y], true);
                 InsertVertices(ref vertices, ref vert, ref count, 5);
             }
-
-
 
             AlterVertexBufferBlocks(_droppedItemsVAO, _droppedItemsVBO, vertices);
             GL.Enable(EnableCap.Blend);

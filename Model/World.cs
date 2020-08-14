@@ -14,6 +14,7 @@ namespace ITProject.Model
     public class World
     {
         public enum WorldLoadType { TestLoad, NewWorld, LoadWorld }
+        public enum WorldLayer { Foreground, Background }
 
         public ushort[,] GetWorld
         {
@@ -33,6 +34,7 @@ namespace ITProject.Model
         private List<WorldItem> _droppedItems = new List<WorldItem>();
         private Dictionary<Vector2, Chest> _worldChests;
         private Dictionary<Vector2, float> _blockDamage = new Dictionary<Vector2, float>();
+        private Dictionary<Vector2, float> _blockDamageWall = new Dictionary<Vector2, float>();
 
         private float _maxBlockDurability = 100f;
 
@@ -237,10 +239,18 @@ namespace ITProject.Model
             return 0;
         }
 
-        public UInt16 GetBlockType(Vector2 position)
+        public UInt16 GetBlockType(Vector2 position, WorldLayer layer)
         {
             if (!GameExtentions.CheckIfInBound((int)position.X, (int)position.Y, WorldSize)) return 0;
-            return _world[(int)position.X, (int)position.Y];
+
+            switch (layer)
+            {
+                case WorldLayer.Foreground:
+                    return _world[(int)position.X, (int)position.Y];
+                case WorldLayer.Background:
+                    return _worldBack[(int)position.X, (int)position.Y];
+            }
+            return 0;
         }
 
         //Gibt den Block zurück, der Abgebaut wurde
@@ -248,46 +258,74 @@ namespace ITProject.Model
         {
             if (GameExtentions.CheckIfInBound((int)blockPosition.X, (int)blockPosition.Y, WorldSize))
             {
-                ushort removedItem = _world[(int)blockPosition.X, (int)blockPosition.Y];
+                ushort removedItem;
+                WorldLayer layer;
+
+                if(toolType == ItemInfoTools.ItemToolType.Hammer)
+                {
+                    layer = WorldLayer.Background;
+                }
+                else
+                {
+                    layer = WorldLayer.Foreground;
+                }
+
+                if(layer == WorldLayer.Foreground)
+                {
+                    removedItem = _world[(int)blockPosition.X, (int)blockPosition.Y];
+                }
+                else
+                {
+                    removedItem = _worldBack[(int)blockPosition.X, (int)blockPosition.Y];
+                }
+
                 if (removedItem == 0) return 0;
 
-                if (!DecreaseBlockDurability(new Vector2((int)blockPosition.X, (int)blockPosition.Y), miningSpeed, toolLevel, toolType))
+                if (!DecreaseBlockDurability(new Vector2((int)blockPosition.X, (int)blockPosition.Y), miningSpeed, toolLevel, toolType, layer))
                 {
                     return 0;
                 }
 
-                if (removedItem == 12)   //Chest
+                if(layer == WorldLayer.Foreground)
                 {
-                    Chest chest;
-                    _worldChests.TryGetValue(new Vector2((int)blockPosition.X, (int)blockPosition.Y), out chest);
-
-                    if (chest != null)
+                    if (removedItem == 12)   //Chest
                     {
-                        if (!chest.IsEmpty())
+                        Chest chest;
+                        _worldChests.TryGetValue(new Vector2((int)blockPosition.X, (int)blockPosition.Y), out chest);
+
+                        if (chest != null)
                         {
-                            return 0;
+                            if (!chest.IsEmpty())
+                            {
+                                return 0;
+                            }
+                        }
+
+                        _worldChests.Remove(new Vector2((int)blockPosition.X, (int)blockPosition.Y));
+                    }
+
+                    if (removedItem >= 70 && removedItem <= 77)
+                    {
+                        RemoveTreeUpwards((int)blockPosition.X, (int)blockPosition.Y);
+                        removedItem = 0;
+                    }
+
+                    //Prüfen, ob Block, der Abgebaut wird, einen Baum über sich hat
+                    if (GameExtentions.CheckIfInBound((int)blockPosition.X, (int)blockPosition.Y + 1, WorldSize))
+                    {
+                        if (_world[(int)blockPosition.X, (int)blockPosition.Y + 1] == 70)
+                        {
+                            RemoveTreeUpwards((int)blockPosition.X, (int)blockPosition.Y + 1);
                         }
                     }
 
-                    _worldChests.Remove(new Vector2((int)blockPosition.X, (int)blockPosition.Y));
+                    _world[(int)blockPosition.X, (int)blockPosition.Y] = 0;
                 }
-
-                if (removedItem >= 70 && removedItem <= 77)
+                else
                 {
-                    RemoveTreeUpwards((int)blockPosition.X, (int)blockPosition.Y);
-                    removedItem = 0;
+                    _worldBack[(int)blockPosition.X, (int)blockPosition.Y] = 0;
                 }
 
-                //Prüfen, ob Block, der Abgebaut wird, einen Baum über sich hat
-                if(GameExtentions.CheckIfInBound((int)blockPosition.X, (int)blockPosition.Y + 1, WorldSize))
-                {
-                    if(_world[(int)blockPosition.X, (int)blockPosition.Y + 1] == 70)
-                    {
-                        RemoveTreeUpwards((int)blockPosition.X, (int)blockPosition.Y + 1);
-                    }
-                }
-
-                _world[(int)blockPosition.X, (int)blockPosition.Y] = 0;
                 WorldChanged = true;
 
                 return removedItem;
@@ -298,23 +336,33 @@ namespace ITProject.Model
             }
         }
 
-        private bool DecreaseBlockDurability(Vector2 position, float miningSpeed, int toolLevel, ItemInfoTools.ItemToolType toolType)
+        private bool DecreaseBlockDurability(Vector2 position, float miningSpeed, int toolLevel, ItemInfoTools.ItemToolType toolType, WorldLayer layer)
         {
+            Dictionary<Vector2, float> activeDic;
+            if(layer == WorldLayer.Foreground)
+            {
+                activeDic = _blockDamage;
+            }
+            else
+            {
+                activeDic = _blockDamageWall;
+            }
+
             ItemInfoWorld item = (ItemInfoWorld)MainModel.Item[_world[(int)position.X, (int)position.Y]];
 
             if (!(item.NeededToolType == toolType || item.NeededToolType == ItemInfoTools.ItemToolType.Hand)) return false;
             if (item.NeededToolLevel > toolLevel) return false;
 
-            if (!_blockDamage.ContainsKey(position))
+            if (!activeDic.ContainsKey(position))
             {
-                _blockDamage.Add(position, item.MiningDuration);
+                activeDic.Add(position, item.MiningDuration);
             }
 
-            _blockDamage[position] -= miningSpeed;
+            activeDic[position] -= miningSpeed;
 
-            if (_blockDamage[position] < 0f)
+            if (activeDic[position] < 0f)
             {
-                _blockDamage.Remove(position);
+                activeDic.Remove(position);
                 return true;
             }
             else

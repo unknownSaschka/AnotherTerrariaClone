@@ -12,7 +12,7 @@ namespace ITProject.Model.Enemies
         private EnemyManager _enemyManager;
         private Vector2 _lastPlayerPosition;
 
-        private float _projectileSpeed = 1f;
+        private float _projectileSpeed = 10f;
 
         //Idee Bossgegner: Normale Hits und zyklisch laser/Kugeln schießen lassen aus Augen?
 
@@ -60,9 +60,25 @@ namespace ITProject.Model.Enemies
         public override void Update(double deltaTime, CollisionHandler collisions)
         {
             base.Update(deltaTime, collisions);
+
+            if(_lastPlayerPosition.X > Position.X)
+            {
+                Direction = true;
+            }
+            else
+            {
+                Direction = false;
+            }
+
+            UpdateBossMovement(deltaTime);
         }
 
         protected override void UpdateMovement(double deltaTime)
+        {
+            
+        }
+
+        private void UpdateBossMovement(double deltaTime)
         {
             Jump(deltaTime);
             CurrentPhaseTime += deltaTime;
@@ -105,7 +121,7 @@ namespace ITProject.Model.Enemies
                 CurrentBossPhase = BossPhase.Idle;
                 CurrentPhaseTime = 0d;
             }
-            Console.WriteLine(CurrentPhaseTime);
+            //Console.WriteLine(CurrentPhaseTime);
 
             _shootingTimer += deltaTime;
             if(_shootingTimer > _shootingPeriod)
@@ -118,11 +134,12 @@ namespace ITProject.Model.Enemies
         private void Shoot()
         {
             Vector2 direction;
+            Vector2 size = new Vector2(1f, 0.5f);
 
             if (Direction) direction = new Vector2(1f, 0f);
             else direction = new Vector2(-1f, 0f);
 
-            _enemyManager.NewProjectile(new Vector2(Position.X, Position.Y + 0.5f), direction, _projectileSpeed);
+            _enemyManager.NewProjectile(new Vector2(Position.X, Position.Y + 1.0f), size, direction, _projectileSpeed);
             //_enemyManager.LaserProjectiles.Add(new LaserProjectile(new Vector2(Position.X, Position.Y + 0.5f), direction, _projectileSpeed));
         }
 
@@ -157,9 +174,10 @@ namespace ITProject.Model.Enemies
         private int _maxRange = 10;
         private Vector2 _startPosition;
 
-        public LaserProjectile(Vector2 position, Vector2 direction, float speed)
+        public LaserProjectile(Vector2 position, Vector2 size, Vector2 direction, float speed)
         {
             Position = position;
+            Size = size;
             _startPosition = position;
             ShootingDirection = direction;
             Velocity = new Vector2(_speed, 0f);
@@ -167,12 +185,12 @@ namespace ITProject.Model.Enemies
             if (ShootingDirection.X > 0) Direction = true;
             else Direction = false;
 
-            _speed = speed;
+            _speed = speed * direction.X;
         }
 
         public override void Update(double deltaTime, CollisionHandler collisions)
         {
-            Position.X = Position.X + Velocity.X * (float)deltaTime;
+            Position.X = Position.X + _speed * (float)deltaTime;
         }
 
         public bool CheckDistance()

@@ -136,6 +136,8 @@ namespace ITProject.Model
             {
                 for(int ix = 0; ix < _inventoryWidth; ix++)
                 {
+                    if (_item[ix, iy] == null) continue;
+
                     if(_item[ix, iy].ID == item.ID)
                     {
                         if(_item[ix, iy].Amount < item.Amount)

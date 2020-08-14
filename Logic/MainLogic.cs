@@ -42,6 +42,9 @@ namespace ITProject.Logic
         private double _lastBreakingBlockSoundUpdate = 0d;
         private double _lastBreakingBlockMaxTime = 0.4d;
 
+        private double _blockPlaceTimer = 0f;
+        private double _blockPlacePeriod = 0.3d;
+
         public struct WindowPositions
         {
             public int Width;
@@ -266,6 +269,7 @@ namespace ITProject.Logic
         {
             PlayerMining = false;
             MainModel.GetModelManager.CollisionHandler.SetPlayerAttack(null, Vector2.Zero);
+            _blockPlaceTimer += fixedDeltaTime;
 
             if (windowPositions.Focused && cursorState.IsButtonDown(MouseButton.Left) && 
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
@@ -437,7 +441,16 @@ namespace ITProject.Logic
                 }
 
                 //Block Breaking Sound Update
-                ushort block = MainModel.GetModelManager.World.GetBlockType(MainModel.GetModelManager.WorldMousePosition);
+                ushort block;
+                if(toolType == ItemInfoTools.ItemToolType.Hammer)
+                {
+                    block = MainModel.GetModelManager.World.GetBlockType(MainModel.GetModelManager.WorldMousePosition, WorldLayer.Background);
+                }
+                else
+                {
+                    block = MainModel.GetModelManager.World.GetBlockType(MainModel.GetModelManager.WorldMousePosition, WorldLayer.Foreground);
+                }
+
                 if (block != 0)
                 {
                     _lastBreakingBlockSoundUpdate += deltaTime;
@@ -489,6 +502,12 @@ namespace ITProject.Logic
                 //Wenn keine Chest an dem Ort, dann versuchen, Block zu platzieren
                 else
                 {
+                    if(_blockPlaceTimer < _blockPlacePeriod)
+                    {
+                        return;
+                    }
+                    _blockPlaceTimer = 0d;
+
                     Player player = MainModel.GetModelManager.Player;
                     Hitbox playerHitbox = new Hitbox(player.Position, player.Size, Hitbox.HitboxType.Player);
                     Hitbox blockHitbox = new Hitbox(mouseOverBlockPos, new Vector2(1f, 1f), Hitbox.HitboxType.Block);
@@ -508,8 +527,6 @@ namespace ITProject.Logic
                                 canPlace = false;
                                 break;
                             }
-
-                            //Console.WriteLine($"{enemyHitbox.Position}, {blockHitbox.Position}");
                         }
 
                         if (canPlace)

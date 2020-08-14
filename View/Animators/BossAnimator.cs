@@ -16,7 +16,7 @@ namespace ITProject.View.Animators
         private AnimationInfo _attackAnimation = new AnimationInfo(4, 4);
         private AnimationInfo _hitAnimation = new AnimationInfo(7, 1);
 
-        private Vector2 _textureGrid = new Vector2(8, 7);
+        private Vector2 _textureGrid = new Vector2(9, 11);
 
         public void PlayIdleAnimation(double deltaTime, ref double currentFrameTime, ref BossPhase lastAnimation, float speed, out Vector2 texMin, out Vector2 texMax)
         {

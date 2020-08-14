@@ -90,12 +90,18 @@ namespace ITProject.Model.Enemies
                     }
                 }
 
+                if (enemie.GetType().Equals(typeof(BossEnemy)))
+                {
+                    ((BossEnemy)enemie).UpdatePlayerPosition(_player.Position);
+                }
+
                 enemie.Update(deltaTime, collisionHandler);
             }
 
             foreach(LaserProjectile projectile in LaserProjectiles.ToList())
             {
                 projectile.Update(deltaTime, collisionHandler);
+
                 if (projectile.CheckDistance())
                 {
                     LaserProjectiles.Remove(projectile);
@@ -103,9 +109,9 @@ namespace ITProject.Model.Enemies
             }
         }
 
-        public void NewProjectile(Vector2 position, Vector2 direction, float speed)
+        public void NewProjectile(Vector2 position, Vector2 size, Vector2 direction, float speed)
         {
-            LaserProjectiles.Add(new LaserProjectile(position, direction, speed));
+            LaserProjectiles.Add(new LaserProjectile(position, size, direction, speed));
             _audioManager.PlaySound(AudioManager.SoundType.Shoot);
         }
 

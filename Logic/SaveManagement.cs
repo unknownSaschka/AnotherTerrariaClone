@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using static ITProject.Model.World;
 
 namespace ITProject.Logic
@@ -58,12 +59,15 @@ namespace ITProject.Logic
             Dictionary<ushort, ItemInfoTools> toolItems = new Dictionary<ushort, ItemInfoTools>();
 
             //Tools
-            toolItems.Add(48, new ItemInfoTools(48, "Pickaxe", ItemInfoTools.ItemToolType.Pickaxe, 1, 3.0f, false, false));
-            toolItems.Add(49, new ItemInfoTools(49, "Iron Pickaxe", ItemInfoTools.ItemToolType.Pickaxe, 2, 1.5f, false, false));
-            toolItems.Add(51, new ItemInfoTools(51, "Hammer", ItemInfoTools.ItemToolType.Hammer, 1, 3.0f, false, false));
-            toolItems.Add(52, new ItemInfoTools(52, "Iron Hammer", ItemInfoTools.ItemToolType.Hammer, 2, 1.5f, false, false));
-            toolItems.Add(54, new ItemInfoTools(54, "Axe", ItemInfoTools.ItemToolType.Axe, 1, 3.0f, false, false));
-            toolItems.Add(55, new ItemInfoTools(55, "Iron Axe", ItemInfoTools.ItemToolType.Axe, 2, 1.5f, false, false));
+            toolItems.Add(48, new ItemInfoTools(48, "Pickaxe", ItemInfoTools.ItemToolType.Pickaxe, 1, 2.0f, false, false));
+            toolItems.Add(49, new ItemInfoTools(49, "Iron Pickaxe", ItemInfoTools.ItemToolType.Pickaxe, 2, 3.5f, false, false));
+            toolItems.Add(50, new ItemInfoTools(50, "Diamond Pickaxe", ItemInfoTools.ItemToolType.Pickaxe, 3, 6.0f, false, false));
+            toolItems.Add(51, new ItemInfoTools(51, "Hammer", ItemInfoTools.ItemToolType.Hammer, 1, 2.0f, false, false));
+            toolItems.Add(52, new ItemInfoTools(52, "Iron Hammer", ItemInfoTools.ItemToolType.Hammer, 2, 3.5f, false, false));
+            toolItems.Add(53, new ItemInfoTools(53, "Diamond hammer", ItemInfoTools.ItemToolType.Hammer, 3, 6.0f, false, false));
+            toolItems.Add(54, new ItemInfoTools(54, "Axe", ItemInfoTools.ItemToolType.Axe, 1, 2.0f, false, false));
+            toolItems.Add(55, new ItemInfoTools(55, "Iron Axe", ItemInfoTools.ItemToolType.Axe, 2, 3.5f, false, false));
+            toolItems.Add(56, new ItemInfoTools(56, "Diamond Axe", ItemInfoTools.ItemToolType.Axe, 3, 6.0f, false, false));
             toolItems.Add(57, new ItemInfoTools(57, "Sword", ItemInfoTools.ItemToolType.Sword, 1, 0f, false, false));
             toolItems.Add(58, new ItemInfoTools(58, "Iron Sword", ItemInfoTools.ItemToolType.Sword, 2, 0f, false, false));
             toolItems.Add(59, new ItemInfoTools(59, "Diamond Sowrd", ItemInfoTools.ItemToolType.Sword, 3, 0f, false, false));
@@ -261,7 +265,9 @@ namespace ITProject.Logic
             craftingRecipies.Add(new CraftingRecipie(new Item(57, 1), new Item[] { new Item(1, 10), new Item(4, 5) }));     //Sword
             craftingRecipies.Add(new CraftingRecipie(new Item(58, 1), new Item[] { new Item(41, 15), new Item(40, 5) }));   //Iron Sword
             craftingRecipies.Add(new CraftingRecipie(new Item(59, 1), new Item[] { new Item(42, 15), new Item(40, 5) }));   //Diamond Sword
-
+            craftingRecipies.Add(new CraftingRecipie(new Item(48, 1), new Item[] { new Item(4, 20)}));   //Pickaxe
+            craftingRecipies.Add(new CraftingRecipie(new Item(49, 1), new Item[] { new Item(41, 15), new Item(40, 5) }));   //Iron Pickaxe
+            craftingRecipies.Add(new CraftingRecipie(new Item(50, 1), new Item[] { new Item(42, 15), new Item(40, 5) }));   //Diamond Pickaxe
 
             //Abspeichern
             using (StreamWriter file = File.CreateText(@"craftings.json"))
