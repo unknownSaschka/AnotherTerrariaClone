@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -13,13 +14,13 @@ namespace ITProject.Logic
 {
     public static class WorldLoader
     {
-        public static void LoadWorld(out int width, out int height, out ushort[,] world, out ushort[,] worldBack, out Dictionary<System.Numerics.Vector2, Chest> worldChests, ModelManager manager, int saveSlot)
+        public static void LoadWorld(out int width, out int height, out ushort[,] world, out ushort[,] worldBack, out Dictionary<System.Numerics.Vector2, Chest> worldChests, out Vector2? bossLocation, ModelManager manager, int saveSlot)
         {
             world = null;
             worldBack = null;
             width = 0;
             height = 0;
-
+            bossLocation = null;
             worldChests = new Dictionary<System.Numerics.Vector2, Chest>();
 
             try
@@ -34,6 +35,9 @@ namespace ITProject.Logic
                 worldBack = worldSaves.SavedWorlds[saveSlot].WorldBack;
                 width = worldSaves.SavedWorlds[saveSlot].Width;
                 height = worldSaves.SavedWorlds[saveSlot].Height;
+                float bossX = worldSaves.SavedWorlds[saveSlot].BossLocationX;
+                float bossY = worldSaves.SavedWorlds[saveSlot].BossLocationY;
+                bossLocation = new Vector2(bossX, bossY);
 
                 foreach(ChestSave cs in worldSaves.SavedWorlds[saveSlot].Chests)
                 {
@@ -47,7 +51,7 @@ namespace ITProject.Logic
             }
         }
 
-        public static bool SaveWorld(int width, int height, ushort[,] world, ushort[,] worldBack, Dictionary<System.Numerics.Vector2, Chest> worldChests, int saveSlot)
+        public static bool SaveWorld(int width, int height, ushort[,] world, ushort[,] worldBack, Dictionary<System.Numerics.Vector2, Chest> worldChests, Vector2? bossLocation, int saveSlot)
         {
             //Converting Chest Dictionary to Array
             ChestSave[] savedChests = new ChestSave[worldChests.Count];
@@ -57,7 +61,7 @@ namespace ITProject.Logic
                 savedChests[count] = new ChestSave(chest.Value.Content.GetSaveInv(), (int)chest.Key.X, (int)chest.Key.Y);
             }
 
-            WorldSave worldSave = new WorldSave(world, worldBack, savedChests, width, height);
+            WorldSave worldSave = new WorldSave(world, worldBack, savedChests, width, height, bossLocation.GetValueOrDefault());
             WorldSaves worldSaves = null;
 
             try
@@ -142,14 +146,18 @@ namespace ITProject.Logic
         public ushort[,] World;
         public ushort[,] WorldBack;
         public ChestSave[] Chests;
+        public float BossLocationX;
+        public float BossLocationY;
 
-        public WorldSave(ushort[,] world, ushort[,] worldBack, ChestSave[] chests, int width, int height)
+        public WorldSave(ushort[,] world, ushort[,] worldBack, ChestSave[] chests, int width, int height, Vector2 bossLocation)
         {
             Width = width;
             Height = height;
             World = world;
             WorldBack = worldBack;
             Chests = chests;
+            BossLocationX = bossLocation.X;
+            BossLocationY = bossLocation.Y;
         }
     }
 

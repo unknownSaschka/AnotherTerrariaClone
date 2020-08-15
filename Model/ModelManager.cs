@@ -88,6 +88,16 @@ namespace ITProject.Model
             OpenChest = null;
             ActiveHoldingItem = null;
             DamageNumbers = new List<DamageNumber>();
+
+            SpawnBoss();
+        }
+
+        private void SpawnBoss()
+        {
+            if(World.BossPosition != null)
+            {
+                EnemyManager.SpawnEnemie(EnemyManager.EnemyType.Boss, World.BossPosition.GetValueOrDefault(), 0f);
+            }
         }
     }
 }

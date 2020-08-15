@@ -30,6 +30,7 @@ namespace ITProject.Model
         {
             get { return new Vector2(_width, _height); }
         }
+        public Vector2? BossPosition;
 
         private List<WorldItem> _droppedItems = new List<WorldItem>();
         private Dictionary<Vector2, Chest> _worldChests;
@@ -60,7 +61,7 @@ namespace ITProject.Model
             {
                 _width = width;
                 _height = height;
-                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack, out _worldChests, manager, saveSlot);
+                WorldLoader.LoadWorld(out width, out height, out _world, out _worldBack, out _worldChests, out BossPosition, manager, saveSlot);
 
                 if (_world.Length == 0)
                 {
@@ -141,7 +142,7 @@ namespace ITProject.Model
 
         public void SaveWorld(int saveSlot)
         {
-            WorldLoader.SaveWorld(_width, _height, _world, _worldBack, _worldChests, saveSlot);
+            WorldLoader.SaveWorld(_width, _height, _world, _worldBack, _worldChests, BossPosition, saveSlot);
         }
 
         public void NewWorld(int? seed)
@@ -156,6 +157,9 @@ namespace ITProject.Model
             GeneratorSettings settings = InitGeneratorSettings(_width, _height, worldGenSeed);
             WorldGenerator worldGenerator = new WorldGenerator(settings);
             worldGenerator.NewWorld(out _world, out _worldBack);
+
+            //BossSpwning
+            CreateBossSpawn(1800);
         }
 
         public void NewWorldOld()
@@ -242,6 +246,7 @@ namespace ITProject.Model
             {
                 if (_world[posX, iy] != 0)
                 {
+                    if (_world[posX, iy] >= 70 && _world[posX, iy] <= 77) continue;
                     return iy + 1;
                 }
             }
@@ -554,50 +559,85 @@ namespace ITProject.Model
             return MainModel.Item[_world[x, y]];
         }
 
-        public class WorldItem : GameObject
+        public void CreateBossSpawn(int centerPositionX)
         {
-            public Item Item;
-            public float LayingTime;
+            int y = SearchGround(centerPositionX);
+            Vector2 size = new Vector2(20, 10);
 
-            public WorldItem(Vector2 position, Vector2 velocity, Vector2 size, Item item)
+            if(!GameExtentions.CheckIfInBound(centerPositionX - (int)size.X, 100, new Vector2(_width, _height)))
             {
-                Position = position;
-                Size = size;
-                Velocity = velocity;
-                Item = item;
-                LayingTime = 0f;
+                centerPositionX += (int)size.X;
             }
-
-            public WorldItem(Vector2 position, Vector2 velocity, Vector2 size, Item item, float layingTime)
+            else if(!GameExtentions.CheckIfInBound(centerPositionX + (int)size.X, 100, new Vector2(_width, _height)))
             {
-                Position = position;
-                Size = size;
-                Velocity = velocity;
-                Item = item;
-                LayingTime = layingTime;
+                centerPositionX -= (int)size.X;
             }
+            
 
-            public void SetVelocity(Vector2 velocity)
-            {
-                Velocity = velocity;
-            }
+            Vector2 min = new Vector2(centerPositionX - (int)(size.X / 2), y - 1);
+            Vector2 max = new Vector2(centerPositionX + size.X / 2, y + size.Y);
+            BossPosition = new Vector2(centerPositionX, y);
 
-            public Hitbox GetHitbox()
+            for (int iy = (int)min.Y; iy < max.Y; iy++)
             {
-                return new Hitbox(Position, Size, Hitbox.HitboxType.Player);
+                for(int ix = (int)min.X; ix < max.X; ix++)
+                {
+                    if(ix == (int)min.X || ix == (int)max.X || iy == (int)min.Y)
+                    {
+                        _world[ix, iy] = 1;
+                    }
+                    else
+                    {
+                        _world[ix, iy] = 0;
+                    }
+                }
             }
         }
+    }
 
-        public class WorldSaveInfo
+    public class WorldItem : GameObject
+    {
+        public Item Item;
+        public float LayingTime;
+
+        public WorldItem(Vector2 position, Vector2 velocity, Vector2 size, Item item)
         {
-            public int SaveSlot;
-            public string Name;
+            Position = position;
+            Size = size;
+            Velocity = velocity;
+            Item = item;
+            LayingTime = 0f;
+        }
 
-            public WorldSaveInfo(int saveSlot, string name)
-            {
-                SaveSlot = saveSlot;
-                Name = name;
-            }
+        public WorldItem(Vector2 position, Vector2 velocity, Vector2 size, Item item, float layingTime)
+        {
+            Position = position;
+            Size = size;
+            Velocity = velocity;
+            Item = item;
+            LayingTime = layingTime;
+        }
+
+        public void SetVelocity(Vector2 velocity)
+        {
+            Velocity = velocity;
+        }
+
+        public Hitbox GetHitbox()
+        {
+            return new Hitbox(Position, Size, Hitbox.HitboxType.Player);
+        }
+    }
+
+    public class WorldSaveInfo
+    {
+        public int SaveSlot;
+        public string Name;
+
+        public WorldSaveInfo(int saveSlot, string name)
+        {
+            SaveSlot = saveSlot;
+            Name = name;
         }
     }
 }

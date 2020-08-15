@@ -14,6 +14,8 @@ namespace ITProject.View
         public uint InventoryBar;
         public uint Itembar_Selector;
         public uint Inventory;
+        public uint CraftingInventory;
+        public uint ChestInventory;
         public uint Block;
         public uint Debug;
         public uint Debug2;
@@ -46,6 +48,8 @@ namespace ITProject.View
             InventoryBar = LoadTexture("Content/textures/Itembar.png");
             Itembar_Selector = LoadTexture("Content/textures/Itembar_Selector.png");
             Inventory = LoadTexture("Content/textures/Inventory.png");
+            CraftingInventory = LoadTexture("Content/textures/Crafting.png");
+            ChestInventory = LoadTexture("Content/textures/Crafting.png");
             Block = LoadTexture("Content/textures/Block.png");
             Debug = LoadTexture("Content/textures/Debug.png");
             lolDoerte = LoadTexture("Content/textures/dumbdoerte.png");
@@ -115,6 +119,8 @@ namespace ITProject.View
             GL.DeleteTexture(Boss);
             GL.DeleteTexture(Laser);
             GL.DeleteTexture(BossHead);
+            GL.DeleteTexture(CraftingInventory);
+            GL.DeleteTexture(ChestInventory);
         }
     }
 

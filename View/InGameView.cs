@@ -968,7 +968,7 @@ namespace ITProject.View
 
             //Zeichne Hintergrund
             DrawElements(_inventoryVAO, _inventoryVBO, 4, _gameTextures.Inventory);
-            inventoryNames.Add(new InventoryName(new Vector2(0, 300f), "Inventory"));
+            inventoryNames.Add(new InventoryName(new Vector2(0, 295f), "Inventory"));
 
             //Zeichne einzelne Items
             Vector2 inventoryStartPos = new Vector2(-225f, 230f);
@@ -992,7 +992,7 @@ namespace ITProject.View
             if (_mainModel.GetModelManager.OpenChest != null)
             {
                 //Zeichne Hintergrund
-                DrawElements(_chestVAO, _chestVBO, 4, _gameTextures.Inventory);
+                DrawElements(_chestVAO, _chestVBO, 4, _gameTextures.ChestInventory);
                 inventoryNames.Add(new InventoryName(new Vector2(0, -35f), "Chest"));
 
                 int chestItemCount;
@@ -1011,7 +1011,7 @@ namespace ITProject.View
             if (_mainModel.GetModelManager.CraftingWindowOpen)
             {
                 //Hintergrund
-                DrawElements(_craftingVAO, _craftingVBO, 4, _gameTextures.Inventory);
+                DrawElements(_craftingVAO, _craftingVBO, 4, _gameTextures.CraftingInventory);
                 inventoryNames.Add(new InventoryName(new Vector2(0, 0f), "Crafting"));
 
                 List<CraftingRecipie> craftings = _mainModel.GetModelManager.Player.CraftableRecipies;
@@ -1328,9 +1328,13 @@ namespace ITProject.View
                     _font = new QFont("fonts/Depredationpixie.ttf", 15, new QuickFont.Configuration.QFontBuilderConfiguration(true));
                     _fontWorld = new QFont("fonts/Depredationpixie.ttf", 5, new QuickFont.Configuration.QFontBuilderConfiguration(true));
                 }
-                catch (Exception e)
+                catch (AccessViolationException e)
                 {
-                    //Console.WriteLine("Fehler beim QFont Laden");
+                    Console.WriteLine("Fehler beim Laden von QFont: " + e);
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine(e);
                 }
             }
 
@@ -1381,7 +1385,7 @@ namespace ITProject.View
 
         private void AlterVertexBufferInventory(ViewInventorytType invType)
         {
-            float[,] indices = GetUpdatedInventoryPos(invType, new Vector2(600f, 250f));
+            float[,] indices = GetUpdatedInventoryPos(invType);
             switch (invType)
             {
                 case ViewInventorytType.Inventory:
@@ -1464,19 +1468,23 @@ namespace ITProject.View
             return vertices;
         }
 
-        private float[,] GetUpdatedInventoryPos(ViewInventorytType invType, Vector2 size)
+        private float[,] GetUpdatedInventoryPos(ViewInventorytType invType)
         {
             Vector2 position = Vector2.Zero;
+            Vector2 size = Vector2.Zero;
             switch (invType)
             {
                 case ViewInventorytType.Inventory:
-                    position = new Vector2(0f, 170f);
+                    position = new Vector2(0f, 165f);
+                    size = new Vector2(600f, 270f);
                     break;
                 case ViewInventorytType.Chest:
                     position = new Vector2(0f, -170f);
+                    size = new Vector2(600f, 270f);
                     break;
                 case ViewInventorytType.Crafting:
                     position = new Vector2(0f, -170f);
+                    size = new Vector2(600f, 350f);
                     break;
             }
 
@@ -1553,7 +1561,7 @@ namespace ITProject.View
             GL.GenBuffers(1, out _invBarSelectorVBO);
 
             //Inventory Background
-            float[,] indicesInventory = GetUpdatedInventoryPos(ViewInventorytType.Inventory, new Vector2(600f, 250f));
+            float[,] indicesInventory = GetUpdatedInventoryPos(ViewInventorytType.Inventory);
 
             GL.GenVertexArrays(1, out _inventoryVAO);
             GL.GenBuffers(1, out _inventoryVBO);
@@ -1568,7 +1576,7 @@ namespace ITProject.View
             GL.BindVertexArray(0);
 
             //ChestInventory
-            float[,] indicesChestInventory = GetUpdatedInventoryPos(ViewInventorytType.Chest, new Vector2(600f, 260f));
+            float[,] indicesChestInventory = GetUpdatedInventoryPos(ViewInventorytType.Chest);
 
             GL.GenVertexArrays(1, out _chestVAO);
             GL.GenBuffers(1, out _chestVBO);
@@ -1619,7 +1627,7 @@ namespace ITProject.View
             GL.GenBuffers(1, out _treesVBO);
 
             //Crafting Window
-            float[,] verticesCraftingBackground = GetUpdatedInventoryPos(ViewInventorytType.Crafting, new Vector2(600f, 350f));
+            float[,] verticesCraftingBackground = GetUpdatedInventoryPos(ViewInventorytType.Crafting);
 
             GL.GenVertexArrays(1, out _craftingVAO);
             GL.GenBuffers(1, out _craftingVBO);
@@ -1657,7 +1665,7 @@ namespace ITProject.View
         private float[,] GetInventoryItemsPos(Vector2 invSize, Inventory inventory, Vector2 startPos, out int itemCount, out List<ItemPositionAmount> itemPositions, out List<ViewItemPositions> viewItemPositions)
         {
             int x = (int)invSize.X, y = (int)invSize.Y;
-            Vector2 steps = new Vector2(50f, 50f);
+            Vector2 steps = new Vector2(50f, 55f);
             Vector2 size = new Vector2(50f, 50f);
             Vector2 position = new Vector2(startPos.X, startPos.Y);
 
