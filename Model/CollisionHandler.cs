@@ -248,8 +248,20 @@ namespace ITProject.Model
             {
                 if (mainModel.GetModelManager.CollisionHandler.Intersects(playerSwordHitbox, enemie.GetHitbox()))
                 {
-                    enemie.GetDamage(weaponDamage);
+                    enemie.GetDamage(weaponDamage, _lastWeapon.ToolType, _lastWeapon.ToolLevel);
                     mainModel.GetModelManager.DamageNumbers.Add(new DamageNumber(enemie.Position, weaponDamage));
+                }
+            }
+        }
+
+        public void CheckPlayerWithLaser(Player player, List<LaserProjectile> lasers)
+        {
+            foreach(LaserProjectile laser in lasers.ToList())
+            {
+                if(Intersects(laser.GetHitbox(), player.GetHitbox()))
+                {
+                    player.Damage(laser.Damage, laser.Position.X < player.Position.X ? true : false, _modelManager.AudioManager);
+                    lasers.Remove(laser);
                 }
             }
         }

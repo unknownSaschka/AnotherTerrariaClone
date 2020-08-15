@@ -321,6 +321,7 @@ namespace ITProject.Model
 
                 InitPlayer(playerSave.PosX, playerSave.PosY);
                 ItemInventory = new Inventory(playerSave.Inventory, manager);
+                ItemInventory.SetItem(0, 3, new Item(59, 1));
                 return true;
             }
             catch(Exception e)

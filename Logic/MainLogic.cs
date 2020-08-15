@@ -584,21 +584,16 @@ namespace ITProject.Logic
         //Menu Functions
         private void MenuButtonPresses(Vector2 mousePositionMiddle, List<ViewButtonPositions> buttonPositions, KeyboardState keyboardState)
         {
-            
-            Console.WriteLine(mousePositionMiddle);
             foreach(ViewButtonPositions button in buttonPositions)
             {
                 if (CheckIfWithin(new OpenTK.Vector2(mousePositionMiddle.X, mousePositionMiddle.Y), button.Position, button.Size, true))
                 {
-                    Console.WriteLine(button.ButtonInput);
-
                     switch (button.ButtonType)
                     {
                         case ButtonTypes.ToWorldList:
                             MainMenuModel.ScreenState = MainMenuModel.Screen.WorldSelect;
                             break;
                         case ButtonTypes.World:
-                            Console.WriteLine(button.ButtonInput);
                             if (button.ButtonInput.Equals("Empty"))
                             {
                                 _worldLoadType = World.WorldLoadType.NewWorld;

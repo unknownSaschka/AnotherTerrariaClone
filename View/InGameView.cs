@@ -51,6 +51,18 @@ namespace ITProject.View
             }
         }
 
+        private struct InventoryName
+        {
+            public Vector2 Position;
+            public string InvName;
+
+            public InventoryName(Vector2 position, string name)
+            {
+                Position = position;
+                InvName = name;
+            }
+        }
+
         private MainView _mainView;
         private GameTextures _gameTextures;
         private MainLogic _logic;
@@ -136,7 +148,6 @@ namespace ITProject.View
 
         public void OnLoad()
         {
-            Console.WriteLine("OnLoad");
             InitQFont();
             InitBuffers();
             InitShadows();
@@ -874,7 +885,7 @@ namespace ITProject.View
             _drawing.Draw();
         }
 
-        private void DrawText(string text, Vector2 position)
+        private void DrawText(string text, Vector2 position, QFontAlignment alignment)
         {
             Vector2 offset = new Vector2(15f, -10f);
 
@@ -888,7 +899,7 @@ namespace ITProject.View
                 DropShadowActive = true
             };
 
-            _drawing.Print(_font, text, new Vector3(position.X + offset.X, position.Y + offset.Y, 0.0f), QFontAlignment.Left, textOpts);
+            _drawing.Print(_font, text, new Vector3(position.X + offset.X, position.Y + offset.Y, 0.0f), alignment, textOpts);
             
             _drawing.RefreshBuffers();
             _drawing.Draw();
@@ -917,11 +928,14 @@ namespace ITProject.View
 
         private void DrawInventory()
         {
+            List<InventoryName> inventoryNames = new List<InventoryName>();
+
             //Zeichne Hintergrund
             DrawElements(_inventoryVAO, _inventoryVBO, 4, _gameTextures.Inventory);
+            inventoryNames.Add(new InventoryName(new Vector2(0, 300f), "Inventory"));
 
             //Zeichne einzelne Items
-            Vector2 inventoryStartPos = new Vector2(-225f, 250f);
+            Vector2 inventoryStartPos = new Vector2(-225f, 230f);
             Vector2 chestStartPos = new Vector2(-225f, -100f);
 
             int itemCount;
@@ -943,6 +957,7 @@ namespace ITProject.View
             {
                 //Zeichne Hintergrund
                 DrawElements(_chestVAO, _chestVBO, 4, _gameTextures.Inventory);
+                inventoryNames.Add(new InventoryName(new Vector2(0, -35f), "Chest"));
 
                 int chestItemCount;
                 Chest chest = _mainModel.GetModelManager.OpenChest;
@@ -961,6 +976,7 @@ namespace ITProject.View
             {
                 //Hintergrund
                 DrawElements(_craftingVAO, _craftingVBO, 4, _gameTextures.Inventory);
+                inventoryNames.Add(new InventoryName(new Vector2(0, 0f), "Crafting"));
 
                 List<CraftingRecipie> craftings = _mainModel.GetModelManager.Player.CraftableRecipies;
                 int craftableCount;
@@ -1003,6 +1019,11 @@ namespace ITProject.View
 
             Vector2 mousePos = new Vector2(_mainView.PointToClient(Control.MousePosition).X, _mainView.PointToClient(Control.MousePosition).Y);
             DrawItemNames(new Vector2(mousePos.X - (_mainView.Width / 2), -(mousePos.Y - (_mainView.Height / 2))));
+
+            foreach(InventoryName inventoryName in inventoryNames)
+            {
+                DrawText(inventoryName.InvName, inventoryName.Position, QFontAlignment.Centre);
+            }
         }
 
         private void DrawItemNames(Vector2 mouseMiddle)
@@ -1049,7 +1070,7 @@ namespace ITProject.View
             if(foundItemID != 0)
             {
                 string itemName = MainModel.Item[foundItemID].Name;
-                DrawText(itemName, mouseMiddle);
+                DrawText(itemName, mouseMiddle, QFontAlignment.Left);
             }
         }
 
@@ -1110,11 +1131,40 @@ namespace ITProject.View
 
         private void DrawBlockDamage(float blockWidth, float blockHeight)
         {
-            Dictionary<System.Numerics.Vector2, float> damagedBlocks = _mainModel.GetModelManager.World.GetAllDamagedBlocks();
+            Dictionary<System.Numerics.Vector2, float> damagedBlocks;
+            Dictionary<System.Numerics.Vector2, float> damagedBlocksWall;
+            _mainModel.GetModelManager.World.GetAllDamagedBlocks(out damagedBlocks, out damagedBlocksWall);
 
-            float[,] vertices = new float[4 * damagedBlocks.Count, 5];
+            float[,] vertices = new float[4 * (damagedBlocks.Count + damagedBlocksWall.Count), 5];
             int count = 0;
             float blockDarkness = 1.0f;
+
+            foreach(var block in damagedBlocksWall)
+            {
+                if(_mainModel.GetModelManager.World.GetBlockType(block.Key, WorldLayer.Foreground) != 0)
+                {
+                    continue;
+                }
+
+                if(damagedBlocks.Where(b => b.Key.Equals(block.Key)).Count() != 0)
+                {
+                    continue;
+                }
+                Console.WriteLine(block.Key);
+                int texPos = (int)GameExtentions.Remap(block.Value, 0, 100, 8, 0);
+                Vector2 min, max;
+                GetTextureCoord(texPos, new Vector2(9, 1), out min, out max, 0);
+                float[,] vertsOfBlock = GetVertices4x5(ConvertVector(block.Key), new Vector2(blockWidth, blockHeight), min, max, blockDarkness, false);
+
+                for (int ic = 0; ic < 4; ic++)
+                {
+                    for (int ia = 0; ia < 5; ia++)
+                    {
+                        vertices[count, ia] = vertsOfBlock[ic, ia];
+                    }
+                    count++;
+                }
+            }
 
             foreach (var blocks in damagedBlocks)
             {
@@ -1482,7 +1532,7 @@ namespace ITProject.View
             GL.BindVertexArray(0);
 
             //ChestInventory
-            float[,] indicesChestInventory = GetUpdatedInventoryPos(ViewInventorytType.Chest, new Vector2(600f, 250f));
+            float[,] indicesChestInventory = GetUpdatedInventoryPos(ViewInventorytType.Chest, new Vector2(600f, 260f));
 
             GL.GenVertexArrays(1, out _chestVAO);
             GL.GenBuffers(1, out _chestVBO);

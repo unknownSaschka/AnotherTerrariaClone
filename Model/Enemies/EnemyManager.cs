@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using static ITProject.Model.ItemInfoTools;
 
 namespace ITProject.Model.Enemies
 {
@@ -125,6 +126,8 @@ namespace ITProject.Model.Enemies
         public bool Dead = false;
         public bool GotHitted = false;
         public bool RemoveAtDistance = true;
+        protected int _neededToolLevel = 0;
+        protected bool _swordNeeded = false;
 
         public override void Update(double deltaTime, CollisionHandler collisions)
         {
@@ -133,8 +136,11 @@ namespace ITProject.Model.Enemies
             base.Update(deltaTime, collisions);
         }
 
-        public void GetDamage(int Damage)
+        public virtual void GetDamage(int Damage, ItemToolType toolType, int toolLevel)
         {
+            if (toolLevel < _neededToolLevel) return;
+            if (toolType != ItemToolType.Sword && _swordNeeded) return;
+
             Console.WriteLine("Enemy Damage");
             GotHitted = true;
             Health -= Damage;

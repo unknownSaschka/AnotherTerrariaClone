@@ -108,6 +108,16 @@ namespace ITProject.Model
                     _blockDamage.Remove(item.Key);
                 }
             }
+
+            foreach (var item in _blockDamageWall.ToList())
+            {
+                _blockDamageWall[item.Key] += 0.5f;
+
+                if (_blockDamageWall[item.Key] >= ((ItemInfoWorld)MainModel.Item[_worldBack[(int)item.Key.X, (int)item.Key.Y]]).MiningDuration)
+                {
+                    _blockDamageWall.Remove(item.Key);
+                }
+            }
         }
 
         /*
@@ -456,6 +466,7 @@ namespace ITProject.Model
 
         public bool HasInventory(Vector2 position)
         {
+            if (!GameExtentions.CheckIfInBound((int)position.X, (int)position.Y, new Vector2(_width, _height))) return false;
             return ((ItemInfoWorld)MainModel.Item[_world[(int)position.X, (int)position.Y]]).HasInventory;
         }
 
@@ -517,9 +528,10 @@ namespace ITProject.Model
             return null;
         }
 
-        public Dictionary<Vector2, float> GetAllDamagedBlocks()
+        public void GetAllDamagedBlocks(out Dictionary<Vector2, float> foregroundBlocks, out Dictionary<Vector2, float> backgroundBlocks)
         {
-            return _blockDamage;
+            foregroundBlocks = _blockDamage;
+            backgroundBlocks = _blockDamageWall;
         }
 
         public ItemInfo GetSaveItemInfo(Vector2 position)

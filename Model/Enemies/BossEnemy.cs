@@ -41,12 +41,14 @@ namespace ITProject.Model.Enemies
 
         public void Init()
         {
-            MaxHealth = 400;
+            MaxHealth = 500;
             Health = MaxHealth;
+            _neededToolLevel = 3;
+            _swordNeeded = true;
 
             _jumpTimer = 5f;
 
-            Size = new Vector2(2.5f, 3.8f);
+            Size = new Vector2(2.0f, 3.3f);
             Damage = 30;
 
             RemoveAtDistance = false;
@@ -169,6 +171,8 @@ namespace ITProject.Model.Enemies
     public class LaserProjectile : GameObject
     {
         public Vector2 ShootingDirection;
+        public int Damage = 15;
+
         private float _speed;
 
         private int _maxRange = 10;
@@ -203,6 +207,11 @@ namespace ITProject.Model.Enemies
             {
                 return false;
             }
+        }
+
+        public Hitbox GetHitbox()
+        {
+            return new Hitbox(Position, Size, Hitbox.HitboxType.Player);
         }
     }
 }

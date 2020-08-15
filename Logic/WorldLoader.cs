@@ -37,6 +37,7 @@ namespace ITProject.Logic
 
                 foreach(ChestSave cs in worldSaves.SavedWorlds[saveSlot].Chests)
                 {
+                    if (cs == null) continue;
                     worldChests.Add(new System.Numerics.Vector2(cs.WorldPosX, cs.WorldPosY), new Chest(cs.Content, manager));
                 }
             }
