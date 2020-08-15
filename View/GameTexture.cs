@@ -29,6 +29,7 @@ namespace ITProject.View
         public uint LightSource1;
         public uint BlockDamage;
         public uint Heart;
+        public uint BossHead;
 
         public uint Player;
         public uint Slime;
@@ -60,11 +61,12 @@ namespace ITProject.View
             LightSource1 = LoadTexture("Content/textures/LightSource1.png");
             BlockDamage = LoadTexture("Content/textures/Block_Damage.png");
             Heart = LoadTexture("Content/textures/Heart_Icon.png");
+            BossHead = LoadTexture("Content/textures/Boss_Head.png");
 
             Player = LoadTexture("Content/textures/Player.png");
             Slime = LoadTexture("Content/textures/Slime_blue.png");
             Boss = LoadTexture("Content/textures/Boss.png");
-            Laser = LoadTexture("Content/textures/Debug2.png");
+            Laser = LoadTexture("Content/textures/Laser.png");
         }
 
         private uint LoadTexture(string file)
@@ -112,6 +114,7 @@ namespace ITProject.View
             GL.DeleteTexture(Heart);
             GL.DeleteTexture(Boss);
             GL.DeleteTexture(Laser);
+            GL.DeleteTexture(BossHead);
         }
     }
 

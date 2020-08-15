@@ -232,8 +232,9 @@ namespace ITProject.Model
                 {
                     if(!MainModel.Item[_manager.ActiveHoldingItem.ID].Stackable || !MainModel.Item[_item[x, y].ID].Stackable)
                     {
+                        Item hold = _item[x, y];
                         _item[x, y] = _manager.ActiveHoldingItem;
-                        _manager.ActiveHoldingItem = null;
+                        _manager.ActiveHoldingItem = hold;
                     }
                     else if(_item[x, y].ID == _manager.ActiveHoldingItem.ID)
                     {

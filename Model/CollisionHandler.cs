@@ -246,7 +246,7 @@ namespace ITProject.Model
 
             foreach (Enemie enemie in potencialEnemies)
             {
-                if (mainModel.GetModelManager.CollisionHandler.Intersects(playerSwordHitbox, enemie.GetHitbox()))
+                if (mainModel.GetModelManager.CollisionHandler.Intersects(playerSwordHitbox, enemie.GetCollisionHitbox()))
                 {
                     enemie.GetDamage(weaponDamage, _lastWeapon.ToolType, _lastWeapon.ToolLevel);
                     mainModel.GetModelManager.DamageNumbers.Add(new DamageNumber(enemie.Position, weaponDamage));

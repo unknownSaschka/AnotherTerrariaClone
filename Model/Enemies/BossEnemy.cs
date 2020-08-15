@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ITProject.Model.Enemies
 {
-    class BossEnemy : Enemie
+    public class BossEnemy : Enemie
     {
         private EnemyManager _enemyManager;
         private Vector2 _lastPlayerPosition;
@@ -41,7 +41,7 @@ namespace ITProject.Model.Enemies
 
         public void Init()
         {
-            MaxHealth = 500;
+            MaxHealth = 800;
             Health = MaxHealth;
             _neededToolLevel = 3;
             _swordNeeded = true;
@@ -175,7 +175,7 @@ namespace ITProject.Model.Enemies
 
         private float _speed;
 
-        private int _maxRange = 10;
+        private int _maxRange = 20;
         private Vector2 _startPosition;
 
         public LaserProjectile(Vector2 position, Vector2 size, Vector2 direction, float speed)

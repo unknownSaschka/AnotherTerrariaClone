@@ -14,6 +14,7 @@ namespace ITProject.Model.Enemies
         public List<Enemie> Enemies;
         public List<LaserProjectile> LaserProjectiles;
         public enum EnemyType { Slime, Boss }
+        public BossEnemy LastBoss;
 
         private AudioManager _audioManager;
         private Player _player;
@@ -94,6 +95,7 @@ namespace ITProject.Model.Enemies
                 if (enemie.GetType().Equals(typeof(BossEnemy)))
                 {
                     ((BossEnemy)enemie).UpdatePlayerPosition(_player.Position);
+                    LastBoss = (BossEnemy)enemie;
                 }
 
                 enemie.Update(deltaTime, collisionHandler);

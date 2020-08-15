@@ -289,11 +289,13 @@ namespace ITProject.Logic
                 PlayerRightClick(mouseMiddle);
             }
 
+            /*
             if (windowPositions.Focused && inputManager.GetKeyPressed(Key.Q) &&
                 MouseInsideWindow(windowPositions.WindowMousePosition, new Vector2(windowPositions.Width, windowPositions.Height)))
             {
                 MainModel.GetModelManager.World.PlaceBlock(MainModel.GetModelManager.WorldMousePosition, 8, MainModel.GetModelManager);
             }
+            */
 
             if(windowPositions.Focused && inputManager.GetKeyPressed(Key.E))
             {

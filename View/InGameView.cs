@@ -749,7 +749,7 @@ namespace ITProject.View
 
                 if (boss.GotHitted)
                 {
-                    _bossAnimator.PlayDamageAnimation(_deltaTime, ref boss.CurrentFrameTime, ref boss.LastAnimation, 1f, out texMin, out texMax);
+                    _bossAnimator.PlayDamageAnimation(_deltaTime, ref boss.CurrentFrameTime, ref boss.LastAnimation, 6f, out texMin, out texMax);
                 }
 
                 if (!enemie.Direction)
@@ -860,6 +860,42 @@ namespace ITProject.View
 
             _drawing.RefreshBuffers();
             _drawing.Draw();
+
+            if(_mainModel.GetModelManager.EnemyManager.LastBoss != null)
+            {
+                if (System.Numerics.Vector2.Distance(player.Position, _mainModel.GetModelManager.EnemyManager.LastBoss.Position) < 40f)
+                {
+                    SetIdentityMatrix(_shader);
+                    Vector2 bossIconPos = new Vector2((_mainView.Width / 2) - 50, (_mainView.Height / 2) - 300);
+                    Vector2 bossIconSize = new Vector2(80f, 80f);
+                    float[,] bossHeadVertices = GetVertices4x4(bossIconPos, bossIconSize, new Vector2(0, 0), new Vector2(1, 1), true);
+                    DrawElements(_heartVAO, _heartVBO, bossHeadVertices.Length, bossHeadVertices, 4, _gameTextures.BossHead);
+
+                    BossEnemy boss = _mainModel.GetModelManager.EnemyManager.LastBoss;
+                    string bossLifeText = $"{boss.Health}/{boss.MaxHealth}";
+                    Color colorBossHealth = Color.FromArgb(new Color4(1.0f, 1.0f, 1.0f, 1.0f).ToArgb());
+
+                    _drawing.ProjectionMatrix = projectionMatrix;
+                    _drawing.DrawingPimitiveses.Clear();
+
+                    if (boss.Health <= 20)
+                    {
+                        colorBossHealth = Color.FromArgb(new Color4(1.0f, 0f, 0f, 1.0f).ToArgb());
+                    }
+
+                    textOpts = new QFontRenderOptions()
+                    {
+                        Colour = colorBossHealth,
+                        DropShadowActive = true
+                    };
+
+
+                    _drawing.Print(_font, bossLifeText, new Vector3((_mainView.Width / 2) - 10, (_mainView.Height / 2) - 350, 0.0f), QFontAlignment.Right, textOpts);
+
+                    _drawing.RefreshBuffers();
+                    _drawing.Draw();
+                }
+            }
         }
 
         private void DrawNumbers(List<ItemPositionAmount> itemPositions)

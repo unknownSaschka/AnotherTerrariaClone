@@ -14,9 +14,11 @@ namespace ITProject.View.Animators
         private AnimationInfo _idleAnimation = new AnimationInfo(1, 5);
         private AnimationInfo _shootAnimation = new AnimationInfo(5, 7);
         private AnimationInfo _attackAnimation = new AnimationInfo(4, 4);
-        private AnimationInfo _hitAnimation = new AnimationInfo(7, 1);
+        private AnimationInfo _hitAnimation = new AnimationInfo(10, 1);
 
         private Vector2 _textureGrid = new Vector2(9, 11);
+
+        private double _damageSpeed;
 
         public void PlayIdleAnimation(double deltaTime, ref double currentFrameTime, ref BossPhase lastAnimation, float speed, out Vector2 texMin, out Vector2 texMax)
         {
@@ -39,13 +41,13 @@ namespace ITProject.View.Animators
         public void PlayShootAnimation(double deltaTime, double currentPhaseTime, ref double currentFrameTime, ref BossPhase lastAnimation, float speed, out Vector2 texMin, out Vector2 texMax)
         {
             //CurrentTime ist die CurrentPhaseTime, nicht AnimationTime
-            /*
+            
             if (lastAnimation == BossPhase.Damage)
             {
                 PlayDamageAnimation(deltaTime, ref currentFrameTime, ref lastAnimation, speed, out texMin, out texMax);
                 return;
             }
-            */
+            
             lastAnimation = BossPhase.Shooting;
             currentFrameTime += deltaTime * speed;
             //Console.WriteLine(currentPhaseTime);
@@ -66,20 +68,22 @@ namespace ITProject.View.Animators
 
         public void PlayDamageAnimation(double deltaTime, ref double currentFrameTime, ref BossPhase lastAnimation, float speed, out Vector2 texMin, out Vector2 texMax)
         {
-            if (lastAnimation == BossPhase.Damage)
+            if(lastAnimation != BossPhase.Damage)
             {
-                PlayDamageAnimation(deltaTime, ref currentFrameTime, ref lastAnimation, speed, out texMin, out texMax);
-                return;
+                currentFrameTime = 0f;
+                _damageSpeed = speed;
             }
 
-            currentFrameTime += deltaTime * speed;
+            lastAnimation = BossPhase.Damage;
+            currentFrameTime += deltaTime * _damageSpeed;
 
+            Console.WriteLine(currentFrameTime);
             if(currentFrameTime > 1f)
             {
                 lastAnimation = BossPhase.Idle;
             }
 
-            GetTextureCoord(_attackAnimation.Position, 0, _textureGrid, out texMin, out texMax, 0f);
+            GetTextureCoord(_hitAnimation.Position, 0, _textureGrid, out texMin, out texMax, 0f);
         }
 
         public void PlayAttackAnimation(double deltaTime, ref double currentFrameTime, ref BossPhase lastAnimation, float speed, out Vector2 texMin, out Vector2 texMax)
@@ -90,7 +94,7 @@ namespace ITProject.View.Animators
                 return;
             }
 
-            currentFrameTime += deltaTime;
+            currentFrameTime += deltaTime * speed;
 
             if(currentFrameTime > _attackAnimation.FrameCount)
             {
