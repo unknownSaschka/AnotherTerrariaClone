@@ -109,7 +109,7 @@ namespace ITProject.View
                     break;
             }
             
-            Title = $"{Math.Round(UpdateFrequency, 2)} fps";
+            //Title = $"{Math.Round(UpdateFrequency, 2)} fps";
             base.OnUpdateFrame(e);
         }
 

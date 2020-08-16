@@ -586,8 +586,14 @@ namespace ITProject.View
             if (swordHB == null) return;
 
             Vector2 texMinTest = new Vector2(0f, 0f), texMaxTest = new Vector2(1f, 1f);
+            if (!player.Direction)
+            {
+                float temp = texMinTest.X;
+                texMinTest.X = texMaxTest.X;
+                texMaxTest.X = temp;
+            }
             float[,] testVerts = GetVertices4x4(ConvertVector(swordHB.Position), ConvertVector(swordHB.Size), texMinTest, texMaxTest, true);
-            DrawElements(_mouseVAO, _mouseVBO, testVerts.Length, testVerts, 4, _gameTextures.Debug);
+            DrawElements(_mouseVAO, _mouseVBO, testVerts.Length, testVerts, 4, _gameTextures.SwordSlash);
         }
 
         private void DrawGUI()
@@ -1779,10 +1785,10 @@ namespace ITProject.View
                 }
 
                 itemCount++;
-                if (count % gridSize.X == 0)
+                if (itemCount % gridSize.X == 0)
                 {
                     position.X = startPos.X;
-                    position.Y += steps.Y;
+                    position.Y -= steps.Y;
                 }
                 else
                 {

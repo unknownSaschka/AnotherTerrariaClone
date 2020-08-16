@@ -37,6 +37,7 @@ namespace ITProject.View
         public uint Slime;
         public uint Boss;
         public uint Laser;
+        public uint SwordSlash;
 
         public GameTextures()
         {
@@ -71,6 +72,7 @@ namespace ITProject.View
             Slime = LoadTexture("Content/textures/Slime_blue.png");
             Boss = LoadTexture("Content/textures/Boss.png");
             Laser = LoadTexture("Content/textures/Laser.png");
+            SwordSlash = LoadTexture("Content/textures/SwordSlash.png");
         }
 
         private uint LoadTexture(string file)
@@ -121,6 +123,7 @@ namespace ITProject.View
             GL.DeleteTexture(BossHead);
             GL.DeleteTexture(CraftingInventory);
             GL.DeleteTexture(ChestInventory);
+            GL.DeleteTexture(SwordSlash);
         }
     }
 

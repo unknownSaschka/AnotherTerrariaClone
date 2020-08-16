@@ -49,6 +49,8 @@ namespace ITProject.Model
         public Box2D InventoryRectangle;
 
         public Hitbox TestSwordHitbox;
+        public double SwordHitTimer;
+        public double _swordHitDuration = 0.2d;
 
         public ModelManager(WorldLoadType worldLoadType, PlayerLoadingType playerLoadingType, int playerSaveSlot, int worldSaveSlot, int worldSeed)
         {

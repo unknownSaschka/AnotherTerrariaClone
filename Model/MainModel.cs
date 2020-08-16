@@ -41,6 +41,17 @@ namespace ITProject.Model
 
         public void Update(double deltaTime)
         {
+            if(_manager.TestSwordHitbox != null)
+            {
+                _manager.SwordHitTimer += deltaTime;
+
+                if(_manager.SwordHitTimer > _manager._swordHitDuration)
+                {
+                    _manager.TestSwordHitbox = null;
+                }
+            }
+
+
             _manager.World.Update(deltaTime, _manager.Player, _manager.CollisionHandler);
             _manager.Player.Update(deltaTime, _manager.CollisionHandler);
             _manager.EnemyManager.Update(deltaTime, _manager.CollisionHandler);

@@ -365,7 +365,13 @@ namespace ITProject.Model
 
             ItemInfoWorld item = (ItemInfoWorld)MainModel.Item[_world[(int)position.X, (int)position.Y]];
 
-            if (!(item.NeededToolType == toolType || item.NeededToolType == ItemInfoTools.ItemToolType.Hand)) return false;
+            if(item.ID >= 70 && item.ID <= 77 && toolType == ItemInfoTools.ItemToolType.Hand)  //Wood
+            {
+
+            }
+            else if (!(item.NeededToolType == toolType || item.NeededToolType == ItemInfoTools.ItemToolType.Hand)) return false;
+
+
             if (item.NeededToolLevel > toolLevel) return false;
 
             if (!activeDic.ContainsKey(position))

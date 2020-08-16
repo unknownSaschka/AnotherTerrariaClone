@@ -268,6 +268,12 @@ namespace ITProject.Logic
             craftingRecipies.Add(new CraftingRecipie(new Item(48, 1), new Item[] { new Item(4, 20)}));   //Pickaxe
             craftingRecipies.Add(new CraftingRecipie(new Item(49, 1), new Item[] { new Item(41, 15), new Item(40, 5) }));   //Iron Pickaxe
             craftingRecipies.Add(new CraftingRecipie(new Item(50, 1), new Item[] { new Item(42, 15), new Item(40, 5) }));   //Diamond Pickaxe
+            craftingRecipies.Add(new CraftingRecipie(new Item(54, 1), new Item[] { new Item(4, 20) }));   //Axe
+            craftingRecipies.Add(new CraftingRecipie(new Item(55, 1), new Item[] { new Item(41, 15), new Item(40, 5) }));   //Iron Axe
+            craftingRecipies.Add(new CraftingRecipie(new Item(56, 1), new Item[] { new Item(42, 15), new Item(40, 5) }));   //Diamond Axe
+            craftingRecipies.Add(new CraftingRecipie(new Item(51, 1), new Item[] { new Item(4, 20) }));   //Hammer
+            craftingRecipies.Add(new CraftingRecipie(new Item(52, 1), new Item[] { new Item(41, 15), new Item(40, 5) }));   //Iron Hammer
+            craftingRecipies.Add(new CraftingRecipie(new Item(53, 1), new Item[] { new Item(42, 15), new Item(40, 5) }));   //Diamond Hammer
 
             //Abspeichern
             using (StreamWriter file = File.CreateText(@"craftings.json"))

@@ -26,7 +26,7 @@ namespace ITProject.Logic
         public bool PlayerMining;
 
         private int _width = 800, _height = 800;
-        private string _windowTitle = "Game";
+        private string _windowTitle = "Terradox";
         private InputManager inputManager;
         public MainModel MainModel;
         public MainMenuModel MainMenuModel;
