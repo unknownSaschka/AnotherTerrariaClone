@@ -77,7 +77,7 @@ namespace ITProject.View.Animators
             lastAnimation = BossPhase.Damage;
             currentFrameTime += deltaTime * _damageSpeed;
 
-            Console.WriteLine(currentFrameTime);
+            //Console.WriteLine(currentFrameTime);
             if(currentFrameTime > 1f)
             {
                 lastAnimation = BossPhase.Idle;

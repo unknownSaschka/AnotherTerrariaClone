@@ -1112,6 +1112,43 @@ namespace ITProject.View
 
         private void DrawMousePointer()
         {
+            Item selectedItem = _mainModel.GetModelManager.Player.ItemInventory.GetItem(_mainModel.GetModelManager.SelectedInventorySlot, 0);
+            if (selectedItem == null) return;
+
+            if (MainModel.Item[selectedItem.ID].GetType().Name == "ItemInfoTools")
+            {
+                _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
+
+                float[,] mouseVertices;
+                uint activeTexture;
+                Vector2 mousePosition = ConvertVector(_mainModel.GetModelManager.WorldMousePosition);
+
+                Vector2 mouseSize = new Vector2(1.2f, 1.2f);
+                Vector2 min, max;
+                GetTextureCoord(selectedItem.ID, _textureGridSize, out min, out max, _textureOffset);
+                mouseVertices = GetVertices4x4(mousePosition, mouseSize, min, max, true);
+                activeTexture = _gameTextures.Items;
+
+                GL.Enable(EnableCap.Blend);
+                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+                GL.ActiveTexture(TextureUnit.Texture0);
+                GL.BindTexture(TextureTarget.Texture2D, activeTexture);
+
+                GL.BindVertexArray(_mouseVAO);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, _mouseVBO);
+
+                GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, sizeof(float) * mouseVertices.Length, mouseVertices);
+                GL.DrawArrays(PrimitiveType.Quads, 0, 4);
+
+                GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+                GL.BindVertexArray(0);
+                GL.BindTexture(TextureTarget.Texture2D, 0);
+                GL.Disable(EnableCap.Blend);
+            }
+        }
+
+        private void DrawMousePointerDebug()
+        {
             _shader.SetVector4("blockColor", new Vector4(1f, 1f, 1f, 1f));
 
             float[,] mouseVertices;
@@ -1120,6 +1157,7 @@ namespace ITProject.View
 
             Item selectedItem = _mainModel.GetModelManager.Player.ItemInventory.GetItem(_mainModel.GetModelManager.SelectedInventorySlot, 0);
 
+            
             if(selectedItem == null)
             {
                 float mouseSize = 0.2f;
@@ -1144,8 +1182,6 @@ namespace ITProject.View
                 mouseVertices = GetVerices4x4MinMax(min, max, new Vector2(0.0f, 0.0f), new Vector2(1.0f, 1.0f));
                 activeTexture = _gameTextures.Debug2;
             }
-
-            
 
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -1186,7 +1222,7 @@ namespace ITProject.View
                 {
                     continue;
                 }
-                Console.WriteLine(block.Key);
+                //Console.WriteLine(block.Key);
                 int texPos = (int)GameExtentions.Remap(block.Value, 0, 100, 8, 0);
                 Vector2 min, max;
                 GetTextureCoord(texPos, new Vector2(9, 1), out min, out max, 0);

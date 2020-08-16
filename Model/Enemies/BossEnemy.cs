@@ -41,7 +41,7 @@ namespace ITProject.Model.Enemies
 
         public void Init()
         {
-            MaxHealth = 800;
+            MaxHealth = 1000;
             Health = MaxHealth;
             _neededToolLevel = 3;
             _swordNeeded = true;

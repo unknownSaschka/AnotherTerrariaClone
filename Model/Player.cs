@@ -385,7 +385,7 @@ namespace ITProject.Model
             _lastHitHealthRegen = 0f;
             _regenerationTimer = 0d;
             GotHitted = true;
-            Console.WriteLine("Damage");
+            //Console.WriteLine("Damage");
 
             if(Health <= 0)
             {
@@ -395,7 +395,7 @@ namespace ITProject.Model
 
         private void Dead()
         {
-            Console.WriteLine("Spieler Dead");
+            //Console.WriteLine("Spieler Dead");
 
             Position = _playerSpawn;
             Health = MaxHealth;

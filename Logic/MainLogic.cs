@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using static ITProject.Logic.GameExtentions;
 using static ITProject.Logic.ViewButtonPositions;
@@ -44,6 +45,8 @@ namespace ITProject.Logic
 
         private double _blockPlaceTimer = 0f;
         private double _blockPlacePeriod = 0.3d;
+
+        private float _playerMiningDistance = 3.5f;
 
         public struct WindowPositions
         {
@@ -301,6 +304,7 @@ namespace ITProject.Logic
             {
                 MainModel.GetModelManager.InventoryOpen = !MainModel.GetModelManager.InventoryOpen;
                 MainModel.GetModelManager.OpenChest = null;
+                MainModel.GetModelManager.CraftingWindowOpen = false;
             }
 
             if (MainModel.GetModelManager.InventoryOpen && inputManager.GetKeyPressed(Key.Escape))
@@ -318,6 +322,7 @@ namespace ITProject.Logic
 
             if(windowPositions.Focused && inputManager.GetKeyPressed(Key.C))
             {
+                MainModel.GetModelManager.OpenChest = null;
 
                 if (MainModel.GetModelManager.CraftingWindowOpen)
                 {
@@ -326,7 +331,6 @@ namespace ITProject.Logic
                 }
                 else
                 {
-                    MainModel.GetModelManager.OpenChest = null;
                     MainModel.GetModelManager.CraftingWindowOpen = true;
                     MainModel.GetModelManager.InventoryOpen = true;
                 }
@@ -442,6 +446,8 @@ namespace ITProject.Logic
                     MainModel.GetModelManager.CollisionHandler.SetPlayerAttack(new ItemInfoTools(0, "Hand", ItemInfoTools.ItemToolType.Hand, 0, 1, false, false), mousePositionMiddle);
                 }
 
+                if (!CheckPlacingDistance(MainModel.GetModelManager.Player.Position, MainModel.GetModelManager.WorldMousePosition)) return;
+
                 //Block Breaking Sound Update
                 ushort block;
                 if(toolType == ItemInfoTools.ItemToolType.Hammer)
@@ -495,6 +501,8 @@ namespace ITProject.Logic
             {
                 Vector2 mouseOverBlockPos = new Vector2((int)MainModel.GetModelManager.WorldMousePosition.X, (int)MainModel.GetModelManager.WorldMousePosition.Y);
 
+                if (!CheckPlacingDistance(MainModel.GetModelManager.Player.Position, MainModel.GetModelManager.WorldMousePosition)) return;
+
                 //Zuerst prüfen, ob Chest geöffnet werden möchte
                 if (MainModel.GetModelManager.World.HasInventory(mouseOverBlockPos))
                 {
@@ -525,7 +533,7 @@ namespace ITProject.Logic
                         {
                             if (MainModel.GetModelManager.CollisionHandler.Intersects(blockHitbox, enemyHitbox))
                             {
-                                Console.WriteLine($"CanPlace False");
+                                //Console.WriteLine($"CanPlace False");
                                 canPlace = false;
                                 break;
                             }
@@ -546,6 +554,18 @@ namespace ITProject.Logic
                         }
                     }
                 }
+            }
+        }
+
+        private bool CheckPlacingDistance(Vector2 playerPosition, Vector2 blockPosition)
+        {
+            if(Vector2.Distance(playerPosition, blockPosition) < _playerMiningDistance)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 

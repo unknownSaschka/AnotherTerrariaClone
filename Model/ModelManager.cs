@@ -76,7 +76,7 @@ namespace ITProject.Model
             Player = new Player(playerLoadingType, playerSaveSlot, new System.Numerics.Vector2(2000, World.SearchGround(2000)), this);
             Crafting = new Crafting();
             CollisionHandler = new CollisionHandler(this);
-            EnemyManager = new EnemyManager(AudioManager, Player);
+            EnemyManager = new EnemyManager(AudioManager, Player, World, this);
             PlayerIntersection = false;
             TestedCollisions = new List<System.Numerics.Vector2>();
             RenderDistance = new System.Numerics.Vector2(42, 22);

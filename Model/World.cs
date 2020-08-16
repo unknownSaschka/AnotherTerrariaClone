@@ -415,11 +415,18 @@ namespace ITProject.Model
             }
         }
 
+        public void SetNewChest(Vector2 position, Item[,] chestInventory, ModelManager manager)
+        {
+            if (_worldChests.ContainsKey(new Vector2((int)position.X, (int)position.Y))) return;
+
+            _world[(int)position.X, (int)position.Y] = 12;
+            _worldChests.Add(new Vector2((int)position.X, (int)position.Y), new Chest(chestInventory, manager));
+        }
+
         public bool AddDroppedItem(WorldItem item)
         {
             if (!((ItemInfoWorld)MainModel.Item[_world[(int)item.Position.X, (int)item.Position.Y]]).Walkable)
             {
-                Console.WriteLine("Item in Block");
                 Vector2? newPos = SearchForItemPlace((int)item.Position.X, (int)item.Position.Y, 0);
                 if (newPos != null)
                 {

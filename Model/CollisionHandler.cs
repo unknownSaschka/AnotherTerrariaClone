@@ -241,7 +241,7 @@ namespace ITProject.Model
                 playerSwordHitbox = new Hitbox(new Vector2(player.Position.X - 1.2f, player.Position.Y), _swordHitboxSize, Hitbox.HitboxType.Player);
             }
 
-            mainModel.GetModelManager.TestSwordHitbox = playerSwordHitbox;
+            //mainModel.GetModelManager.TestSwordHitbox = playerSwordHitbox;
             IEnumerable<Enemie> potencialEnemies = mainModel.GetModelManager.EnemyManager.GetNearbyEnemies(playerSwordHitbox.Position, _swordHitboxSize.Length());
 
             foreach (Enemie enemie in potencialEnemies)

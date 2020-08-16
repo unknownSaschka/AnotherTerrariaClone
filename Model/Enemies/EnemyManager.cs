@@ -18,16 +18,20 @@ namespace ITProject.Model.Enemies
 
         private AudioManager _audioManager;
         private Player _player;
+        private World _world;
+        private ModelManager _modelManager;
 
         private float _enemyRemoveDistance = 80f;
         private float _enemySpawningDistance = 10f;
 
-        public EnemyManager(AudioManager audioManager, Player player)
+        public EnemyManager(AudioManager audioManager, Player player, World world, ModelManager manager)
         {
             Enemies = new List<Enemie>();
             LaserProjectiles = new List<LaserProjectile>();
             _audioManager = audioManager;
             _player = player;
+            _world = world;
+            _modelManager = manager;
         }
 
         /// <summary>
@@ -81,6 +85,13 @@ namespace ITProject.Model.Enemies
                 if (enemie.Dead)
                 {
                     Enemies.Remove(enemie);
+
+                    if (enemie.GetType().Equals(typeof(BossEnemy)))
+                    {
+                        Item[,] chestInventory = new Item[10, 4];
+                        chestInventory[0, 0] = new Item(42, 99);
+                        _world.SetNewChest(new Vector2(enemie.Position.X, enemie.Position.Y), chestInventory, _modelManager);
+                    }
                     continue;
                 }
                 else if(enemie.RemoveAtDistance)
@@ -143,11 +154,10 @@ namespace ITProject.Model.Enemies
             if (toolLevel < _neededToolLevel) return;
             if (toolType != ItemToolType.Sword && _swordNeeded) return;
 
-            Console.WriteLine("Enemy Damage");
             GotHitted = true;
             Health -= Damage;
 
-            if(Health < 0)
+            if(Health <= 0)
             {
                 Health = 0;
                 Dead = true;
