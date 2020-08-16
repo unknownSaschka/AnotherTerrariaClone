@@ -522,7 +522,19 @@ namespace ITProject.Logic
                     Hitbox playerHitbox = new Hitbox(player.Position, player.Size, Hitbox.HitboxType.Player);
                     Hitbox blockHitbox = new Hitbox(mouseOverBlockPos, new Vector2(1f, 1f), Hitbox.HitboxType.Block);
 
-                    if (!MainModel.GetModelManager.CollisionHandler.Intersects(playerHitbox, blockHitbox))
+                    bool canNotPlace = MainModel.GetModelManager.CollisionHandler.Intersects(playerHitbox, blockHitbox);
+                    ushort selectedItem = player.ItemInventory.GetItemID(MainModel.GetModelManager.SelectedInventorySlot, 0);
+                    bool walkableItem = false;
+
+                    if (MainModel.Item[selectedItem].GetType().Name.Equals("ItemInfoWorld"))
+                    {
+                        if (((ItemInfoWorld)MainModel.Item[selectedItem]).Walkable)
+                        {
+                            walkableItem = true;
+                        }
+                    }
+
+                    if (!canNotPlace || walkableItem)
                     {
                         var enemyHitboxes = from enemie in MainModel.GetModelManager.EnemyManager.Enemies
                                             where Vector2.Distance(blockHitbox.Position, enemie.Position) < 5
@@ -542,7 +554,7 @@ namespace ITProject.Logic
                         if (canPlace)
                         {
                             Inventory playerInventory = MainModel.GetModelManager.Player.ItemInventory;
-                            ushort selectedItem = playerInventory.GetItemID(MainModel.GetModelManager.SelectedInventorySlot, 0);
+                            //ushort selectedItem = playerInventory.GetItemID(MainModel.GetModelManager.SelectedInventorySlot, 0);
 
                             if (MainModel.Item[selectedItem].Placable)
                             {

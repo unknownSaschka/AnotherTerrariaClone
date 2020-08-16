@@ -23,6 +23,8 @@ namespace ITProject.View
 {
     class InGameView
     {
+        private static bool LIGHTING = true;
+
         private enum ViewInventorytType { Inventory, Chest, Crafting }
 
         private struct TreePositions
@@ -317,7 +319,10 @@ namespace ITProject.View
 
             if (world.WorldChanged)
             {
-                //ResetLightMap(minBoundary, maxBoundary);
+                if (LIGHTING)
+                {
+                    ResetLightMap(minBoundary, maxBoundary);                                                                                    //Block Lighting
+                }
                 world.WorldChanged = false;
             }
 
@@ -339,8 +344,10 @@ namespace ITProject.View
                     //Alles, was innerhalb der RenderDistance abläuft
                     if (!GameExtentions.CheckIfInBound(ix, iy, worldSize)) continue;
                     ushort blockID = world.GetWorld[ix, iy];
+                    ushort blockIDBack = world.GetWorldBack[ix, iy];
 
                     bool background = false;
+                    bool foreground = true;
 
                     if (blockID == 8)   //Wasser
                     {
@@ -356,8 +363,14 @@ namespace ITProject.View
 
                     if (blockID == 0)
                     {
-                        blockID = world.GetWorldBack[ix, iy];
                         background = true;
+                        foreground = false;
+                    }
+
+                    if (blockID == 12 || blockID == 13)
+                    {
+                        background = true;
+                        foreground = true;
                     }
 
                     if (blockID == 0 || ((ItemInfoWorld)MainModel.Item[world.GetWorld[ix, iy]]).LightSource)
@@ -365,38 +378,52 @@ namespace ITProject.View
                         ApplyLightRec(ix, iy, 1.0f, worldSize);
                     }
 
-                    Vector2 min, max;
-                    GetTextureCoord(blockID, new Vector2(8, 8), out min, out max, _textureOffset);
+                    Vector2 backMin, backMax;
+                    Vector2 foreMin, foreMax;
+                    float[,] vertBack;
+                    float[,] vertFore;
 
-                    //blockDarkness = _light[ix, iy];
-                    blockDarkness = 1.0f;
-                    float[,] vert = GetVertices4x5(new Vector2(ix, iy), new Vector2(w, h), min, max, blockDarkness, false);
+                    if (LIGHTING)
+                    {
+                        blockDarkness = _light[ix, iy];                                                                                               //Block Lighting
+                    }
+                    else
+                    {
+                        blockDarkness = 1.0f;
+                    }
 
                     if (background)
                     {
+                        GetTextureCoord(blockIDBack, new Vector2(8, 8), out backMin, out backMax, _textureOffset);
+                        vertBack = GetVertices4x5(new Vector2(ix, iy), new Vector2(w, h), backMin, backMax, blockDarkness, false);
+
                         for (int ic = 0; ic < 4; ic++)
                         {
                             for (int ia = 0; ia < 5; ia++)
                             {
-                                backgroundVertices[countBackground, ia] = vert[ic, ia];
+                                backgroundVertices[countBackground, ia] = vertBack[ic, ia];
                             }
                             countBackground++;
                         }
 
                         blocksBack++;
                     }
-                    else
+
+                    if(foreground)
                     {
                         if (blockID == 8)    //Wenn Wasser, dann weiter, da wo anders dargestellt wird
                         {
                             continue;
                         }
 
+                        GetTextureCoord(blockID, new Vector2(8, 8), out foreMin, out foreMax, _textureOffset);
+                        vertFore = GetVertices4x5(new Vector2(ix, iy), new Vector2(w, h), foreMin, foreMax, blockDarkness, false);
+
                         for (int ic = 0; ic < 4; ic++)
                         {
                             for (int ia = 0; ia < 5; ia++)
                             {
-                                vertices[count, ia] = vert[ic, ia];
+                                vertices[count, ia] = vertFore[ic, ia];
                             }
                             count++;
                         }

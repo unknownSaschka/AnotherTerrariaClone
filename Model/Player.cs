@@ -325,6 +325,7 @@ namespace ITProject.Model
                 ItemInventory.SetItem(0, 3, new Item(59, 1));                   //Test
                 ItemInventory.SetItem(1, 3, new Item(40, 99));
                 ItemInventory.SetItem(2, 3, new Item(41, 99));
+                ItemInventory.SetItem(3, 3, new Item(13, 10));
                 return true;
             }
             catch(Exception e)

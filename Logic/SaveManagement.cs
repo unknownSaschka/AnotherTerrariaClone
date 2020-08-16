@@ -34,8 +34,8 @@ namespace ITProject.Logic
             worldItems.Add(10, new ItemInfoWorld(10, "Lava", lightBlocking, false, true, true, true, false, false, 1, miningDuration, ItemInfoTools.ItemToolType.Hand));
             worldItems.Add(11, new ItemInfoWorld(11, "Flowing Lava", lightBlocking, false, false, true, true, false, false, 1, miningDuration, ItemInfoTools.ItemToolType.Hand));
             worldItems.Add(12, new ItemInfoWorld(12, "Chest", 0.05f, true, true, true, false, false, true, 1, miningDuration, ItemInfoTools.ItemToolType.Axe));
-            worldItems.Add(13, new ItemInfoWorld(13, "Torch", 0.0f, true, true, false, true, true, false, 0, miningDuration, ItemInfoTools.ItemToolType.Hand));
-            worldItems.Add(14, new ItemInfoWorld(14, "TorchWall", 0.0f, true, true, false, false, true, false, 0, miningDuration, ItemInfoTools.ItemToolType.Hand));
+            worldItems.Add(13, new ItemInfoWorld(13, "Torch", 0.0f, true, true, true, true, true, false, 0, miningDuration, ItemInfoTools.ItemToolType.Hand));
+            worldItems.Add(14, new ItemInfoWorld(14, "TorchWall", 0.0f, true, true, true, false, true, false, 0, miningDuration, ItemInfoTools.ItemToolType.Hand));
             worldItems.Add(15, new ItemInfoWorld(15, "Lamp Block", 0.0f, true, true, false, false, true, false, 1, miningDuration, ItemInfoTools.ItemToolType.Hand));
             worldItems.Add(20, new ItemInfoWorld(20, "Coal Ore", lightBlocking, true, true, false, false, false, false, 1, miningDuration, ItemInfoTools.ItemToolType.Pickaxe));
             worldItems.Add(21, new ItemInfoWorld(21, "Iron Ore", lightBlocking, true, true, false, false, false, false, 1, miningDuration, ItemInfoTools.ItemToolType.Pickaxe));
